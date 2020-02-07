@@ -15,8 +15,8 @@ distance from the outermost point (in metres) will be considered as outermost as
 /* For an object-like origin provides shapes of connections connected to that object or bundle.
 All shapes are located on two adjacent fuselage sections. */
 struct _ConnsForObject {
-    Shape *t_shapes[MAX_ORIGINS];
-    Shape *n_shapes[MAX_ORIGINS];
+    Shape *t_shapes[MAX_FUSELAGE_OBJECTS];
+    Shape *n_shapes[MAX_FUSELAGE_OBJECTS];
     int t_count;
     int n_count;
 };
@@ -28,8 +28,8 @@ static bool initialized = false;
 /* Allocates storage for merge filters and memory for internal use. */
 MergeFilters *mesh_init_filter(Arena *arena) {
     initialized = true;
-    conns = arena->alloc<_ConnsForObject>(MAX_ORIGINS);
-    verts = arena->alloc<dvec>(SHAPE_MAX_SHAPE_SUBDIVS * MAX_ORIGINS);
+    conns = arena->alloc<_ConnsForObject>(MAX_FUSELAGE_OBJECTS);
+    verts = arena->alloc<dvec>(SHAPE_MAX_SHAPE_SUBDIVS * MAX_FUSELAGE_OBJECTS);
     return arena->alloc<MergeFilters>(1);
 }
 
@@ -38,7 +38,7 @@ void mesh_make_merge_filter(MergeFilters *filters, int shape_subdivs,
                             Shape **t_shapes, int t_shapes_count, OriginFlags t_object_like_flags,
                             Shape **n_shapes, int n_shapes_count, OriginFlags n_object_like_flags) {
     assert(initialized);
-    memset(conns, 0, sizeof(_ConnsForObject) * MAX_ORIGINS); /* reset correlations between shapes */
+    memset(conns, 0, sizeof(_ConnsForObject) * MAX_FUSELAGE_OBJECTS); /* reset correlations between shapes */
 
     /* collect all connection shapes */
 
@@ -62,7 +62,7 @@ void mesh_make_merge_filter(MergeFilters *filters, int shape_subdivs,
 
     double subdiv_da = TAU / shape_subdivs;
 
-    for (int i = 0; i < MAX_ORIGINS; ++i) {
+    for (int i = 0; i < MAX_FUSELAGE_OBJECTS; ++i) {
         _ConnsForObject *c = conns + i;
         MergeFilter *filter = filters->objects + i;
 
@@ -73,7 +73,7 @@ void mesh_make_merge_filter(MergeFilters *filters, int shape_subdivs,
         for (int subdiv_i = 0; subdiv_i < shape_subdivs; ++subdiv_i) /* reset conn flags */
             filter->conns[subdiv_i] = 0ull;
 
-        static int outermost_shape_indices[MAX_ORIGINS];
+        static int outermost_shape_indices[MAX_FUSELAGE_OBJECTS];
 
         if (t_is_object_like && c->n_count > 1) { /* tailwise merge transition */
             mesh_polygonize_shape_bundle(c->n_shapes, c->n_count, shape_subdivs, verts);
@@ -146,7 +146,7 @@ int mesh_find_outermost_shapes_for_subdivision(dvec *verts, int subdiv_i, double
     static struct _Dot {
         double dot;
         int index;
-    } vert_dots[MAX_ORIGINS];
+    } vert_dots[MAX_FUSELAGE_OBJECTS];
 
     for (int i = 0; i < shapes_count; ++i) {
         dvec v = subdiv_verts[i];

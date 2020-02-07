@@ -118,8 +118,8 @@ int mesh_trace_envelope(EnvPoint *env_points, Shape **shapes, int shapes_count, 
             - If conn shape whose neither origin parts are bundled - single shape poly.
             - Else, add shape to appropriate bundle poly. */
 
-        _Poly *bundle_polys_map[MAX_ORIGINS];
-        memset(bundle_polys_map, 0, sizeof(_Poly *) * MAX_ORIGINS);
+        _Poly *bundle_polys_map[MAX_FUSELAGE_OBJECTS];
+        memset(bundle_polys_map, 0, sizeof(_Poly *) * MAX_FUSELAGE_OBJECTS);
 
         for (int a_i = 0; a_i < shapes_count; ++a_i) {
             Shape *a = shapes[a_i];
@@ -236,7 +236,7 @@ int mesh_trace_envelope(EnvPoint *env_points, Shape **shapes, int shapes_count, 
                 dvec *verts = env_arena.lock<dvec>(shape_subdivs * p->shapes_count);
                 mesh_polygonize_shape_bundle(p->shapes, p->shapes_count, shape_subdivs, verts);
 
-                static int outermost_shape_indices[MAX_ORIGINS];
+                static int outermost_shape_indices[MAX_FUSELAGE_OBJECTS];
                 static double subdiv_da = TAU / shape_subdivs;
 
                 for (int subdiv_i = 0; subdiv_i < shape_subdivs; ++subdiv_i) { /* find outermost vertex for each subdivision */

@@ -44,7 +44,7 @@ struct MergeFilter {
 };
 
 struct MergeFilters {
-    MergeFilter objects[MAX_ORIGINS];
+    MergeFilter objects[MAX_FUSELAGE_OBJECTS];
 };
 
 struct dvec;

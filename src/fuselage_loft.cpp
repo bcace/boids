@@ -156,13 +156,6 @@ static void _get_skin_intersection(float x, Shape *shape,
     shape_update_curve_control_points(shape->curves);
 }
 
-static Origin _origin_mirror(Origin o, bool tail_mirror, bool nose_mirror) {
-    Origin r;
-    r.tail = o.tail + (tail_mirror ? MAX_FUSELAGE_OBJECTS : 0);
-    r.nose = o.nose + (nose_mirror ? MAX_FUSELAGE_OBJECTS : 0);
-    return r;
-}
-
 static inline bool _intersects_object(float x, Object *o) {
     return x >= o->min_x && x <= o->max_x;
 }

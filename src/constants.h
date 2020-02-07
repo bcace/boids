@@ -13,14 +13,12 @@
 #define SHAPE_MAX_ENVELOPE_SHAPES       32
 #define SHAPE_MAX_SHAPE_SUBDIVS         (SHAPE_MAX_CURVE_SUBDIVS * SHAPE_CURVES)
 #define SHAPE_MAX_ENVELOPE_POINTS       (SHAPE_MAX_ENVELOPE_SHAPES * SHAPE_MAX_SHAPE_SUBDIVS)
-#define MAX_FUSELAGE_OBJECTS            32
-#define MAX_ORIGINS                     (MAX_FUSELAGE_OBJECTS * 2)
-
+#define MAX_FUSELAGE_OBJECTS            (sizeof(OriginFlags) * 8)
 #define ZERO_ORIGIN_FLAG                0ull
 #define ORIGIN_PART_TO_FLAG(__part)     (OriginFlags)(1ull << (__part))
 
 typedef short int OriginPart;
-typedef unsigned long long int OriginFlags; /* make sure MAX_ORIGINS fits into sizeof(OriginFlags) */
+typedef unsigned long long int OriginFlags;
 
 struct Origin {
     OriginPart tail;

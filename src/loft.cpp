@@ -65,18 +65,21 @@ static void _init_objref(Objref *o_ref, Object *o, bool is_clone) {
 
 /* Main loft function. */
 void loft_model(Arena *arena, Model *model) {
-    static Fuselage fuselages[MAX_FUSELAGES];
-    int fuselages_count = 0;
-
-    arena->clear();
-
-    for (int i = 0; i < MAX_FUSELAGES; ++i) { /* clear old fuselages */
-        fuselages[i].objects_count = 0;
-        fuselages[i].conns_count = 0;
-    }
 
     if (model->objects.count == 0) /* if model has no objects we're done */
         return;
+
+    arena->clear();
+
+    /* clear old fuselages */
+
+    static Fuselage fuselages[MAX_FUSELAGES];
+    int fuselages_count = 0;
+
+    for (int i = 0; i < MAX_FUSELAGES; ++i) {
+        fuselages[i].objects_count = 0;
+        fuselages[i].conns_count = 0;
+    }
 
     /* create object references from model objects, including clones */
 
@@ -85,9 +88,12 @@ void loft_model(Arena *arena, Model *model) {
 
     for (int i = 0; i < model->objects.count; ++i) {
         Object *o = model->objects[i];
+        break_assert(o_refs_count < MAX_FUSELAGE_OBJECTS);
         _init_objref(o_refs + o_refs_count++, o, false);
-        if (object_should_be_mirrored(o))
+        if (object_should_be_mirrored(o)) {
+            break_assert(o_refs_count < MAX_FUSELAGE_OBJECTS);
             _init_objref(o_refs + o_refs_count++, o, true);
+        }
     }
 
     // TODO: describe how fuselage id propagation works
