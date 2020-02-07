@@ -9,13 +9,15 @@
 #define MAX_FUSELAGE_CONNS  32
 
 
+struct Arena;
+struct Model;
 struct Object;
 
 struct Objref {
     Object *object;
     bool is_clone;
 
-    /* data adapted from the object */
+    /* data derived from object */
     double x, y, z; /* position, model CS */
     Former t_skin_former, n_skin_former; /* skin formers, model CS */
 
@@ -44,7 +46,6 @@ struct Fuselage {
     int conns_count;
 };
 
-void fuselage_clear(Fuselage *fuselage);
-void fuselage_update_longitudinal_tangents(Fuselage *fuselage); // TODO: this is just a prelude to loft, move it there
+void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fuselage);
 
 #endif
