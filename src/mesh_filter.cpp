@@ -15,10 +15,8 @@ distance from the outermost point (in metres) will be considered as outermost as
 /* For an object-like origin provides shapes of connections connected to that object or bundle.
 All shapes are located on two adjacent fuselage sections. */
 struct _ConnsForObject {
-    Shape *t_shapes[MAX_FUSELAGE_OBJECTS];
-    Shape *n_shapes[MAX_FUSELAGE_OBJECTS];
-    int t_count;
-    int n_count;
+    Shape *shapes[MAX_FUSELAGE_OBJECTS];
+    int count;
 };
 
 static _ConnsForObject *conns;
@@ -35,8 +33,8 @@ MergeFilters *mesh_init_filter(Arena *arena) {
 
 // TODO: document
 void mesh_make_merge_filter(MergeFilters *filters, int shape_subdivs,
-                            Shape **t_shapes, int t_shapes_count, OriginFlags t_object_like_flags,
-                            Shape **n_shapes, int n_shapes_count, OriginFlags n_object_like_flags) {
+                            Shape **t_shapes, int t_shapes_count, MeshEnv *t_env,
+                            Shape **n_shapes, int n_shapes_count, MeshEnv *n_env) {
     assert(initialized);
     memset(conns, 0, sizeof(_ConnsForObject) * MAX_FUSELAGE_OBJECTS); /* reset correlations between shapes */
 
@@ -44,65 +42,61 @@ void mesh_make_merge_filter(MergeFilters *filters, int shape_subdivs,
 
     for (int i = 0; i < t_shapes_count; ++i) {
         Shape *s = t_shapes[i];
-        if (s->origin.tail != s->origin.nose) {
+        if (s->origin.tail != s->origin.nose && (n_env->object_like_flags & ORIGIN_PART_TO_FLAG(s->origin.nose))) {
             _ConnsForObject *c = conns + s->origin.nose;
-            c->t_shapes[c->t_count++] = s;
+            c->shapes[c->count++] = s;
         }
     }
 
     for (int i = 0; i < n_shapes_count; ++i) {
         Shape *s = n_shapes[i];
-        if (s->origin.tail != s->origin.nose) {
+        if (s->origin.tail != s->origin.nose && (t_env->object_like_flags & ORIGIN_PART_TO_FLAG(s->origin.tail))) {
             _ConnsForObject *c = conns + s->origin.tail;
-            c->n_shapes[c->n_count++] = s;
+            c->shapes[c->count++] = s;
         }
     }
 
-    /* find merge transitions among correlations */
+    /* find merge transitions */
 
     double subdiv_da = TAU / shape_subdivs;
 
     for (int i = 0; i < MAX_FUSELAGE_OBJECTS; ++i) {
         _ConnsForObject *c = conns + i;
+
+        OriginFlags flags = ORIGIN_PART_TO_FLAG(i);
+        bool t_is_object_like = t_env->object_like_flags & flags;
+        bool n_is_object_like = n_env->object_like_flags & flags;
+
         MergeFilter *filter = filters->objects + i;
 
-        OriginFlags f = ORIGIN_PART_TO_FLAG(i);
-        bool t_is_object_like = t_object_like_flags & f;
-        bool n_is_object_like = n_object_like_flags & f;
-
-        for (int subdiv_i = 0; subdiv_i < shape_subdivs; ++subdiv_i) /* reset conn flags */
-            filter->conns[subdiv_i] = 0ull;
-
-        static int outermost_shape_indices[MAX_FUSELAGE_OBJECTS];
-
-        if (t_is_object_like && c->n_count > 1) { /* tailwise merge transition */
-            mesh_polygonize_shape_bundle(c->n_shapes, c->n_count, shape_subdivs, verts);
-
-            for (int subdiv_i = 0; subdiv_i < shape_subdivs; ++subdiv_i) {
-                int count = mesh_find_outermost_shapes_for_subdivision(verts, subdiv_i, subdiv_da, c->n_count, outermost_shape_indices);
-                for (int j = 0; j < count; ++j) {
-                    int shape_i = outermost_shape_indices[j];
-                    filter->conns[subdiv_i] |= ORIGIN_PART_TO_FLAG(c->n_shapes[shape_i]->origin.nose);
-                }
-            }
-
-            filter->active = true;
-        }
-        else if (n_is_object_like && c->t_count > 1) { /* nosewise merge transition */
-            mesh_polygonize_shape_bundle(c->t_shapes, c->t_count, shape_subdivs, verts);
-
-            for (int subdiv_i = 0; subdiv_i < shape_subdivs; ++subdiv_i) {
-                int count = mesh_find_outermost_shapes_for_subdivision(verts, subdiv_i, subdiv_da, c->t_count, outermost_shape_indices);
-                for (int j = 0; j < count; ++j) {
-                    int shape_i = outermost_shape_indices[j];
-                    filter->conns[subdiv_i] |= ORIGIN_PART_TO_FLAG(c->t_shapes[shape_i]->origin.tail);
-                }
-            }
-
-            filter->active = true;
-        }
-        else
+        if (t_is_object_like == n_is_object_like)   /* not a transition, both sides are either object or conn */
             filter->active = false;
+        else if (c->count <= 1)                     /* object only on one side, but conns are not multiple */
+            filter->active = false;
+        else {
+            filter->active = true;
+
+            for (int subdiv_i = 0; subdiv_i < shape_subdivs; ++subdiv_i) /* reset conn flags */
+                filter->conns[subdiv_i] = 0ull;
+
+            static int outermost_shape_indices[MAX_FUSELAGE_OBJECTS];
+            mesh_polygonize_shape_bundle(c->shapes, c->count, shape_subdivs, verts);
+
+            for (int subdiv_i = 0; subdiv_i < shape_subdivs; ++subdiv_i) {
+                int count = mesh_find_outermost_shapes_for_subdivision(verts, subdiv_i, subdiv_da, c->count, outermost_shape_indices);
+
+                for (int j = 0; j < count; ++j) {
+                    Shape *shape = c->shapes[outermost_shape_indices[j]];
+                    if (t_is_object_like)
+                        filter->conns[subdiv_i] |= ORIGIN_PART_TO_FLAG(shape->origin.nose);
+                    else
+                        filter->conns[subdiv_i] |= ORIGIN_PART_TO_FLAG(shape->origin.tail);
+                }
+            }
+
+            /* If we have slices we can set mesh points' is_outermost here.
+            mesh_make_envelopes() should set is_outermost to true by default for all points. Then this procedure can set some of them to false here. */
+        }
     }
 }
 

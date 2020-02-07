@@ -299,8 +299,8 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
             Section *n_s = section;
 
             mesh_make_merge_filter(filter, shape_subdivs,
-                                   t_s->n_shapes, t_s->n_shapes_count, t_s->n_env->object_like_flags,
-                                   n_s->t_shapes, n_s->t_shapes_count, n_s->t_env->object_like_flags);
+                                   t_s->n_shapes, t_s->n_shapes_count, t_s->n_env,
+                                   n_s->t_shapes, n_s->t_shapes_count, n_s->t_env);
 
             mesh_between_two_sections(model, shape_subdivs, filter,
                                       t_s->n_env, t_s->neighbors_map,
