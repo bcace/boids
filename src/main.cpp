@@ -94,7 +94,7 @@ void _key_callback(int key, int mods, int action) {
             if (key == PLATFORM_KEY_S)
                 model_serialize(&model, "model_dump");
             else if (key == PLATFORM_KEY_L) {
-                model_deserialize(&model, "model_dump_merge_filter_test");
+                model_deserialize(&model, "model_dump");
                 _recalculate_model();
             }
             else if (key == PLATFORM_KEY_D)

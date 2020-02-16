@@ -6,6 +6,7 @@
 #include "arena.h"
 #include "math.h"
 #include <math.h>
+#include <string.h>
 
 
 static Arena verts_arena(500000);
@@ -26,7 +27,7 @@ static _Circle _object_circle(Object *o, bool is_clone) {
     c.y = o->min_z + ry;
     c.r = max_d(rx, ry) + 0.05; /* a small margin is added to the circle */
     if (is_clone)
-        c.x -= o->p.y * 2.0;
+        c.x = -c.x;
     return c;
 }
 
@@ -41,25 +42,23 @@ static bool _object_circles_overlap(Objref *a_ref, Objref *b_ref) {
 }
 
 /* Initializes an Objref instance. */
-static void _init_objref(Objref *o_ref, Object *o, bool is_clone) {
-    o_ref->object = o;
-    o_ref->is_clone = is_clone;
-    o_ref->fuselage_id = -1;
-    o_ref->t_conns_count = 0;
-    o_ref->n_conns_count = 0;
-    o_ref->t_conn_flags = ZERO_ORIGIN_FLAG;
-    o_ref->n_conn_flags = ZERO_ORIGIN_FLAG;
-    o_ref->x = (double)o->p.x;
-    o_ref->z = (double)o->p.z;
-    if (is_clone) {
-        o_ref->y = -(double)o->p.y;
-        shape_mirror_former(&o->tail_skin_former, &o_ref->t_skin_former, o_ref->x, o_ref->y, o_ref->z, STRUCTURAL_MARGIN);
-        shape_mirror_former(&o->nose_skin_former, &o_ref->n_skin_former, o_ref->x, o_ref->y, o_ref->z, STRUCTURAL_MARGIN);
+static void _init_objref(Objref *r, Object *o, bool is_clone) {
+    r->object = o;
+    r->is_clone = is_clone;
+    r->fuselage_id = -1;
+    r->t_conns_count = 0;
+    r->n_conns_count = 0;
+    r->x = (double)o->p.x;
+    r->z = (double)o->p.z;
+    if (r->is_clone) {
+        r->y = -(double)o->p.y;
+        shape_mirror_former(&o->tail_skin_former, &r->t_skin_former, r->x, r->y, r->z, STRUCTURAL_MARGIN);
+        shape_mirror_former(&o->nose_skin_former, &r->n_skin_former, r->x, r->y, r->z, STRUCTURAL_MARGIN);
     }
     else {
-        o_ref->y = (double)o->p.y;
-        shape_copy_former(&o->tail_skin_former, &o_ref->t_skin_former, o_ref->x, o_ref->y, o_ref->z, STRUCTURAL_MARGIN);
-        shape_copy_former(&o->nose_skin_former, &o_ref->n_skin_former, o_ref->x, o_ref->y, o_ref->z, STRUCTURAL_MARGIN);
+        r->y = (double)o->p.y;
+        shape_copy_former(&o->tail_skin_former, &r->t_skin_former, r->x, r->y, r->z, STRUCTURAL_MARGIN);
+        shape_copy_former(&o->nose_skin_former, &r->n_skin_former, r->x, r->y, r->z, STRUCTURAL_MARGIN);
     }
 }
 
@@ -88,15 +87,21 @@ void loft_model(Arena *arena, Model *model) {
 
     for (int i = 0; i < model->objects.count; ++i) {
         Object *o = model->objects[i];
+
         break_assert(o_refs_count < MAX_FUSELAGE_OBJECTS);
-        _init_objref(o_refs + o_refs_count++, o, false);
+        Objref *o_ref = o_refs + o_refs_count++;
+        _init_objref(o_ref, o, false);
+
+        /* cloning object if required, also make sure all clones follow the original object immediately */
+
         if (object_should_be_mirrored(o)) {
             break_assert(o_refs_count < MAX_FUSELAGE_OBJECTS);
-            _init_objref(o_refs + o_refs_count++, o, true);
+            Objref *c_ref = o_refs + o_refs_count++;
+            _init_objref(c_ref, o, true);
         }
     }
 
-    // TODO: describe how fuselage id propagation works
+    /* let objrefs "infect" each other with fuselage ids if their area circles overlap */
 
     int next_available_fuselage_id = 0;
     for (int a_i = 0; a_i < o_refs_count; ++a_i) { /* assign fuselage ids to all objects */
@@ -132,7 +137,7 @@ void loft_model(Arena *arena, Model *model) {
         for (int i = 0; i < MAX_ELEMENTS; ++i) // TODO: memset?
             fuselages_map[i] = 0;
 
-        for (int i = 0; i < o_refs_count; ++i) {
+        for (int i = 0; i < o_refs_count; ++i) { /* assign objects to fuselages, create fuselages if needed */
             Objref *o_ref = o_refs + i;
             break_assert(o_ref->fuselage_id != -1);
 
@@ -144,91 +149,146 @@ void loft_model(Arena *arena, Model *model) {
             else
                 fuselage = fuselages_map[o_ref->fuselage_id];
 
-            fuselage->objects[fuselage->objects_count++] = o_refs[i];
+            fuselage->objects[fuselage->objects_count++] = *o_ref;
         }
     }
 
+    /* create connections between objrefs in each fuselage */
+
     // TODO: explain how connection generation works
 
-    typedef struct {
-        Objref *tail_o;
-        Objref *nose_o;
-        float grade;
-    } _ConnCandidate;
+    struct _Conn1 {
+        int t_i;
+        int n_i;
+    } *conns1 = arena->alloc<_Conn1>(MAX_FUSELAGE_OBJECTS * MAX_FUSELAGE_OBJECTS);
 
-    _ConnCandidate *candidates = arena->alloc<_ConnCandidate>(MAX_FUSELAGE_OBJECTS * MAX_FUSELAGE_OBJECTS);
+    struct _Conn2 {
+        int t_i;
+        int n_i;
+        float grade;
+    } *conns2 = arena->alloc<_Conn2>(MAX_FUSELAGE_OBJECTS * MAX_FUSELAGE_OBJECTS);
+
+    struct _ObjrefInfo {
+        OriginFlags t_conn_flags;
+        OriginFlags n_conn_flags;
+        OriginFlags non_clone_origin; /* origin flag where original object and all its clones have the same origin */
+        OriginFlags t_non_clone_origins; /* non-clone-origins of all (potentially) connected objects */
+        OriginFlags n_non_clone_origins; /* non-clone-origins of all (potentially) connected objects */
+    } *infos = arena->alloc<_ObjrefInfo>(MAX_FUSELAGE_OBJECTS);
 
     for (int i = 0; i < fuselages_count; ++i) {
         Fuselage *fuselage = fuselages + i;
 
-        for (int a_i = 0; a_i < fuselage->objects_count; ++a_i) { /* determine all the possible connected pairs of objects */
+        memset(infos, 0, sizeof(_ObjrefInfo) * fuselage->objects_count);
+
+        /* set objects' non-clone origins */
+
+        OriginFlags last_non_clone_origin = ZERO_ORIGIN_FLAG; /* last non-clone is immediately followed by its clones */
+
+        for (int o_i = 0; o_i < fuselage->objects_count; ++o_i) {
+            Objref *o_ref = fuselage->objects + o_i;
+            _ObjrefInfo *o_info = infos + o_i;
+
+            if (o_ref->is_clone) {
+                break_assert(last_non_clone_origin != ZERO_ORIGIN_FLAG);
+                o_info->non_clone_origin = last_non_clone_origin;
+            }
+            else {
+                last_non_clone_origin = ORIGIN_PART_TO_FLAG(fuselage->objects_count);
+                o_info->non_clone_origin = last_non_clone_origin;
+            }
+        }
+
+        /* determine all the possible connected pairs of objects (don't overlap along x) */
+
+        int conns1_count = 0;
+
+        for (int a_i = 0; a_i < fuselage->objects_count; ++a_i) {
             Objref *a_ref = fuselage->objects + a_i;
             Object *a = a_ref->object;
+            _ObjrefInfo *a_info = infos + a_i;
 
             for (int b_i = a_i + 1; b_i < fuselage->objects_count; ++b_i) {
                 Objref *b_ref = fuselage->objects + b_i;
                 Object *b = b_ref->object;
+                _ObjrefInfo *b_info = infos + b_i;
 
                 if (a->max_x < b->min_x - 0.1) {        /* a is tail, b is nose */
                     if (_object_circles_overlap(a_ref, b_ref)) {
-                        a_ref->n_conn_flags |= ORIGIN_PART_TO_FLAG(b_i);
-                        b_ref->t_conn_flags |= ORIGIN_PART_TO_FLAG(a_i);
+                        a_info->n_conn_flags |= ORIGIN_PART_TO_FLAG(b_i);
+                        b_info->t_conn_flags |= ORIGIN_PART_TO_FLAG(a_i);
+                        _Conn1 *c1 = conns1 + conns1_count++;
+                        c1->t_i = a_i;
+                        c1->n_i = b_i;
                     }
                 }
                 else if (a->min_x > b->max_x + 0.1) {   /* a is nose, b is tail */
                     if (_object_circles_overlap(a_ref, b_ref)) {
-                        a_ref->t_conn_flags |= ORIGIN_PART_TO_FLAG(b_i);
-                        b_ref->n_conn_flags |= ORIGIN_PART_TO_FLAG(a_i);
+                        a_info->t_conn_flags |= ORIGIN_PART_TO_FLAG(b_i);
+                        b_info->n_conn_flags |= ORIGIN_PART_TO_FLAG(a_i);
+                        _Conn1 *c1 = conns1 + conns1_count++;
+                        c1->t_i = b_i;
+                        c1->n_i = a_i;
                     }
                 }
             }
         }
 
-        int conns_count = 0;
-        for (int a_i = 0; a_i < fuselage->objects_count; ++a_i) { /* create connection candidates by filtering through possible ones */
-            Objref *a_ref = fuselage->objects + a_i;
-            Object *a = a_ref->object;
+        /* create connection candidates by filtering through possible ones */
 
-            for (int b_i = 0; b_i < fuselage->objects_count; ++b_i) {
-                if ((a_ref->t_conn_flags & ORIGIN_PART_TO_FLAG(b_i)) == 0) /* object b is not candidate for connection with object a */
-                    continue;
+        int conns2_count = 0;
 
-                Objref *b_ref = fuselage->objects + b_i;
-                Object *b = b_ref->object;
+        for (int j = 0; j < conns1_count; ++j) {
+            _Conn1 *c1 = conns1 + j;
+            _ObjrefInfo *t_info = infos + c1->t_i;
+            _ObjrefInfo *n_info = infos + c1->n_i;
 
-                if ((b_ref->n_conn_flags & a_ref->t_conn_flags) != 0) /* object b is nosewise connected to some objects a is tailwise connected */
-                    continue;
+            /* skip connection candidate if objects it connects can be connected through other objects in between */
 
-                float dx = a->min_x - b->max_x;
-                // TODO: see if this should actually be appropriate skin former centroids instead of just object positions
-                float dy = a->p.y - b->p.y;
-                float dz = a->p.z - b->p.z;
-                // TODO: check if I can remove this sqrtf altogether
-                float grade = dx / sqrtf(dy * dy + dz * dz); // FAST_SQRT
+            if ((t_info->n_conn_flags & n_info->t_conn_flags) != 0) /* tail object is nosewise connected to some objects nose object is tailwise connected to */
+                continue;
 
-                int insert_i = 0;
-                for (; insert_i < conns_count; ++insert_i)
-                    if (grade > candidates[insert_i].grade)
-                        break;
-                for (int m = conns_count; m > insert_i; --m)
-                    candidates[m] = candidates[m - 1];
+            Object *t_obj = fuselage->objects[c1->t_i].object;
+            Object *n_obj = fuselage->objects[c1->n_i].object;
 
-                _ConnCandidate *cc = candidates + insert_i;
-                cc->tail_o = b_ref;
-                cc->nose_o = a_ref;
-                cc->grade = grade;
-                ++conns_count;
-            }
+            float dx = n_obj->min_x - t_obj->max_x;
+            // TODO: see if this should actually be appropriate skin former centroids instead of just object positions
+            float dy = n_obj->p.y - t_obj->p.y;
+            float dz = n_obj->p.z - t_obj->p.z;
+            // TODO: check if I can remove this sqrtf altogether
+            float grade = dx / sqrtf(dy * dy + dz * dz); // FAST_SQRT
+
+            int insert_i = 0;
+            for (; insert_i < conns2_count; ++insert_i)
+                if (grade > conns2[insert_i].grade)
+                    break;
+            for (int m = conns2_count; m > insert_i; --m)
+                conns2[m] = conns2[m - 1];
+
+            _Conn2 *c2 = conns2 + insert_i;
+            c2->t_i = c1->t_i;
+            c2->n_i = c1->n_i;
+            t_info->n_non_clone_origins |= n_info->non_clone_origin;
+            n_info->t_non_clone_origins |= t_info->non_clone_origin;
+            c2->grade = grade;
+            ++conns2_count;
         }
 
-        for (int j = 0; j < conns_count; ++j) { /* make actual conns from conn candidates */
-            _ConnCandidate *cc = candidates + j;
+        /* make actual conns from conn candidates */
+
+        for (int j = 0; j < conns2_count; ++j) {
+            _Conn2 *c2 = conns2 + j;
+            _ObjrefInfo *t_info = infos + c2->t_i;
+            _ObjrefInfo *n_info = infos + c2->n_i;
 
             /* only add the connection if both endpoints don't already have something connected */
-            if (cc->tail_o->n_conns_count == 0 || cc->nose_o->t_conns_count == 0) {
+
+            if ((t_info->n_non_clone_origins & ~n_info->non_clone_origin) == ZERO_ORIGIN_FLAG ||
+                (n_info->t_non_clone_origins & ~t_info->non_clone_origin) == ZERO_ORIGIN_FLAG) {
+
                 Conn *c = fuselage->conns + fuselage->conns_count++;
-                c->tail_o = cc->tail_o;
-                c->nose_o = cc->nose_o;
+                c->tail_o = fuselage->objects + c2->t_i;
+                c->nose_o = fuselage->objects + c2->n_i;
                 ++c->tail_o->n_conns_count;
                 ++c->nose_o->t_conns_count;
             }
@@ -242,8 +302,10 @@ void loft_model(Arena *arena, Model *model) {
     model->skin_verts_count = 0;
     mesh_init(model);
 
-    for (int i = 0; i < fuselages_count; ++i)
+    for (int i = 0; i < fuselages_count; ++i) {
+        arena->clear();
         fuselage_loft(arena, &verts_arena, model, fuselages + i);
+    }
 
     /* make triangles and quads for drawing from generated panels */
 

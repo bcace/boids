@@ -167,8 +167,6 @@ static inline bool _intersects_connection(float x, Object *t_o, Object *n_o) {
 void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fuselage) {
     _update_longitudinal_tangents(fuselage);
 
-    arena->clear();
-
     int shape_subdivs = SHAPE_CURVE_SAMPLES * SHAPE_CURVES;
     int sections_count = FUSELAGE_SUBDIVS_COUNT + 1;
 

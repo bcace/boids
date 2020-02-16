@@ -21,16 +21,14 @@ struct Objref {
     double x, y, z; /* position, model CS */
     Former t_skin_former, n_skin_former; /* skin formers, model CS */
 
-    /* only used while grouping objects into fuselages and connecting them */
+    /* only used while grouping objects into fuselages */
     int fuselage_id;
-    OriginFlags t_conn_flags;
-    OriginFlags n_conn_flags;
 
     /* used for lofting */
-    vec3 t_tangents[SHAPE_CURVES];
-    vec3 n_tangents[SHAPE_CURVES];
     int t_conns_count;
     int n_conns_count;
+    vec3 t_tangents[SHAPE_CURVES];
+    vec3 n_tangents[SHAPE_CURVES];
     OriginPart origin; /* object lofting id */
 };
 
