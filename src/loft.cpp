@@ -46,6 +46,7 @@ static void _init_objref(Objref *r, Object *o, bool is_clone) {
     r->object = o;
     r->is_clone = is_clone;
     r->fuselage_id = -1;
+    r->non_clone_origin = ZERO_ORIGIN_FLAG;
     r->t_conns_count = 0;
     r->n_conns_count = 0;
     r->x = (double)o->p.x;
@@ -92,7 +93,7 @@ void loft_model(Arena *arena, Model *model) {
         Objref *o_ref = o_refs + o_refs_count++;
         _init_objref(o_ref, o, false);
 
-        /* cloning object if required, also make sure all clones follow the original object immediately */
+        /* make sure all clones follow the original object immediately */
 
         if (object_should_be_mirrored(o)) {
             break_assert(o_refs_count < MAX_FUSELAGE_OBJECTS);
@@ -137,6 +138,8 @@ void loft_model(Arena *arena, Model *model) {
         for (int i = 0; i < MAX_ELEMENTS; ++i) // TODO: memset?
             fuselages_map[i] = 0;
 
+        OriginFlags last_non_clone_origin = ZERO_ORIGIN_FLAG; /* last non-clone is immediately followed by its clones */
+
         for (int i = 0; i < o_refs_count; ++i) { /* assign objects to fuselages, create fuselages if needed */
             Objref *o_ref = o_refs + i;
             break_assert(o_ref->fuselage_id != -1);
@@ -148,6 +151,15 @@ void loft_model(Arena *arena, Model *model) {
             }
             else
                 fuselage = fuselages_map[o_ref->fuselage_id];
+
+            /* set objects' non-clone origins */
+
+            if (o_ref->is_clone)
+                o_ref->non_clone_origin = last_non_clone_origin;
+            else {
+                last_non_clone_origin = ORIGIN_PART_TO_FLAG(fuselage->objects_count);
+                o_ref->non_clone_origin = last_non_clone_origin;
+            }
 
             fuselage->objects[fuselage->objects_count++] = *o_ref;
         }
@@ -171,7 +183,6 @@ void loft_model(Arena *arena, Model *model) {
     struct _ObjrefInfo {
         OriginFlags t_conn_flags;
         OriginFlags n_conn_flags;
-        OriginFlags non_clone_origin; /* origin flag where original object and all its clones have the same origin */
         OriginFlags t_non_clone_origins; /* non-clone-origins of all (potentially) connected objects */
         OriginFlags n_non_clone_origins; /* non-clone-origins of all (potentially) connected objects */
     } *infos = arena->alloc<_ObjrefInfo>(MAX_FUSELAGE_OBJECTS);
@@ -180,24 +191,6 @@ void loft_model(Arena *arena, Model *model) {
         Fuselage *fuselage = fuselages + i;
 
         memset(infos, 0, sizeof(_ObjrefInfo) * fuselage->objects_count);
-
-        /* set objects' non-clone origins */
-
-        OriginFlags last_non_clone_origin = ZERO_ORIGIN_FLAG; /* last non-clone is immediately followed by its clones */
-
-        for (int o_i = 0; o_i < fuselage->objects_count; ++o_i) {
-            Objref *o_ref = fuselage->objects + o_i;
-            _ObjrefInfo *o_info = infos + o_i;
-
-            if (o_ref->is_clone) {
-                break_assert(last_non_clone_origin != ZERO_ORIGIN_FLAG);
-                o_info->non_clone_origin = last_non_clone_origin;
-            }
-            else {
-                last_non_clone_origin = ORIGIN_PART_TO_FLAG(fuselage->objects_count);
-                o_info->non_clone_origin = last_non_clone_origin;
-            }
-        }
 
         /* determine all the possible connected pairs of objects (don't overlap along x) */
 
@@ -248,8 +241,10 @@ void loft_model(Arena *arena, Model *model) {
             if ((t_info->n_conn_flags & n_info->t_conn_flags) != 0) /* tail object is nosewise connected to some objects nose object is tailwise connected to */
                 continue;
 
-            Object *t_obj = fuselage->objects[c1->t_i].object;
-            Object *n_obj = fuselage->objects[c1->n_i].object;
+            Objref *t_ref = fuselage->objects + c1->t_i;
+            Objref *n_ref = fuselage->objects + c1->n_i;
+            Object *t_obj = t_ref->object;
+            Object *n_obj = n_ref->object;
 
             float dx = n_obj->min_x - t_obj->max_x;
             // TODO: see if this should actually be appropriate skin former centroids instead of just object positions
@@ -268,8 +263,8 @@ void loft_model(Arena *arena, Model *model) {
             _Conn2 *c2 = conns2 + insert_i;
             c2->t_i = c1->t_i;
             c2->n_i = c1->n_i;
-            t_info->n_non_clone_origins |= n_info->non_clone_origin;
-            n_info->t_non_clone_origins |= t_info->non_clone_origin;
+            t_info->n_non_clone_origins |= n_ref->non_clone_origin;
+            n_info->t_non_clone_origins |= t_ref->non_clone_origin;
             c2->grade = grade;
             ++conns2_count;
         }
@@ -278,13 +273,15 @@ void loft_model(Arena *arena, Model *model) {
 
         for (int j = 0; j < conns2_count; ++j) {
             _Conn2 *c2 = conns2 + j;
+            Objref *t_ref = fuselage->objects + c2->t_i;
+            Objref *n_ref = fuselage->objects + c2->n_i;
             _ObjrefInfo *t_info = infos + c2->t_i;
             _ObjrefInfo *n_info = infos + c2->n_i;
 
             /* only add the connection if both endpoints don't already have something connected */
 
-            if ((t_info->n_non_clone_origins & ~n_info->non_clone_origin) == ZERO_ORIGIN_FLAG ||
-                (n_info->t_non_clone_origins & ~t_info->non_clone_origin) == ZERO_ORIGIN_FLAG) {
+            if ((t_info->n_non_clone_origins & ~n_ref->non_clone_origin) == ZERO_ORIGIN_FLAG ||
+                (n_info->t_non_clone_origins & ~t_ref->non_clone_origin) == ZERO_ORIGIN_FLAG) {
 
                 Conn *c = fuselage->conns + fuselage->conns_count++;
                 c->tail_o = fuselage->objects + c2->t_i;

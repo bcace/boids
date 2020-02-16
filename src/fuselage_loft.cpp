@@ -128,8 +128,8 @@ void _update_longitudinal_tangents(Fuselage *fuselage) {
 
 /* Used to intersect either objects or connecting pipes between objects. Results is a shape. */
 static void _get_skin_intersection(float x, Shape *shape,
-                                   Former *tail_f, vec3 *tail_l_tangents, vec3 tail_o_p,
-                                   Former *nose_f, vec3 *nose_l_tangents, vec3 nose_o_p) {
+                                   Former *tail_f, vec3 *tail_l_tangents, vec3 tail_o_p, bool t_is_merge,
+                                   Former *nose_f, vec3 *nose_l_tangents, vec3 nose_o_p, bool n_is_merge) {
     Curve *t_curves = tail_f->shape.curves;
     Curve *n_curves = nose_f->shape.curves;
 
@@ -150,7 +150,29 @@ static void _get_skin_intersection(float x, Shape *shape,
         vec3 p = bezier(p1, c1, c2, p2, t);
         shape->curves[i].x = p.y;
         shape->curves[i].y = p.z;
-        shape->curves[i].w = lerp_1d(t_curves[i].w, n_curves[i].w, smooth_t);
+
+        if (t_is_merge && n_is_merge) {
+            if (t < 0.333f)
+                shape->curves[i].w = t_curves[i].w;
+            else if (t < 0.666f)
+                shape->curves[i].w = lerp_1d(t_curves[i].w, n_curves[i].w, SMOOTHSTEP((t - 0.333f) / 0.333f));
+            else
+                shape->curves[i].w = n_curves[i].w;
+        }
+        else if (t_is_merge) {
+            if (t < 0.5f)
+                shape->curves[i].w = t_curves[i].w;
+            else
+                shape->curves[i].w = lerp_1d(t_curves[i].w, n_curves[i].w, SMOOTHSTEP((t - 0.5f) / 0.5f));
+        }
+        else if (n_is_merge) {
+            if (t < 0.5f)
+                shape->curves[i].w = lerp_1d(t_curves[i].w, n_curves[i].w, SMOOTHSTEP(t / 0.5f));
+            else
+                shape->curves[i].w = n_curves[i].w;
+        }
+        else
+            shape->curves[i].w = lerp_1d(t_curves[i].w, n_curves[i].w, smooth_t);
     }
 
     shape_update_curve_control_points(shape->curves);
@@ -238,8 +260,8 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
                 bool is_nosemost = i < (sections_count - 1) && !_intersects_object(section_x + section_dx, o) && o_ref->n_conns_count == 0;
 
                 _get_skin_intersection(section_x, s,
-                                       &o_ref->t_skin_former, o_ref->t_tangents, o->p,
-                                       &o_ref->n_skin_former, o_ref->n_tangents, o->p);
+                                       &o_ref->t_skin_former, o_ref->t_tangents, o->p, false,
+                                       &o_ref->n_skin_former, o_ref->n_tangents, o->p, false);
                 s->origin.tail = o_ref->origin;
                 s->origin.nose = o_ref->origin;
                 if (!is_tailmost)
@@ -265,8 +287,8 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
                 Shape *s = section->shapes + section->shapes_count++;
 
                 _get_skin_intersection(section_x, s,
-                                       &tail_o_ref->n_skin_former, tail_o_ref->n_tangents, tail_o->p,
-                                       &nose_o_ref->t_skin_former, nose_o_ref->t_tangents, nose_o->p);
+                                       &tail_o_ref->n_skin_former, tail_o_ref->n_tangents, tail_o->p, tail_o_ref->n_conns_count > 1,
+                                       &nose_o_ref->t_skin_former, nose_o_ref->t_tangents, nose_o->p, nose_o_ref->t_conns_count > 1);
                 s->origin.tail = tail_o_ref->origin;
                 s->origin.nose = nose_o_ref->origin;
                 section->t_shapes[section->t_shapes_count++] = s;

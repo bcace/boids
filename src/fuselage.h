@@ -23,10 +23,11 @@ struct Objref {
 
     /* only used while grouping objects into fuselages */
     int fuselage_id;
+    OriginFlags non_clone_origin; /* origin flag where original object and all its clones have the same origin */
 
     /* used for lofting */
-    int t_conns_count;
-    int n_conns_count;
+    short int t_conns_count;
+    short int n_conns_count;
     vec3 t_tangents[SHAPE_CURVES];
     vec3 n_tangents[SHAPE_CURVES];
     OriginPart origin; /* object lofting id */

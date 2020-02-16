@@ -9,7 +9,7 @@
 #include <stdlib.h>
 
 
-double COLLAPSE_MARGIN = 0.0;
+double COLLAPSE_MARGIN = 0.25;
 double ONE_MINUS_COLLAPSE_MARGIN = 1.0 - COLLAPSE_MARGIN;
 
 static void _update_mesh_envelope_slices(MeshEnv *env) {
@@ -508,7 +508,7 @@ void mesh_make_envelopes(Model *model, Arena *verts_arena, float section_x,
 
 void mesh_verts_merge_margin(bool increase) {
     if (increase) {
-        if (COLLAPSE_MARGIN < 0.9) {
+        if (COLLAPSE_MARGIN < 0.5) {
             COLLAPSE_MARGIN += 0.05;
             ONE_MINUS_COLLAPSE_MARGIN = 1.0 - COLLAPSE_MARGIN;
         }
