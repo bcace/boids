@@ -5,7 +5,7 @@
 
 #define SHAPE_FILL_POLY_MARGIN          0.1 // TODO: this is very sensitive, doesn't work if set to a smaller number
 #define SHAPE_W_MIN                     0.1
-#define SHAPE_W_MAX                     10.0
+#define SHAPE_W_MAX                     4.0
 #define SHAPE_W_CIRCLE                  0.70710678
 
 

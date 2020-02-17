@@ -125,11 +125,10 @@ void _update_longitudinal_tangents(Fuselage *fuselage) {
     }
 }
 
-
-/* Used to intersect either objects or connecting pipes between objects. Results is a shape. */
-static void _get_skin_intersection(float x, Shape *shape,
-                                   Former *tail_f, vec3 *tail_l_tangents, vec3 tail_o_p, bool t_is_merge,
-                                   Former *nose_f, vec3 *nose_l_tangents, vec3 nose_o_p, bool n_is_merge) {
+/* Returns a shape that represents an section of object or connection. */
+static void _get_skin_section(float x, Shape *shape,
+                              Former *tail_f, vec3 *tail_l_tangents, vec3 tail_o_p, bool t_is_merge,
+                              Former *nose_f, vec3 *nose_l_tangents, vec3 nose_o_p, bool n_is_merge) {
     Curve *t_curves = tail_f->shape.curves;
     Curve *n_curves = nose_f->shape.curves;
 
@@ -259,9 +258,9 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
                 bool is_tailmost = i > 0 &&                    !_intersects_object(section_x - section_dx, o) && o_ref->t_conns_count == 0;
                 bool is_nosemost = i < (sections_count - 1) && !_intersects_object(section_x + section_dx, o) && o_ref->n_conns_count == 0;
 
-                _get_skin_intersection(section_x, s,
-                                       &o_ref->t_skin_former, o_ref->t_tangents, o->p, false,
-                                       &o_ref->n_skin_former, o_ref->n_tangents, o->p, false);
+                _get_skin_section(section_x, s,
+                                  &o_ref->t_skin_former, o_ref->t_tangents, o->p, false,
+                                  &o_ref->n_skin_former, o_ref->n_tangents, o->p, false);
                 s->origin.tail = o_ref->origin;
                 s->origin.nose = o_ref->origin;
                 if (!is_tailmost)
@@ -286,9 +285,9 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
                 break_assert(section->shapes_count < SHAPE_MAX_ENVELOPE_SHAPES);
                 Shape *s = section->shapes + section->shapes_count++;
 
-                _get_skin_intersection(section_x, s,
-                                       &tail_o_ref->n_skin_former, tail_o_ref->n_tangents, tail_o->p, tail_o_ref->n_conns_count > 1,
-                                       &nose_o_ref->t_skin_former, nose_o_ref->t_tangents, nose_o->p, nose_o_ref->t_conns_count > 1);
+                _get_skin_section(section_x, s,
+                                  &tail_o_ref->n_skin_former, tail_o_ref->n_tangents, tail_o->p, tail_o_ref->n_conns_count > 1,
+                                  &nose_o_ref->t_skin_former, nose_o_ref->t_tangents, nose_o->p, nose_o_ref->t_conns_count > 1);
                 s->origin.tail = tail_o_ref->origin;
                 s->origin.nose = nose_o_ref->origin;
                 section->t_shapes[section->t_shapes_count++] = s;

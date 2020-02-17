@@ -234,18 +234,20 @@ int mesh_trace_envelope(EnvPoint *env_points, Shape **shapes, int shapes_count, 
                 along the average normal. */
 
                 dvec *verts = env_arena.lock<dvec>(shape_subdivs * p->shapes_count);
-                mesh_polygonize_shape_bundle(p->shapes, p->shapes_count, shape_subdivs, verts);
+                dvec *centroids = env_arena.lock<dvec>(p->shapes_count);
+                mesh_polygonize_shape_bundle(p->shapes, p->shapes_count, shape_subdivs, verts, centroids);
 
                 static int outermost_shape_indices[MAX_FUSELAGE_OBJECTS];
-                static double subdiv_da = TAU / shape_subdivs;
+                double subdiv_da = TAU / shape_subdivs;
 
                 for (int subdiv_i = 0; subdiv_i < shape_subdivs; ++subdiv_i) { /* find outermost vertex for each subdivision */
-                    int count = mesh_find_outermost_shapes_for_subdivision(verts, subdiv_i, subdiv_da, p->shapes_count, outermost_shape_indices);
+                    int count = mesh_find_outermost_shapes_for_subdivision(verts, centroids, subdiv_i, subdiv_da, p->shapes_count, outermost_shape_indices);
                     // TODO: figure out how to use multiple suitable outermost shape indices (average position?)
                     int shape_i = outermost_shape_indices[0];
                     p->verts[subdiv_i] = verts[subdiv_i * p->shapes_count + shape_i];
                 }
 
+                env_arena.unlock();
                 env_arena.unlock();
 
                 p->center.x = 0.0;
