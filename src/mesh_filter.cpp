@@ -21,7 +21,6 @@ struct _ConnsForObject {
 
 static _ConnsForObject *conns;
 static dvec *verts;
-static dvec *centroids;
 static bool initialized = false;
 
 /* Allocates storage for merge filters and memory for internal use. */
@@ -29,7 +28,6 @@ MergeFilters *mesh_init_filter(Arena *arena) {
     initialized = true;
     conns = arena->alloc<_ConnsForObject>(MAX_FUSELAGE_OBJECTS);
     verts = arena->alloc<dvec>(SHAPE_MAX_SHAPE_SUBDIVS * MAX_FUSELAGE_OBJECTS);
-    centroids = arena->alloc<dvec>(MAX_FUSELAGE_OBJECTS);
     return arena->alloc<MergeFilters>(1);
 }
 
@@ -82,10 +80,10 @@ void mesh_make_merge_filter(MergeFilters *filters, int shape_subdivs,
                 filter->conns[subdiv_i] = 0ull;
 
             static int outermost_shape_indices[MAX_FUSELAGE_OBJECTS];
-            mesh_polygonize_shape_bundle(c->shapes, c->count, shape_subdivs, verts, centroids);
+            dvec centroid = mesh_polygonize_shape_bundle(c->shapes, c->count, shape_subdivs, verts);
 
             for (int subdiv_i = 0; subdiv_i < shape_subdivs; ++subdiv_i) {
-                int count = mesh_find_outermost_shapes_for_subdivision(verts, centroids, subdiv_i, subdiv_da, c->count, outermost_shape_indices);
+                int count = mesh_find_outermost_shapes_for_subdivision(verts, centroid, subdiv_i, subdiv_da, c->count, outermost_shape_indices);
 
                 for (int j = 0; j < count; ++j) {
                     Shape *shape = c->shapes[outermost_shape_indices[j]];
@@ -103,7 +101,7 @@ void mesh_make_merge_filter(MergeFilters *filters, int shape_subdivs,
 }
 
 /* Sample vertices for given shapes, putting all vertices for a subdivision next to each other. */
-void mesh_polygonize_shape_bundle(Shape **shapes, int shapes_count, int shape_subdivs, dvec *verts, dvec *centroids) {
+dvec mesh_polygonize_shape_bundle(Shape **shapes, int shapes_count, int shape_subdivs, dvec *verts) {
     int curve_subdivs = shape_subdivs / SHAPE_CURVES;
     double dt = 1.0 / curve_subdivs;
 
@@ -128,13 +126,27 @@ void mesh_polygonize_shape_bundle(Shape **shapes, int shapes_count, int shape_su
         }
     }
 
-    for (int i = 0; i < shapes_count; ++i)
-        centroids[i] = shape_centroid(shapes[i]);
+    /* calculate bundle centroid */
+
+    dvec centroid;
+    centroid.x = 0.0;
+    centroid.y = 0.0;
+
+    for (int i = 0; i < shapes_count; ++i) {
+        dvec c = shape_centroid(shapes[i]);
+        centroid.x += c.x;
+        centroid.y += c.y;
+    }
+
+    centroid.x /= (double)shapes_count;
+    centroid.y /= (double)shapes_count;
+
+    return centroid;
 }
 
 /* Identifies shapes (by index) whose point for the given subdivision is outermost. Returns number of found
 shapes since multiple shapes can have outermost points. */
-int mesh_find_outermost_shapes_for_subdivision(dvec *verts, dvec *centroids, int subdiv_i, double subdiv_da, int shapes_count, int *outermost_shape_indices) {
+int mesh_find_outermost_shapes_for_subdivision(dvec *verts, dvec centroid, int subdiv_i, double subdiv_da, int shapes_count, int *outermost_shape_indices) {
     dvec *subdiv_verts = verts + subdiv_i * shapes_count;
     double subdiv_a = subdiv_i * subdiv_da;
     double nx = cos(subdiv_a);
@@ -148,8 +160,8 @@ int mesh_find_outermost_shapes_for_subdivision(dvec *verts, dvec *centroids, int
     } vert_dots[MAX_FUSELAGE_OBJECTS];
 
     for (int i = 0; i < shapes_count; ++i) {
-        double vx = subdiv_verts[i].x - centroids[i].x;
-        double vy = subdiv_verts[i].y - centroids[i].y;
+        double vx = subdiv_verts[i].x - centroid.x;
+        double vy = subdiv_verts[i].y - centroid.y;
         double dot = nx * vx + ny * vy;
 
         int ins_i = 0;

@@ -26,7 +26,7 @@ connections are converging faster
 - smaller to avoid large differences between envelopes with and without bundles
 - smaller to avoid large differences between normals at samples, which make deciding which sample to take more uncertain
 - smaller to avoid jumps in fill polygons, because they're formed from shape bundle polygon centers */
-const double BUNDLE_MARGIN_FACTOR = 0.01;
+const double BUNDLE_MARGIN_FACTOR = 0.1;
 
 /* Calculates polygon x offset. Offset is non-zero only when try_i is non-zero. */
 static inline double _try_offset_x(int shape_i, int try_i, double angle_step) {
@@ -234,20 +234,18 @@ int mesh_trace_envelope(EnvPoint *env_points, Shape **shapes, int shapes_count, 
                 along the average normal. */
 
                 dvec *verts = env_arena.lock<dvec>(shape_subdivs * p->shapes_count);
-                dvec *centroids = env_arena.lock<dvec>(p->shapes_count);
-                mesh_polygonize_shape_bundle(p->shapes, p->shapes_count, shape_subdivs, verts, centroids);
+                dvec centroid = mesh_polygonize_shape_bundle(p->shapes, p->shapes_count, shape_subdivs, verts);
 
                 static int outermost_shape_indices[MAX_FUSELAGE_OBJECTS];
                 double subdiv_da = TAU / shape_subdivs;
 
                 for (int subdiv_i = 0; subdiv_i < shape_subdivs; ++subdiv_i) { /* find outermost vertex for each subdivision */
-                    int count = mesh_find_outermost_shapes_for_subdivision(verts, centroids, subdiv_i, subdiv_da, p->shapes_count, outermost_shape_indices);
+                    int count = mesh_find_outermost_shapes_for_subdivision(verts, centroid, subdiv_i, subdiv_da, p->shapes_count, outermost_shape_indices);
                     // TODO: figure out how to use multiple suitable outermost shape indices (average position?)
                     int shape_i = outermost_shape_indices[0];
                     p->verts[subdiv_i] = verts[subdiv_i * p->shapes_count + shape_i];
                 }
 
-                env_arena.unlock();
                 env_arena.unlock();
 
                 p->center.x = 0.0;

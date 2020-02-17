@@ -54,8 +54,8 @@ struct Arena;
 
 /* filter */
 MergeFilters *mesh_init_filter(Arena *arena);
-void mesh_polygonize_shape_bundle(Shape **shapes, int shapes_count, int shape_subdivs, dvec *verts, dvec *centroids);
-int mesh_find_outermost_shapes_for_subdivision(dvec *verts, dvec *centroids, int subdiv_i, double subdiv_da, int shapes_count, int *outermost_shape_indices);
+dvec mesh_polygonize_shape_bundle(Shape **shapes, int shapes_count, int shape_subdivs, dvec *verts);
+int mesh_find_outermost_shapes_for_subdivision(dvec *verts, dvec centroid, int subdiv_i, double subdiv_da, int shapes_count, int *outermost_shape_indices);
 void mesh_make_merge_filter(MergeFilters *filters, int shape_subdivs,
                             Shape **t_shapes, int t_shapes_count, MeshEnv *t_env,
                             Shape **n_shapes, int n_shapes_count, MeshEnv *n_env);
