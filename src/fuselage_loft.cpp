@@ -125,7 +125,7 @@ void _update_longitudinal_tangents(Fuselage *fuselage) {
     }
 }
 
-/* Returns a shape that represents an section of object or connection. */
+/* Returns a shape that represents a section of object or connection. */
 static void _get_skin_section(float x, Shape *shape,
                               Former *tail_f, vec3 *tail_l_tangents, vec3 tail_o_p, bool t_is_merge,
                               Former *nose_f, vec3 *nose_l_tangents, vec3 nose_o_p, bool n_is_merge) {
@@ -151,22 +151,22 @@ static void _get_skin_section(float x, Shape *shape,
         shape->curves[i].y = p.z;
 
         if (t_is_merge && n_is_merge) {
-            if (t < 0.333f)
+            if (t < TWO_SIDE_MERGE_DELAY)
                 shape->curves[i].w = t_curves[i].w;
-            else if (t < 0.666f)
-                shape->curves[i].w = lerp_1d(t_curves[i].w, n_curves[i].w, SMOOTHSTEP((t - 0.333f) / 0.333f));
+            else if (t < ONE_MINUS_TWO_SIDE_MERGE_DELAY)
+                shape->curves[i].w = lerp_1d(t_curves[i].w, n_curves[i].w, SMOOTHSTEP((t - TWO_SIDE_MERGE_DELAY) / (ONE_MINUS_TWO_SIDE_MERGE_DELAY - TWO_SIDE_MERGE_DELAY)));
             else
                 shape->curves[i].w = n_curves[i].w;
         }
         else if (t_is_merge) {
-            if (t < 0.5f)
+            if (t < ONE_SIDE_MERGE_DELAY)
                 shape->curves[i].w = t_curves[i].w;
             else
-                shape->curves[i].w = lerp_1d(t_curves[i].w, n_curves[i].w, SMOOTHSTEP((t - 0.5f) / 0.5f));
+                shape->curves[i].w = lerp_1d(t_curves[i].w, n_curves[i].w, SMOOTHSTEP((t - ONE_SIDE_MERGE_DELAY) / ONE_MINUS_ONE_SIDE_MERGE_DELAY));
         }
         else if (n_is_merge) {
-            if (t < 0.5f)
-                shape->curves[i].w = lerp_1d(t_curves[i].w, n_curves[i].w, SMOOTHSTEP(t / 0.5f));
+            if (t < ONE_MINUS_ONE_SIDE_MERGE_DELAY)
+                shape->curves[i].w = lerp_1d(t_curves[i].w, n_curves[i].w, SMOOTHSTEP(t / ONE_MINUS_ONE_SIDE_MERGE_DELAY));
             else
                 shape->curves[i].w = n_curves[i].w;
         }

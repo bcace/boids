@@ -141,6 +141,14 @@ void _key_callback(int key, int mods, int action) {
                 mesh_verts_merge_margin(false);
                 _recalculate_model();
             }
+            else if (key == PLATFORM_KEY_H) {
+                config_decrease_merge_interpolation_delay();
+                _recalculate_model();
+            }
+            else if (key == PLATFORM_KEY_J) {
+                config_increase_merge_interpolation_delay();
+                _recalculate_model();
+            }
             else if (key == PLATFORM_KEY_R) {
                 _recalculate_model();
             }
