@@ -22,9 +22,6 @@ extern float TWO_SIDE_MERGE_DELAY;
 extern float ONE_MINUS_ONE_SIDE_MERGE_DELAY;
 extern float ONE_MINUS_TWO_SIDE_MERGE_DELAY;
 
-void config_decrease_sections_count();
-void config_increase_sections_count();
-
 void config_decrease_shape_samples();
 void config_increase_shape_samples();
 

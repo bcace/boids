@@ -169,7 +169,7 @@ static struct _Corr {
     int n_end_i; /* if opening */
 } *corrs = 0;
 
-static int _check_for_opening_corrs(_Corr *corrs, int corrs_count,
+static int _check_for_opening_corrs(Model *model, _Corr *corrs, int corrs_count,
                                     EnvPoint *t_env_points, int t_count, int t_beg, int t_end,
                                     EnvPoint *n_env_points, int n_count, int n_beg, int n_end) {
 
@@ -216,7 +216,7 @@ static int _check_for_opening_corrs(_Corr *corrs, int corrs_count,
             t_has_isecs = false;
     }
 
-    break_assert(t_has_isecs != n_has_isecs); /* could not decide whether opening is tail or nose */
+    model_assert(model, t_has_isecs != n_has_isecs, "_check_for_opening_corrs"); /* could not decide whether opening is tail or nose */
 
     if (t_has_isecs) {
         _Corr *corr = corrs + corrs_count++;
@@ -359,7 +359,7 @@ static void _mesh_envs_pass_1(Model *model, Arena *verts_arena, float section_x,
             if (_can_correlate_env_points(t_ep, n_ep)) {
 
                 if (prev_corr) /* check for zip correlations */
-                    corrs_count = _check_for_opening_corrs(corrs, corrs_count,
+                    corrs_count = _check_for_opening_corrs(model, corrs, corrs_count,
                                                            t_env_points, t_count, prev_corr->t_i, t_i,
                                                            n_env_points, n_count, prev_corr->n_i, n_i);
 
@@ -375,7 +375,7 @@ static void _mesh_envs_pass_1(Model *model, Arena *verts_arena, float section_x,
         }
     }
 
-    corrs_count = _check_for_opening_corrs(corrs, corrs_count,
+    corrs_count = _check_for_opening_corrs(model, corrs, corrs_count,
                                            t_env_points, t_count, prev_corr->t_i, first_corr->t_i,
                                            n_env_points, n_count, prev_corr->n_i, first_corr->n_i);
 

@@ -14,17 +14,6 @@ float ONE_MINUS_ONE_SIDE_MERGE_DELAY = 1.0f - ONE_SIDE_MERGE_DELAY;
 float TWO_SIDE_MERGE_DELAY = _MAX_TWO_SIDE_MERGE_DELAY;
 float ONE_MINUS_TWO_SIDE_MERGE_DELAY = 1.0f - TWO_SIDE_MERGE_DELAY;
 
-
-void config_decrease_sections_count() {
-    if (FUSELAGE_SUBDIVS_COUNT > MIN_FUSELAGE_SUBDIVS_COUNT)
-        FUSELAGE_SUBDIVS_COUNT /= 2;
-}
-
-void config_increase_sections_count() {
-    if (FUSELAGE_SUBDIVS_COUNT < MAX_FUSELAGE_SUBDIVS_COUNT)
-        FUSELAGE_SUBDIVS_COUNT *= 2;
-}
-
 void config_decrease_shape_samples() {
     if (SHAPE_CURVE_SAMPLES > MIN_SHAPE_CURVE_SAMPLES) {
         SHAPE_CURVE_SAMPLES /= 2;
