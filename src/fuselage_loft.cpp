@@ -234,7 +234,6 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
     /* envelope point buffers for envelope tracing */
     EnvPoint *t_env_points = arena->alloc<EnvPoint>(SHAPE_MAX_ENVELOPE_POINTS);
     EnvPoint *n_env_points = arena->alloc<EnvPoint>(SHAPE_MAX_ENVELOPE_POINTS);
-    MergeFilters *filter = mesh_init_filter(arena);
 
     for (int i = 0; i < sections_count; ++i) {
         Section *section = sections[i % 2];
@@ -317,11 +316,11 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
             Section *t_s = sections[(section == sections[0]) ? 1 : 0];
             Section *n_s = section;
 
-            mesh_make_merge_filter(filter, shape_subdivs,
-                                   t_s->n_shapes, t_s->n_shapes_count, t_s->n_env,
-                                   n_s->t_shapes, n_s->t_shapes_count, n_s->t_env);
+            mesh_apply_merge_filter(arena, shape_subdivs,
+                                    t_s->n_shapes, t_s->n_shapes_count, t_s->n_env,
+                                    n_s->t_shapes, n_s->t_shapes_count, n_s->t_env);
 
-            mesh_between_two_sections(model, shape_subdivs, filter,
+            mesh_between_two_sections(model, shape_subdivs,
                                       t_s->n_env, t_s->neighbors_map,
                                       n_s->t_env, n_s->neighbors_map);
         }

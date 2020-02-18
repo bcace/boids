@@ -48,6 +48,8 @@ static void _add_mesh_point(MeshEnv *env, EnvPoint *ep, int i1, int i2, int vert
     mp->vert_i = vert_i;
     mp->subdiv_i = ep->subdiv_i;
     mp->is_intersection = ep->is_intersection;
+    mp->t_is_outermost = true;
+    mp->n_is_outermost = true;
 }
 
 /* Check if current non-intersection point should be skipped. */

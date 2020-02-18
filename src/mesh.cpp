@@ -30,12 +30,12 @@ void _init_corr(Model *model, float x1, float x2) {
 void _draw_corr(MeshPoint *t_p, MeshPoint *n_p, float r, float g, float b) {
     vec3 *v = corr_verts_arena.alloc<vec3>(2);
     v->x = ctx_x1;
-    v->y = t_p->x;
-    v->z = t_p->y;
+    v->y = (float)t_p->x;
+    v->z = (float)t_p->y;
     ++v;
     v->x = ctx_x2;
-    v->y = n_p->x;
-    v->z = n_p->y;
+    v->y = (float)n_p->x;
+    v->z = (float)n_p->y;
     vec3 *c = corr_colors_arena.alloc<vec3>(2);
     c->r = r;
     c->g = g;
@@ -473,7 +473,7 @@ static struct _Corr {
 } *corrs = 0;
 
 /* Make simple correlations between non-intersection points. */
-static void _mesh_pass_1(Model *model, int shape_subdivs, MergeFilters *filters,
+static void _mesh_pass_1(Model *model, int shape_subdivs,
                          MeshEnv *t_env, int *t_neighbors_map,
                          MeshEnv *n_env, int *n_neighbors_map) {
 
@@ -492,60 +492,40 @@ static void _mesh_pass_1(Model *model, int shape_subdivs, MergeFilters *filters,
             if (!_origins_related(t_slice->origin, n_slice->origin))
                 continue;
 
-            /* see if we need merge filtering */
-
-            MergeFilter *filter = 0;
-            OriginFlags conn_slice_origin_flag;
-
-            bool t_is_object = t_slice->origin.tail == t_slice->origin.nose;
-            bool n_is_object = n_slice->origin.tail == n_slice->origin.nose;
-
-            if (t_is_object != n_is_object) { /* transition between conn and object origins */
-                if (t_is_object) { /* tailwise merge */
-                    filter = filters->objects + n_slice->origin.tail;
-                    if (filter->active)
-                        conn_slice_origin_flag = ORIGIN_PART_TO_FLAG(n_slice->origin.nose);
-                    else
-                        filter = 0;
-                }
-                else { /* nosewise merge */
-                    filter = filters->objects + t_slice->origin.nose;
-                    if (filter->active)
-                        conn_slice_origin_flag = ORIGIN_PART_TO_FLAG(t_slice->origin.tail);
-                    else
-                        filter = 0;
-                }
-            }
-
             int n_poly_beg = n_env->points[n_slice->beg].subdiv_i;
             int n_poly_end = n_env->points[n_slice->end].subdiv_i;
 
             for (int l = 0; l < SHAPE_MAX_ENVELOPE_POINTS; ++l) {
                 int t_env_i = (t_slice->beg + l) % t_env->count;
-                int t_poly_i = t_env->points[t_env_i].subdiv_i;
+                MeshPoint *t_p = t_env->points + t_env_i;
 
-                if (filter == 0 || (filter->conns[t_poly_i] & conn_slice_origin_flag)) { /* check merge filter, if available */
+                if (t_p->n_is_outermost) {
+                    int t_poly_i = t_p->subdiv_i;
 
                     int offset = period_offset_if_contains(t_poly_i, n_poly_beg, n_poly_end, shape_subdivs);
                     if (offset != -1) {
                         int n_env_i = (n_slice->beg + offset) % n_env->count;
+                        MeshPoint *n_p = n_env->points + n_env_i;
 
-                        int insert_i = 0;
-                        for (; insert_i < corrs_count; ++insert_i) // TODO: maybe think about starting search from end
-                            if (t_env_i < corrs[insert_i].t_env_i ||
-                                t_env_i == corrs[insert_i].t_env_i && n_env_i < corrs[insert_i].n_env_i)
-                                break;
-                        for (int m = corrs_count; m > insert_i; --m)
-                            corrs[m] = corrs[m - 1];
+                        if (n_p->t_is_outermost) {
 
-                        _Corr *corr = corrs + insert_i;
-                        corr->t_env_i = t_env_i;
-                        corr->n_env_i = n_env_i;
-                        ++corrs_count;
+                            int insert_i = 0;
+                            for (; insert_i < corrs_count; ++insert_i) // TODO: maybe think about starting search from end
+                                if (t_env_i < corrs[insert_i].t_env_i ||
+                                    t_env_i == corrs[insert_i].t_env_i && n_env_i < corrs[insert_i].n_env_i)
+                                    break;
+                            for (int m = corrs_count; m > insert_i; --m)
+                                corrs[m] = corrs[m - 1];
+
+                            _Corr *corr = corrs + insert_i;
+                            corr->t_env_i = t_env_i;
+                            corr->n_env_i = n_env_i;
+                            ++corrs_count;
 
 #if DRAW_CORRS
-                        _draw_corr(t_env->points + t_env_i, n_env->points + n_env_i, 1, 0, filter ? 1 : 0);
+                            _draw_corr(t_env->points + t_env_i, n_env->points + n_env_i, 1.0f, 0.0f, 0.0f);
 #endif
+                        }
                     }
                 }
 
@@ -601,7 +581,7 @@ static void _mesh_pass_1(Model *model, int shape_subdivs, MergeFilters *filters,
     }
 }
 
-/* 0. correlation pass. Handles simplest case when all the points can be correlated directly, one-to-one. */
+/* Handles simplest case when all the points can be correlated directly, one-to-one. */
 static void _mesh_pass_0(Model *model, int shape_subdivs,
                          MeshEnv *t_env, int *t_neighbors_map,
                          MeshEnv *n_env, int *n_neighbors_map) {
@@ -629,7 +609,7 @@ static void _mesh_pass_0(Model *model, int shape_subdivs,
 }
 
 /* Main meshing procedure. */
-void mesh_between_two_sections(Model *model, int shape_subdivs, MergeFilters *filter,
+void mesh_between_two_sections(Model *model, int shape_subdivs,
                                MeshEnv *t_env, int *t_neighbors_map,
                                MeshEnv *n_env, int *n_neighbors_map) {
 
@@ -645,7 +625,7 @@ void mesh_between_two_sections(Model *model, int shape_subdivs, MergeFilters *fi
                      t_env, t_neighbors_map,
                      n_env, n_neighbors_map);
     else                                                            /* more complicated case where we don't have clear correlations between all points */
-        _mesh_pass_1(model, shape_subdivs, filter,
+        _mesh_pass_1(model, shape_subdivs,
                      t_env, t_neighbors_map,
                      n_env, n_neighbors_map);
 

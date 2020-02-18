@@ -2,6 +2,7 @@
 #include "shape.h"
 #include "arena.h"
 #include "dvec.h"
+#include "periodic.h"
 #include <math.h>
 #include <float.h>
 #include <stdlib.h>
@@ -19,26 +20,19 @@ struct _ConnsForObject {
     int count;
 };
 
-static _ConnsForObject *conns;
-static dvec *verts;
-static bool initialized = false;
+/* If any merge transitions are detected between two given mesh envelopes marks appropriate mesh
+points as non-outermost. */
+void mesh_apply_merge_filter(Arena *arena, int shape_subdivs,
+                             Shape **t_shapes, int t_shapes_count, MeshEnv *t_env,
+                             Shape **n_shapes, int n_shapes_count, MeshEnv *n_env) {
 
-/* Allocates storage for merge filters and memory for internal use. */
-MergeFilters *mesh_init_filter(Arena *arena) {
-    initialized = true;
-    conns = arena->alloc<_ConnsForObject>(MAX_FUSELAGE_OBJECTS);
-    verts = arena->alloc<dvec>(SHAPE_MAX_SHAPE_SUBDIVS * MAX_FUSELAGE_OBJECTS);
-    return arena->alloc<MergeFilters>(1);
-}
+    _ConnsForObject *conns = arena->lock<_ConnsForObject>(MAX_FUSELAGE_OBJECTS);
+    dvec *verts = arena->lock<dvec>(SHAPE_MAX_SHAPE_SUBDIVS * MAX_FUSELAGE_OBJECTS);
+    OriginFlags *filter = arena->lock<OriginFlags>(SHAPE_MAX_SHAPE_SUBDIVS);
 
-// TODO: document
-void mesh_make_merge_filter(MergeFilters *filters, int shape_subdivs,
-                            Shape **t_shapes, int t_shapes_count, MeshEnv *t_env,
-                            Shape **n_shapes, int n_shapes_count, MeshEnv *n_env) {
-    assert(initialized);
-    memset(conns, 0, sizeof(_ConnsForObject) * MAX_FUSELAGE_OBJECTS); /* reset correlations between shapes */
+    /* collect all connection shapes on one side for each object-like shape on the other */
 
-    /* collect all connection shapes */
+    memset(conns, 0, sizeof(_ConnsForObject) * MAX_FUSELAGE_OBJECTS);
 
     for (int i = 0; i < t_shapes_count; ++i) {
         Shape *s = t_shapes[i];
@@ -56,28 +50,24 @@ void mesh_make_merge_filter(MergeFilters *filters, int shape_subdivs,
         }
     }
 
-    /* find merge transitions */
+    /* for each object-like shape that transitions into multiple connections form and apply filter */
 
     double subdiv_da = TAU / shape_subdivs;
 
-    for (int i = 0; i < MAX_FUSELAGE_OBJECTS; ++i) {
-        _ConnsForObject *c = conns + i;
+    for (int object_like_i = 0; object_like_i < MAX_FUSELAGE_OBJECTS; ++object_like_i) {
+        _ConnsForObject *c = conns + object_like_i;
 
-        OriginFlags flags = ORIGIN_PART_TO_FLAG(i);
-        bool t_is_object_like = t_env->object_like_flags & flags;
-        bool n_is_object_like = n_env->object_like_flags & flags;
+        OriginFlags object_like_flag = ORIGIN_PART_TO_FLAG(object_like_i);
+        bool t_is_object_like = t_env->object_like_flags & object_like_flag;
+        bool n_is_object_like = n_env->object_like_flags & object_like_flag;
 
-        MergeFilter *filter = filters->objects + i;
+        /* if object-like on one side and multiple connections on other side */
 
-        if (t_is_object_like == n_is_object_like)   /* not a transition, both sides are either object or conn */
-            filter->active = false;
-        else if (c->count <= 1)                     /* object only on one side, but conns are not multiple */
-            filter->active = false;
-        else {
-            filter->active = true;
+        if (t_is_object_like != n_is_object_like && c->count > 1) {
 
-            for (int subdiv_i = 0; subdiv_i < shape_subdivs; ++subdiv_i) /* reset conn flags */
-                filter->conns[subdiv_i] = 0ull;
+            /* form filter */
+
+            memset(filter, 0, sizeof(OriginFlags) * shape_subdivs); /* reset filter */
 
             static int outermost_shape_indices[MAX_FUSELAGE_OBJECTS];
             dvec centroid = mesh_polygonize_shape_bundle(c->shapes, c->count, shape_subdivs, verts);
@@ -88,16 +78,62 @@ void mesh_make_merge_filter(MergeFilters *filters, int shape_subdivs,
                 for (int j = 0; j < count; ++j) {
                     Shape *shape = c->shapes[outermost_shape_indices[j]];
                     if (t_is_object_like)
-                        filter->conns[subdiv_i] |= ORIGIN_PART_TO_FLAG(shape->origin.nose);
+                        filter[subdiv_i] |= ORIGIN_PART_TO_FLAG(shape->origin.nose);
                     else
-                        filter->conns[subdiv_i] |= ORIGIN_PART_TO_FLAG(shape->origin.tail);
+                        filter[subdiv_i] |= ORIGIN_PART_TO_FLAG(shape->origin.tail);
                 }
             }
 
-            /* If we have slices we can set mesh points' is_outermost here.
-            mesh_make_envelopes() should set is_outermost to true by default for all points. Then this procedure can set some of them to false here. */
+            /* apply filter to mark mesh points as outermost or not */
+
+            if (t_is_object_like) { /* tailwise merge */
+
+                for (int i = 0; i < n_env->slices_count; ++i) {
+                    MeshEnvSlice *slice = n_env->slices + i;
+
+                    if (slice->origin.tail != object_like_i)
+                        continue;
+
+                    OriginFlags conn_flag = ORIGIN_PART_TO_FLAG(slice->origin.nose);
+
+                    for (int j = slice->beg; ; j = period_incr(j, n_env->count)) {
+                        MeshPoint *p = n_env->points + j;
+
+                        if ((filter[p->subdiv_i] & conn_flag) == ZERO_ORIGIN_FLAG)
+                            p->t_is_outermost = false;
+
+                        if (j == slice->end)
+                            break;
+                    }
+                }
+            }
+            else {                  /* nosewise merge */
+
+                for (int i = 0; i < t_env->slices_count; ++i) {
+                    MeshEnvSlice *slice = t_env->slices + i;
+
+                    if (slice->origin.nose != object_like_i)
+                        continue;
+
+                    OriginFlags conn_flag = ORIGIN_PART_TO_FLAG(slice->origin.tail);
+
+                    for (int j = slice->beg; ; j = period_incr(j, t_env->count)) {
+                        MeshPoint *p = t_env->points + j;
+
+                        if ((filter[p->subdiv_i] & conn_flag) == ZERO_ORIGIN_FLAG)
+                            p->n_is_outermost = false;
+
+                        if (j == slice->end)
+                            break;
+                    }
+                }
+            }
         }
     }
+
+    arena->unlock();
+    arena->unlock();
+    arena->unlock();
 }
 
 /* Sample vertices for given shapes, putting all vertices for a subdivision next to each other. */
