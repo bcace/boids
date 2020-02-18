@@ -241,9 +241,23 @@ int mesh_trace_envelope(EnvPoint *env_points, Shape **shapes, int shapes_count, 
 
                 for (int subdiv_i = 0; subdiv_i < shape_subdivs; ++subdiv_i) { /* find outermost vertex for each subdivision */
                     int count = mesh_find_outermost_shapes_for_subdivision(verts, centroid, subdiv_i, subdiv_da, p->shapes_count, outermost_shape_indices);
-                    // TODO: figure out how to use multiple suitable outermost shape indices (average position?)
-                    int shape_i = outermost_shape_indices[0];
-                    p->verts[subdiv_i] = verts[subdiv_i * p->shapes_count + shape_i];
+                    dvec *subdiv_verts = verts + subdiv_i * p->shapes_count;
+
+                    if (count == 1)     /* single outermost vertex found */
+                        p->verts[subdiv_i] = subdiv_verts[outermost_shape_indices[0]];
+                    else {              /* multiple outermost vertices found */
+                        dvec r;
+                        r.x = r.y = 0.0;
+                        for (int c = 0; c < count; ++c) {
+                            dvec v = subdiv_verts[outermost_shape_indices[c]];
+                            r.x += v.x;
+                            r.y += v.y;
+                        }
+                        r.x /= count;
+                        r.y /= count;
+
+                        p->verts[subdiv_i] = r;
+                    }
                 }
 
                 env_arena.unlock();
