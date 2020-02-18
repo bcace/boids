@@ -605,10 +605,6 @@ static void _mesh_pass_1(Model *model, int shape_subdivs, MergeFilters *filters,
 static void _mesh_pass_0(Model *model, int shape_subdivs,
                          MeshEnv *t_env, int *t_neighbors_map,
                          MeshEnv *n_env, int *n_neighbors_map) {
-
-    break_assert(t_env->count == shape_subdivs);
-    break_assert(n_env->count == shape_subdivs);
-
     int t_i1 = 0;
     int t_subdiv_i = t_env->points[t_i1].subdiv_i;
 
