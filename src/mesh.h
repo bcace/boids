@@ -56,9 +56,9 @@ void mesh_apply_merge_filter(Arena *arena, int shape_subdivs,
 int mesh_trace_envelope(EnvPoint *env_points, Shape **shapes, int shapes_count, int curve_subdivs, OriginFlags *object_like_flags);
 
 /* envelope */
-void mesh_make_envelopes(Model *model, Arena *verts_arena, float section_x,
-                         MeshEnv *t_env, Shape **t_shapes, int t_shapes_count, struct EnvPoint *t_env_points,
-                         MeshEnv *n_env, Shape **n_shapes, int n_shapes_count, struct EnvPoint *n_env_points);
+void mesh_make_envelopes(Model *model, Arena *arena, Arena *verts_arena, float section_x,
+                         MeshEnv *t_env, Shape **t_shapes, int t_shapes_count,
+                         MeshEnv *n_env, Shape **n_shapes, int n_shapes_count);
 
 /* mesh */
 void mesh_init(Model *model);

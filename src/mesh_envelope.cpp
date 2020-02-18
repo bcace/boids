@@ -493,11 +493,14 @@ void _mesh_envs_pass_0(Model *model, Arena *verts_arena, float section_x,
 }
 
 /* Main mesh envelope making procedure. */
-void mesh_make_envelopes(Model *model, Arena *verts_arena, float section_x,
-                         MeshEnv *t_env, Shape **t_shapes, int t_shapes_count, EnvPoint *t_env_points,
-                         MeshEnv *n_env, Shape **n_shapes, int n_shapes_count, EnvPoint *n_env_points) {
+void mesh_make_envelopes(Model *model, Arena *arena, Arena *verts_arena, float section_x,
+                         MeshEnv *t_env, Shape **t_shapes, int t_shapes_count,
+                         MeshEnv *n_env, Shape **n_shapes, int n_shapes_count) {
 
     t_env->x = n_env->x = section_x;
+
+    EnvPoint *t_env_points = arena->lock<EnvPoint>(SHAPE_MAX_ENVELOPE_POINTS);
+    EnvPoint *n_env_points = arena->lock<EnvPoint>(SHAPE_MAX_ENVELOPE_POINTS);
 
     if (t_env == n_env) /* single envelope */
         _mesh_envs_pass_0(model, verts_arena, section_x,
@@ -506,6 +509,9 @@ void mesh_make_envelopes(Model *model, Arena *verts_arena, float section_x,
         _mesh_envs_pass_1(model, verts_arena, section_x,
                           t_env, t_shapes, t_shapes_count, t_env_points,
                           n_env, n_shapes, n_shapes_count, n_env_points);
+
+    arena->unlock();
+    arena->unlock();
 }
 
 void mesh_verts_merge_margin(bool increase) {

@@ -244,10 +244,6 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
     sections[0] = arena->alloc<Section>();
     sections[1] = arena->alloc<Section>();
 
-    // TODO: these could be locked inside mesh_make_envelopes
-    EnvPoint *t_env_points = arena->alloc<EnvPoint>(SHAPE_MAX_ENVELOPE_POINTS);
-    EnvPoint *n_env_points = arena->alloc<EnvPoint>(SHAPE_MAX_ENVELOPE_POINTS);
-
     for (int i = 0; i < sections_count; ++i) {
         Section *section = sections[i % 2];
         float section_x = min_x + i * section_dx;
@@ -318,9 +314,9 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
         else
             section->t_env = section->n_env = section->envs;
 
-        mesh_make_envelopes(model, verts_arena, section_x,
-                            section->t_env, section->t_shapes, section->t_shapes_count, t_env_points,
-                            section->n_env, section->n_shapes, section->n_shapes_count, n_env_points);
+        mesh_make_envelopes(model, arena, verts_arena, section_x,
+                            section->t_env, section->t_shapes, section->t_shapes_count,
+                            section->n_env, section->n_shapes, section->n_shapes_count);
 
         /* mesh */
 
