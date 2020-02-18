@@ -22,7 +22,7 @@ void Arena::clear() {
 
 void Arena::unlock() {
     if (locked_stack > 0)
-        taken -= lock_stack[locked_stack--];
+        taken -= lock_stack[--locked_stack];
 }
 
 char *Arena::alloc_bytes(int bytes, bool zero) {
