@@ -189,30 +189,43 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
     _update_longitudinal_tangents(fuselage);
 
     int shape_subdivs = SHAPE_CURVE_SAMPLES * SHAPE_CURVES;
-    int sections_count = FUSELAGE_SUBDIVS_COUNT + 1;
 
-    /* get section positions and set object origins */
+    /* set object origins and get fuselage extents */
 
-    float min_x, max_x, section_dx;
+    float min_x = FLT_MAX, max_x = -FLT_MAX;
+    float min_y = FLT_MAX, max_y = -FLT_MAX;
+    float min_z = FLT_MAX, max_z = -FLT_MAX;
 
-    {
-        min_x = FLT_MAX;
-        max_x = -FLT_MAX;
+    for (int i = 0; i < fuselage->objects_count; ++i) {
+        Objref *o_ref = fuselage->objects + i;
+        Object *o = o_ref->object;
+        o_ref->origin = i;
 
-        for (int i = 0; i < fuselage->objects_count; ++i) {
-            Objref *o_ref = fuselage->objects + i;
-            Object *o = o_ref->object;
-            if (o->min_x < min_x)
-                min_x = o->min_x;
-            if (o->max_x > max_x)
-                max_x = o->max_x;
-            o_ref->origin = i;
-        }
+        if (o->min_x < min_x)
+            min_x = o->min_x;
+        if (o->min_y < min_y)
+            min_y = o->min_y;
+        if (o->min_z < min_z)
+            min_z = o->min_z;
 
-        min_x += 0.1f;
-        max_x -= 0.1f;
-        section_dx = (max_x - min_x) / FUSELAGE_SUBDIVS_COUNT;
+        if (o->max_x > max_x)
+            max_x = o->max_x;
+        if (o->max_y > max_y)
+            max_y = o->max_y;
+        if (o->max_z > max_z)
+            max_z = o->max_z;
     }
+
+    min_x += 0.001f;
+    max_x -= 0.001f;
+
+    /* estimate mesh size along x */
+
+    float mesh_size = ((max_y - min_y) + (max_z - min_z)) * 2.0f / shape_subdivs;
+    int fuselage_subdivs = (int)ceilf((max_x - min_x) / mesh_size);
+
+    float section_dx = (max_x - min_x) / fuselage_subdivs;
+    int sections_count = fuselage_subdivs + 1;
 
     /* get fuselage section envelopes */
 
@@ -231,7 +244,7 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
     sections[0] = arena->alloc<Section>();
     sections[1] = arena->alloc<Section>();
 
-    /* envelope point buffers for envelope tracing */
+    // TODO: these could be locked inside mesh_make_envelopes
     EnvPoint *t_env_points = arena->alloc<EnvPoint>(SHAPE_MAX_ENVELOPE_POINTS);
     EnvPoint *n_env_points = arena->alloc<EnvPoint>(SHAPE_MAX_ENVELOPE_POINTS);
 

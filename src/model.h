@@ -6,7 +6,7 @@
 #define MAX_ELEMENTS    32 // TODO: rename to MAX_OBJECTS
 #define MAX_FUSELAGES   32
 
-#define DRAW_CORRS      1 /* just for debugging */
+#define DRAW_CORRS      0 /* just for debugging */
 
 
 struct vec3;
