@@ -135,23 +135,6 @@ static int _mesh_envs_pass_3(float section_x, vec3 *verts, int verts_count,
     return verts_count;
 }
 
-static bool _can_correlate_env_points(EnvPoint *a, EnvPoint *b) {
-    if (a->is_intersection != b->is_intersection ||
-        a->origin.tail != b->origin.tail ||
-        a->origin.nose != b->origin.nose ||
-        a->subdiv_i != b->subdiv_i)
-        return false;
-    if (!a->is_intersection) /* if non-intersection, we're done */
-        return true;
-    double dx = a->x - b->x;
-    if (dx > 0.000001 || dx < -0.000001)
-        return false;
-    double dy = a->y - b->y;
-    if (dy > 0.000001 || dy < -0.000001)
-        return false;
-    return true;
-}
-
 enum _CorrType { ctNone, ctIsec, ctOpen };
 
 static struct _Corr {
@@ -169,6 +152,66 @@ static struct _Corr {
     int n_end_i; /* if opening */
 } *corrs = 0;
 
+/* Creates mesh envelope points for both sides of an opening. */
+static int _mesh_envs_pass_2(float section_x, vec3 *verts, int verts_count, _Corr *corr,
+                             MeshEnv *t_env, EnvPoint *t_env_points, int t_count,
+                             MeshEnv *n_env, EnvPoint *n_env_points, int n_count) {
+    EnvPoint *ep1 = 0, *ep2 = 0;
+    double t_beg_t, t_end_t;
+    double n_beg_t, n_end_t;
+
+    break_assert(corr->type == ctOpen); /* correlation must be opening */
+
+    if (corr->tail_isec_opening) {
+        ep1 = t_env_points + corr->t_beg_i;
+        ep2 = t_env_points + corr->t_end_i;
+        t_beg_t = ep1->t2;
+        t_end_t = ep2->t1;
+        n_beg_t = ep1->t1;
+        n_end_t = ep2->t2;
+    }
+    else {
+        ep1 = n_env_points + corr->n_beg_i;
+        ep2 = n_env_points + corr->n_end_i;
+        t_beg_t = ep1->t1;
+        t_end_t = ep2->t2;
+        n_beg_t = ep1->t2;
+        n_end_t = ep2->t1;
+    }
+
+    /* clone first tail isec */
+
+    _add_mesh_point(t_env, ep1, ep1->i1, ep1->i2, verts_count);
+    _add_mesh_point(n_env, ep1, ep1->i1, ep1->i2, verts_count);
+
+    vec3 *v = verts + verts_count++;
+    v->x = section_x;
+    v->y = (float)ep1->x;
+    v->z = (float)ep1->y;
+
+    /* add the rest of the points in between */
+
+    verts_count = _mesh_envs_pass_3(section_x, verts, verts_count,
+                                    t_env, t_env_points, t_count, corr->t_beg_i, corr->t_end_i,
+                                    t_beg_t, t_end_t);
+
+    verts_count = _mesh_envs_pass_3(section_x, verts, verts_count,
+                                    n_env, n_env_points, n_count, corr->n_beg_i, corr->n_end_i,
+                                    n_beg_t, n_end_t);
+
+    /* clone last tail isec */
+
+    _add_mesh_point(t_env, ep2, ep2->i1, ep2->i2, verts_count);
+    _add_mesh_point(n_env, ep2, ep2->i1, ep2->i2, verts_count);
+
+    v = verts + verts_count++;
+    v->x = section_x;
+    v->y = (float)ep2->x;
+    v->z = (float)ep2->y;
+
+    return verts_count;
+}
+
 static int _check_for_opening_corrs(Model *model, _Corr *corrs, int corrs_count,
                                     EnvPoint *t_env_points, int t_count, int t_beg, int t_end,
                                     EnvPoint *n_env_points, int n_count, int n_beg, int n_end) {
@@ -176,7 +219,7 @@ static int _check_for_opening_corrs(Model *model, _Corr *corrs, int corrs_count,
     int t_range = period_range_count(t_beg, t_end, t_count);
     int n_range = period_range_count(n_beg, n_end, n_count);
 
-    if (t_range == 2 && n_range == 2) /* nothing to correlate */
+    if (t_range <= 3 && n_range <= 3) /* nothing to correlate */
         return corrs_count;
 
     bool t_has_isecs = false;
@@ -240,66 +283,6 @@ static int _check_for_opening_corrs(Model *model, _Corr *corrs, int corrs_count,
     return corrs_count;
 }
 
-/* Creates mesh envelope points for both sides of an opening. */
-static int _mesh_envs_pass_2(float section_x, vec3 *verts, int verts_count, _Corr *corr,
-                             MeshEnv *t_env, EnvPoint *t_env_points, int t_count,
-                             MeshEnv *n_env, EnvPoint *n_env_points, int n_count) {
-    EnvPoint *ep1 = 0, *ep2 = 0;
-    double t_beg_t, t_end_t;
-    double n_beg_t, n_end_t;
-
-    break_assert(corr->type == ctOpen); /* correlation must be opening */
-
-    if (corr->tail_isec_opening) {
-        ep1 = t_env_points + corr->t_beg_i;
-        ep2 = t_env_points + corr->t_end_i;
-        t_beg_t = ep1->t2;
-        t_end_t = ep2->t1;
-        n_beg_t = ep1->t1;
-        n_end_t = ep2->t2;
-    }
-    else {
-        ep1 = n_env_points + corr->n_beg_i;
-        ep2 = n_env_points + corr->n_end_i;
-        t_beg_t = ep1->t1;
-        t_end_t = ep2->t2;
-        n_beg_t = ep1->t2;
-        n_end_t = ep2->t1;
-    }
-
-    /* clone first tail isec */
-
-    _add_mesh_point(t_env, ep1, ep1->i1, ep1->i2, verts_count);
-    _add_mesh_point(n_env, ep1, ep1->i1, ep1->i2, verts_count);
-
-    vec3 *v = verts + verts_count++;
-    v->x = section_x;
-    v->y = (float)ep1->x;
-    v->z = (float)ep1->y;
-
-    /* add the rest of the points in between */
-
-    verts_count = _mesh_envs_pass_3(section_x, verts, verts_count,
-                                    t_env, t_env_points, t_count, corr->t_beg_i, corr->t_end_i,
-                                    t_beg_t, t_end_t);
-
-    verts_count = _mesh_envs_pass_3(section_x, verts, verts_count,
-                                    n_env, n_env_points, n_count, corr->n_beg_i, corr->n_end_i,
-                                    n_beg_t, n_end_t);
-
-    /* clone last tail isec */
-
-    _add_mesh_point(t_env, ep2, ep2->i1, ep2->i2, verts_count);
-    _add_mesh_point(n_env, ep2, ep2->i1, ep2->i2, verts_count);
-
-    v = verts + verts_count++;
-    v->x = section_x;
-    v->y = (float)ep2->x;
-    v->z = (float)ep2->y;
-
-    return verts_count;
-}
-
 static inline EnvPoint *_end_isec_point_from_corr(_Corr *corr, EnvPoint *t_env_points, EnvPoint *n_env_points) {
     if (corr->type == ctOpen) {
         if (corr->tail_isec_opening)
@@ -318,6 +301,23 @@ static inline EnvPoint *_beg_isec_point_from_corr(_Corr *corr, EnvPoint *t_env_p
             return n_env_points + corr->n_beg_i;
     }
     return t_env_points + corr->t_i;
+}
+
+static bool _can_correlate_env_points(EnvPoint *a, EnvPoint *b) {
+    if (a->is_intersection != b->is_intersection ||
+        a->origin.tail != b->origin.tail ||
+        a->origin.nose != b->origin.nose ||
+        a->subdiv_i != b->subdiv_i)
+        return false;
+    if (!a->is_intersection) /* if non-intersection, we're done */
+        return true;
+    double dx = a->x - b->x;
+    if (dx > 0.000001 || dx < -0.000001)
+        return false;
+    double dy = a->y - b->y;
+    if (dy > 0.000001 || dy < -0.000001)
+        return false;
+    return true;
 }
 
 /* Creates mesh points from two envelopes. */

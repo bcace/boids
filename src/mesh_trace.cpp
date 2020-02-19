@@ -52,8 +52,10 @@ struct _Poly {
     dvec center;
 };
 
-static inline void _init_poly(_Poly *poly) {
+static inline void _init_poly(_Poly *poly, OriginPart t_origin, OriginPart n_origin) {
     poly->shapes_count = 0;
+    poly->origin.tail = t_origin;
+    poly->origin.nose = n_origin;
     for (int i = 0; i < SHAPE_CURVES; ++i) {
         _Bounds *bounds = poly->bounds + i;
         bounds->min.x = DBL_MAX;
@@ -150,9 +152,7 @@ int mesh_trace_envelope(EnvPoint *env_points, Shape **shapes, int shapes_count, 
                     if (bundle_polys_map[o_origin] == 0) {
                         _Poly *p = polys + polys_count++;
                         bundle_polys_map[o_origin] = p;
-                        _init_poly(p);
-                        p->origin.tail = o_origin;
-                        p->origin.nose = o_origin;
+                        _init_poly(p, o_origin, o_origin);
                     }
                 }
             }
@@ -163,10 +163,8 @@ int mesh_trace_envelope(EnvPoint *env_points, Shape **shapes, int shapes_count, 
 
             if (s->origin.tail == s->origin.nose) { /* object shape */
                 _Poly *p = polys + polys_count++;
-                _init_poly(p);
+                _init_poly(p, s->origin.tail, s->origin.nose);
                 p->shapes[p->shapes_count++] = s;
-                p->origin.tail = s->origin.tail;
-                p->origin.nose = s->origin.nose;
             }
             else { /* conn shape */
                 _Poly *t_bundle_p = bundle_polys_map[s->origin.tail];
@@ -180,10 +178,8 @@ int mesh_trace_envelope(EnvPoint *env_points, Shape **shapes, int shapes_count, 
                     n_bundle_p->shapes[n_bundle_p->shapes_count++] = s;
                 else {
                     _Poly *p = polys + polys_count++;
-                    _init_poly(p);
+                    _init_poly(p, s->origin.tail, s->origin.nose);
                     p->shapes[p->shapes_count++] = s;
-                    p->origin.tail = s->origin.tail;
-                    p->origin.nose = s->origin.nose;
                 }
             }
         }
@@ -321,10 +317,10 @@ int mesh_trace_envelope(EnvPoint *env_points, Shape **shapes, int shapes_count, 
 
         /* trace fill polygon */
 
-        _Poly *poly = polys + polys_count; /* take the first available bundle, but don't make it yet */
+        _Poly *poly = polys + polys_count; /* take the first available poly, but don't make it yet */
         poly->verts = env_arena.lock<dvec>(shapes_count);
         poly->verts_count = 0;
-        _init_poly(poly);
+        _init_poly(poly, -1, -1);
 
         {
             int current_center = first_center;
