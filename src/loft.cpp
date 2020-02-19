@@ -122,9 +122,11 @@ void loft_model(Arena *arena, Model *model) {
             if (b_ref->fuselage_id == -1)
                 b_ref->fuselage_id = a_ref->fuselage_id;
             else if (b_ref->fuselage_id != a_ref->fuselage_id) {
+                int b_fuselage_id = b_ref->fuselage_id;
+
                 for (int k = 0; k < o_refs_count; ++k) { /* switch all objects with the same fuselage id as object b to a */
                     Objref *c_ref = o_refs + k;
-                    if (c_ref->fuselage_id == b_ref->fuselage_id)
+                    if (c_ref->fuselage_id == b_fuselage_id)
                         c_ref->fuselage_id = a_ref->fuselage_id;
                 }
             }
@@ -135,8 +137,7 @@ void loft_model(Arena *arena, Model *model) {
 
     {
         static Fuselage *fuselages_map[MAX_ELEMENTS];
-        for (int i = 0; i < MAX_ELEMENTS; ++i) // TODO: memset?
-            fuselages_map[i] = 0;
+        memset(fuselages_map, 0, sizeof(Fuselage *) * MAX_ELEMENTS);
 
         OriginFlags last_non_clone_origin = ZERO_ORIGIN_FLAG; /* last non-clone is immediately followed by its clones */
 
