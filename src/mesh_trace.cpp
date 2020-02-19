@@ -26,7 +26,7 @@ connections are converging faster
 - smaller to avoid large differences between envelopes with and without bundles
 - smaller to avoid large differences between normals at samples, which make deciding which sample to take more uncertain
 - smaller to avoid jumps in fill polygons, because they're formed from shape bundle polygon centers */
-const double BUNDLE_MARGIN_FACTOR = 0.1;
+const double BUNDLE_MARGIN_FACTOR = 0.05;
 
 /* Calculates polygon x offset. Offset is non-zero only when try_i is non-zero. */
 static inline double _try_offset_x(int shape_i, int try_i, double angle_step) {

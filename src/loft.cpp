@@ -182,10 +182,10 @@ void loft_model(Arena *arena, Model *model) {
     } *conns2 = arena->alloc<_Conn2>(MAX_FUSELAGE_OBJECTS * MAX_FUSELAGE_OBJECTS);
 
     struct _ObjrefInfo {
-        OriginFlags t_conn_flags;
-        OriginFlags n_conn_flags;
-        OriginFlags t_non_clone_origins; /* non-clone-origins of all (potentially) connected objects */
-        OriginFlags n_non_clone_origins; /* non-clone-origins of all (potentially) connected objects */
+        union {
+            OriginFlags conn_flags;
+            OriginFlags non_clone_origins;
+        } t, n;
     } *infos = arena->alloc<_ObjrefInfo>(MAX_FUSELAGE_OBJECTS);
 
     for (int i = 0; i < fuselages_count; ++i) {
@@ -209,8 +209,8 @@ void loft_model(Arena *arena, Model *model) {
 
                 if (a->max_x < b->min_x - 0.1) {        /* a is tail, b is nose */
                     if (_object_circles_overlap(a_ref, b_ref)) {
-                        a_info->n_conn_flags |= ORIGIN_PART_TO_FLAG(b_i);
-                        b_info->t_conn_flags |= ORIGIN_PART_TO_FLAG(a_i);
+                        a_info->n.conn_flags |= ORIGIN_PART_TO_FLAG(b_i);
+                        b_info->t.conn_flags |= ORIGIN_PART_TO_FLAG(a_i);
                         _Conn1 *c1 = conns1 + conns1_count++;
                         c1->t_i = a_i;
                         c1->n_i = b_i;
@@ -218,8 +218,8 @@ void loft_model(Arena *arena, Model *model) {
                 }
                 else if (a->min_x > b->max_x + 0.1) {   /* a is nose, b is tail */
                     if (_object_circles_overlap(a_ref, b_ref)) {
-                        a_info->t_conn_flags |= ORIGIN_PART_TO_FLAG(b_i);
-                        b_info->n_conn_flags |= ORIGIN_PART_TO_FLAG(a_i);
+                        a_info->t.conn_flags |= ORIGIN_PART_TO_FLAG(b_i);
+                        b_info->n.conn_flags |= ORIGIN_PART_TO_FLAG(a_i);
                         _Conn1 *c1 = conns1 + conns1_count++;
                         c1->t_i = b_i;
                         c1->n_i = a_i;
@@ -239,7 +239,7 @@ void loft_model(Arena *arena, Model *model) {
 
             /* skip connection candidate if objects it connects can be connected through other objects in between */
 
-            if ((t_info->n_conn_flags & n_info->t_conn_flags) != 0) /* tail object is nosewise connected to some objects nose object is tailwise connected to */
+            if ((t_info->n.conn_flags & n_info->t.conn_flags) != 0) /* tail object is nosewise connected to some objects nose object is tailwise connected to */
                 continue;
 
             Objref *t_ref = fuselage->objects + c1->t_i;
@@ -251,7 +251,6 @@ void loft_model(Arena *arena, Model *model) {
             // TODO: see if this should actually be appropriate skin former centroids instead of just object positions
             float dy = n_obj->p.y - t_obj->p.y;
             float dz = n_obj->p.z - t_obj->p.z;
-            // TODO: check if I can remove this sqrtf altogether
             float grade = dx / sqrtf(dy * dy + dz * dz); // FAST_SQRT
 
             int insert_i = 0;
@@ -264,13 +263,13 @@ void loft_model(Arena *arena, Model *model) {
             _Conn2 *c2 = conns2 + insert_i;
             c2->t_i = c1->t_i;
             c2->n_i = c1->n_i;
-            t_info->n_non_clone_origins |= n_ref->non_clone_origin;
-            n_info->t_non_clone_origins |= t_ref->non_clone_origin;
             c2->grade = grade;
             ++conns2_count;
         }
 
         /* make actual conns from conn candidates */
+
+        memset(infos, 0, sizeof(_ObjrefInfo) *fuselage->objects_count);
 
         for (int j = 0; j < conns2_count; ++j) {
             _Conn2 *c2 = conns2 + j;
@@ -279,17 +278,20 @@ void loft_model(Arena *arena, Model *model) {
             _ObjrefInfo *t_info = infos + c2->t_i;
             _ObjrefInfo *n_info = infos + c2->n_i;
 
-            /* only add the connection if both endpoints don't already have something connected */
+            /* skip connection if both endpoints already have something connected */
 
-            if ((t_info->n_non_clone_origins & ~n_ref->non_clone_origin) == ZERO_ORIGIN_FLAG ||
-                (n_info->t_non_clone_origins & ~t_ref->non_clone_origin) == ZERO_ORIGIN_FLAG) {
+            if ((t_info->n.non_clone_origins & ~n_ref->non_clone_origin) != ZERO_ORIGIN_FLAG &&
+                (n_info->t.non_clone_origins & ~t_ref->non_clone_origin) != ZERO_ORIGIN_FLAG)
+                continue;
 
-                Conn *c = fuselage->conns + fuselage->conns_count++;
-                c->tail_o = fuselage->objects + c2->t_i;
-                c->nose_o = fuselage->objects + c2->n_i;
-                ++c->tail_o->n_conns_count;
-                ++c->nose_o->t_conns_count;
-            }
+            t_info->n.non_clone_origins |= n_ref->non_clone_origin;
+            n_info->t.non_clone_origins |= t_ref->non_clone_origin;
+
+            Conn *c = fuselage->conns + fuselage->conns_count++;
+            c->tail_o = fuselage->objects + c2->t_i;
+            c->nose_o = fuselage->objects + c2->n_i;
+            ++c->tail_o->n_conns_count;
+            ++c->nose_o->t_conns_count;
         }
     }
 
