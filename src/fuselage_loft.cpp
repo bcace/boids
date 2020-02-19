@@ -226,6 +226,8 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
 
     float section_dx = (max_x - min_x) / fuselage_subdivs;
     int sections_count = fuselage_subdivs + 1;
+    int beg_section = 0;
+    int end_section = sections_count - 1;
 
     /* get fuselage section envelopes */
 
@@ -251,6 +253,7 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
         section->shapes_count = 0;
         section->t_shapes_count = 0;
         section->n_shapes_count = 0;
+
         bool two_envelopes = false;
 
         /* intersect objects */
@@ -263,8 +266,8 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
                 break_assert(section->shapes_count < SHAPE_MAX_ENVELOPE_SHAPES);
                 Shape *s = section->shapes + section->shapes_count++;
 
-                bool is_tailmost = i > 0 &&                    !_intersects_object(section_x - section_dx, o) && o_ref->t_conns_count == 0;
-                bool is_nosemost = i < (sections_count - 1) && !_intersects_object(section_x + section_dx, o) && o_ref->n_conns_count == 0;
+                bool is_tailmost = (i != beg_section) && !_intersects_object(section_x - section_dx, o) && o_ref->t_conns_count == 0;
+                bool is_nosemost = (i != end_section) && !_intersects_object(section_x + section_dx, o) && o_ref->n_conns_count == 0;
 
                 _get_skin_section(section_x, s,
                                   &o_ref->t_skin_former, o_ref->t_tangents, o->p, false,
@@ -305,7 +308,10 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
             }
         }
 
-        /* trace envelope */
+        if (section->t_shapes_count == 0 || section->n_shapes_count == 0) /* skip if there are no shapes on either side */
+            continue;
+
+        /* trace envelopes */
 
         if (two_envelopes) {
             section->t_env = section->envs;
