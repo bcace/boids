@@ -22,11 +22,11 @@ enum SkinVertColorSource {
     NO_SOURCE, VX, VY, VZ, V
 };
 
-typedef struct Panel {
+struct Panel {
     int v1, v2, v3, v4; /* vertex indices */
     int prev, next, tail, nose; /* neighbor panel indices */
     float vx, vy, vz; /* airspeed components */
-} Panel;
+};
 
 struct Model {
     array<Object *, MAX_ELEMENTS> objects;
