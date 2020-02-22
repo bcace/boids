@@ -41,7 +41,7 @@ static unsigned char _get_y_fraction(AirfoilSide *side, double y) {
         return v;
 }
 
-Airfoil airfoil_parse_selig(const char *path, int count) {
+void _parse_selig_airfoil(Airfoil *a, const char *path, int count) {
     static char *text = 0;
     static dvec *verts = 0;
 
@@ -113,11 +113,10 @@ Airfoil airfoil_parse_selig(const char *path, int count) {
 
     /* resample airfoil */
 
-    Airfoil a;
-    a.upper.base = (float)min_u;
-    a.upper.delta = (float)((max_u - min_u) / _FRACTION_COUNT);
-    a.lower.base = (float)min_l;
-    a.lower.delta = (float)((max_l - min_l) / _FRACTION_COUNT);
+    a->upper.base = (float)min_u;
+    a->upper.delta = (float)((max_u - min_u) / _FRACTION_COUNT);
+    a->lower.base = (float)min_l;
+    a->lower.delta = (float)((max_l - min_l) / _FRACTION_COUNT);
 
     int prev_u = lead_i;
     int prev_l = lead_i;
@@ -133,7 +132,7 @@ Airfoil airfoil_parse_selig(const char *path, int count) {
             dvec next_p = verts[prev_u - 1];
             double t = (x - prev_p.x) / (next_p.x - prev_p.x);
             double y = prev_p.y + (next_p.y - prev_p.y) * t;
-            a.upper.y[i] = _get_y_fraction(&a.upper, y);
+            a->upper.y[i] = _get_y_fraction(&a->upper, y);
         }
 
         while (verts[prev_l + 1].x < x)
@@ -144,12 +143,86 @@ Airfoil airfoil_parse_selig(const char *path, int count) {
             dvec next_p = verts[prev_l + 1];
             double t = (x - prev_p.x) / (next_p.x - prev_p.x);
             double y = prev_p.y + (next_p.y - prev_p.y) * t;
-            a.lower.y[i] = _get_y_fraction(&a.lower, y);
+            a->lower.y[i] = _get_y_fraction(&a->lower, y);
         }
     }
 
-    a.upper.y[AIRFOIL_SUBDIVS - 1] = _get_y_fraction(&a.upper, verts[0].y);
-    a.lower.y[AIRFOIL_SUBDIVS - 1] = _get_y_fraction(&a.lower, verts[count - 1].y);
+    a->upper.y[AIRFOIL_SUBDIVS - 1] = _get_y_fraction(&a->upper, verts[0].y);
+    a->lower.y[AIRFOIL_SUBDIVS - 1] = _get_y_fraction(&a->lower, verts[count - 1].y);
+}
 
-    return a;
+void _print_airfoil_side_y(FILE *f, AirfoilSide *side, const char *label) {
+
+    fprintf(f,
+"        unsigned char %s_y[] = { "
+    , label);
+
+    for (int i = 0; i < AIRFOIL_SUBDIVS; ++i)
+        fprintf(f, "%d, ", side->y[i]);
+
+    fprintf(f,
+"};\n");
+}
+
+struct _FileInfo {
+    const char *path;
+    int count;
+};
+
+void _print_airfoil(FILE *f, _FileInfo *info, int index) {
+    Airfoil a;
+    _parse_selig_airfoil(&a, info->path, info->count);
+
+    fprintf(f,
+"\n    /* %s */\n"
+"    {\n", info->path);
+
+    _print_airfoil_side_y(f, &a.upper, "u");
+    _print_airfoil_side_y(f, &a.lower, "l");
+
+    fprintf(f,
+"\n"
+"        airfoil_init_from_base(airfoils + %d,\n"
+"                               %g, %g, u_y,\n"
+"                               %g, %g, l_y);\n"
+"\n"
+"        ++count;\n"
+"    }\n",
+    index,
+    a.upper.base, a.upper.delta,
+    a.lower.base, a.lower.delta);
+}
+
+void airfoil_generate_base() {
+
+    _FileInfo infos[] = {
+        { "airfoils/naca23012.dat", 61 },
+        { "airfoils/naca23015_clean.dat", 35 },
+        { "airfoils/naca23018_clean.dat", 35 },
+        { "airfoils/b737a.dat", 45 },
+        { "airfoils/b737b.dat", 45 },
+        { "airfoils/b737c.dat", 45 },
+        { "airfoils/b737d.dat", 45 },
+    };
+
+    int infos_count = sizeof(infos) / sizeof(_FileInfo);
+
+    FILE *f = (FILE *)plat_fopen("src/airfoil_base.cpp", "w");
+
+    fprintf(f,
+"#include \"airfoil.h\"\n\n\n"
+"int airfoil_init_base(Airfoil *airfoils) {\n"
+"    int count = 0;\n"
+    );
+
+    for (int i = 0; i < infos_count; ++i)
+        _print_airfoil(f, infos + i, i);
+
+    fprintf(f,
+"\n"
+"    return count;\n"
+"}\n"
+    );
+
+    fclose(f);
 }

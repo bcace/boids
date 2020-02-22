@@ -287,7 +287,7 @@ void _main_loop_func() {
 int main() {
 
 #if AIRFOIL_MAKING_MODE
-    airfoil_parse_selig("airfoils/naca23012.dat", 61);
+    airfoil_generate_base();
     return 0;
 #endif
 

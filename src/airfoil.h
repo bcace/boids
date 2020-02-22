@@ -3,7 +3,7 @@
 
 #define AIRFOIL_SUBDIVS     32
 #define AIRFOIL_POINTS      (AIRFOIL_SUBDIVS * 2 + 1)
-#define AIRFOIL_MAKING_MODE 0
+#define AIRFOIL_MAKING_MODE 1
 
 
 struct dvec;
@@ -14,13 +14,16 @@ struct AirfoilSide {
 };
 
 struct Airfoil {
-    AirfoilSide upper;
-    AirfoilSide lower;
+    char name[16];
+    AirfoilSide upper, lower;
 };
 
 double airfoil_get_subdiv_x(int i);
 dvec airfoil_get_point(Airfoil *airfoil, int i);
+void airfoil_init_from_base(Airfoil *airfoil,
+                            float u_base, float u_delta, unsigned char *u_y,
+                            float l_base, float l_delta, unsigned char *l_y);
 
-Airfoil airfoil_parse_selig(const char *path, int count);
+void airfoil_generate_base();
 
 #endif
