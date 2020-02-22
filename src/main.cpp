@@ -20,6 +20,7 @@
 #include "ochre.h"
 #include "arena.h"
 #include "apame.h"
+#include "airfoil.h"
 #include <assert.h>
 #include <stdio.h>
 
@@ -284,6 +285,12 @@ void _main_loop_func() {
 }
 
 int main() {
+
+#if AIRFOIL_MAKING_MODE
+    airfoil_parse_selig("airfoils/naca23012.dat", 61);
+    return 0;
+#endif
+
     model_init_ochre_state();
 
     // create window

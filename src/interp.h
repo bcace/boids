@@ -25,6 +25,8 @@ vec3 split_bezier(vec3 e1, vec3 c1, vec3 c2, vec3 e2, float t,
 
 float cube_bezier_1f(float e1, float c1, float c2, float e2, float t);
 
+float quad_bezier_1f(float a, float b, float c, float t);
+double quad_bezier_1d(double a, double b, double c, double t);
 vec2 quad_bezier_2f(vec2 a, vec2 b, vec2 c, float t);
 vec2 quad_bezier_2f_derivative(vec2 a, vec2 b, vec2 c, float t);
 float quad_bezier_2f_param_at_derivative(vec2 a, vec2 b, vec2 c, float deriv);
@@ -120,6 +122,16 @@ float cube_bezier_1f(float e1, float c1, float c2, float e2, float t) {
     double c = _t * t * t * 3.0;
     double d = t * t * t;
     return e1 * a + c1 * b + c2 * c + e2 * d;
+}
+
+double quad_bezier_1d(double a, double b, double c, double t) {
+    double _t = 1.0 - t;
+    return (a * _t * _t) + (b * t * _t * 2.0) + (c * t * t);
+}
+
+float quad_bezier_1f(float a, float b, float c, float t) {
+    float _t = 1.0f - t;
+    return (a * _t * _t) + (b * t * _t * 2.0f) + (c * t * t);
 }
 
 vec2 quad_bezier_2f(vec2 a, vec2 b, vec2 c, float t) {

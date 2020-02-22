@@ -12,19 +12,19 @@
 struct dvec;
 
 struct Curve {
-    double x, y;    /* curve start position */
-    double w;       /* rational Bezier weight */
+    double x, y;    /* curve start position, serial */
+    double w;       /* rational Bezier weight, serial */
     double cx, cy;  /* control point (calculated) */
 };
 
 struct Shape {
-    Curve curves[SHAPE_CURVES];
+    Curve curves[SHAPE_CURVES]; /* serial */
     Origin origin;
 };
 
 struct Former {
-    Shape shape;
-    float x;
+    Shape shape; /* serial */
+    float x; /* serial */
 };
 
 Shape shape_make(double x, double y, double d1, double d2, double d3, double d4, double w1, double w2, double w3, double w4);

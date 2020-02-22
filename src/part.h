@@ -13,9 +13,13 @@ struct Object;
 
 struct Part {
     char name[MAX_PROTO_NAME];
-    array<Former, MAX_PROTO_FORMERS> formers; // initial collision formers
+
+    /* data copied onto objects */
+    // TODO: think about making this a separate structure, shared between Object and Part
+    // TODO: don't use array here
+    array<Former, MAX_PROTO_FORMERS> formers; /* initial collision formers */
     Former tail_skin_former, nose_skin_former;
-    float tail_endp_dx, nose_endp_dx; // endpoint distances from respective skin formers
+    float tail_endp_dx, nose_endp_dx; /* endpoint distances from respective skin formers */
     bool tail_opening, nose_opening;
 };
 

@@ -24,9 +24,7 @@
 #define HANDLE_SIZE             0.02f
 
 
-struct Part;
 struct Arena;
-struct Fuselage;
 struct CollPrism;
 struct mat4_stack;
 struct ShaderProgram;
@@ -43,7 +41,7 @@ struct HandleConstraints {
 };
 
 struct Handle {
-    vec3 verts[HANDLE_VERTS]; // model CS
+    vec3 verts[HANDLE_VERTS]; /* model CS */
     bool selected;
 };
 
