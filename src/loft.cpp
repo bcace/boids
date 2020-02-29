@@ -3,6 +3,7 @@
 #include "model.h"
 #include "fuselage.h"
 #include "object.h"
+#include "group.h"
 #include "arena.h"
 #include "math.h"
 #include <math.h>
@@ -42,11 +43,10 @@ static bool _object_circles_overlap(Objref *a_ref, Objref *b_ref) {
 }
 
 /* Initializes an Objref instance. */
-static void _init_objref(Objref *r, Object *o, bool is_clone) {
+static void _init_objref(Objref *r, Object *o, int index, bool is_clone) {
     r->object = o;
     r->is_clone = is_clone;
-    r->fuselage_id = -1;
-    r->non_clone_origin = ZERO_ORIGIN_FLAG;
+    r->non_clone_origin = origin_index_to_flag(index);
     r->t_conns_count = 0;
     r->n_conns_count = 0;
     r->x = (double)o->p.x;
@@ -76,94 +76,41 @@ void loft_model(Arena *arena, Model *model) {
     static Fuselage fuselages[MAX_FUSELAGES];
     int fuselages_count = 0;
 
-    for (int i = 0; i < MAX_FUSELAGES; ++i) {
-        fuselages[i].objects_count = 0;
-        fuselages[i].conns_count = 0;
-    }
-
     /* create object references from model objects, including clones */
 
     Objref *o_refs = arena->alloc<Objref>(model->objects.count * 2);
     int o_refs_count = 0;
 
+    break_assert(model->objects.count <= MAX_FUSELAGE_OBJECTS); // TODO: remove this once max number of objects in the model is the same as that of fuselages
+
     for (int i = 0; i < model->objects.count; ++i) {
         Object *o = model->objects[i];
 
-        break_assert(o_refs_count < MAX_FUSELAGE_OBJECTS);
         Objref *o_ref = o_refs + o_refs_count++;
-        _init_objref(o_ref, o, false);
+        _init_objref(o_ref, o, i, false);
 
         /* make sure all clones follow the original object immediately */
 
         if (object_should_be_mirrored(o)) {
-            break_assert(o_refs_count < MAX_FUSELAGE_OBJECTS);
             Objref *c_ref = o_refs + o_refs_count++;
-            _init_objref(c_ref, o, true);
+            _init_objref(c_ref, o, i, true);
         }
     }
 
-    /* let objrefs "infect" each other with fuselage ids if their area circles overlap */
+    /* group object references into fuselages */
 
-    int next_available_fuselage_id = 0;
-    for (int a_i = 0; a_i < o_refs_count; ++a_i) { /* assign fuselage ids to all objects */
-        Objref *a_ref = o_refs + a_i;
-        Object *a = a_ref->object;
+    static GroupMaker maker;
+    group_objects(sizeof(Objref), o_refs, o_refs_count, (GROUP_FUNC)_object_circles_overlap, &maker);
 
-        if (a_ref->fuselage_id == -1)
-            a_ref->fuselage_id = next_available_fuselage_id++;
+    for (int i = 0; i < maker.count; ++i) {
+        Group *g = maker.groups + i;
 
-        for (int b_i = a_i + 1; b_i < o_refs_count; ++b_i) {
-            Objref *b_ref = o_refs + b_i;
-            Object *b = b_ref->object;
+        Fuselage *f = fuselages + fuselages_count++;
+        f->objects_count = g->count;
+        f->conns_count = 0;
 
-            if (!_object_circles_overlap(a_ref, b_ref)) /* if objects a and b do not overlap in y-z */
-                continue;
-
-            if (b_ref->fuselage_id == -1)
-                b_ref->fuselage_id = a_ref->fuselage_id;
-            else if (b_ref->fuselage_id != a_ref->fuselage_id) {
-                int b_fuselage_id = b_ref->fuselage_id;
-
-                for (int k = 0; k < o_refs_count; ++k) { /* switch all objects with the same fuselage id as object b to a */
-                    Objref *c_ref = o_refs + k;
-                    if (c_ref->fuselage_id == b_fuselage_id)
-                        c_ref->fuselage_id = a_ref->fuselage_id;
-                }
-            }
-        }
-    }
-
-    /* create fuselages from fuselage ids */
-
-    {
-        static Fuselage *fuselages_map[MAX_ELEMENTS];
-        memset(fuselages_map, 0, sizeof(Fuselage *) * MAX_ELEMENTS);
-
-        OriginFlag last_non_clone_origin = ZERO_ORIGIN_FLAG; /* last non-clone is immediately followed by its clones */
-
-        for (int i = 0; i < o_refs_count; ++i) { /* assign objects to fuselages, create fuselages if needed */
-            Objref *o_ref = o_refs + i;
-            break_assert(o_ref->fuselage_id != -1);
-
-            Fuselage *fuselage = fuselages_map[o_ref->fuselage_id];
-            if (fuselage == 0) {
-                fuselage = fuselages + fuselages_count++;
-                fuselages_map[o_ref->fuselage_id] = fuselage;
-            }
-            else
-                fuselage = fuselages_map[o_ref->fuselage_id];
-
-            /* set objects' non-clone origins */
-
-            if (o_ref->is_clone)
-                o_ref->non_clone_origin = last_non_clone_origin;
-            else {
-                last_non_clone_origin = origin_index_to_flag(fuselage->objects_count);
-                o_ref->non_clone_origin = last_non_clone_origin;
-            }
-
-            fuselage->objects[fuselage->objects_count++] = *o_ref;
-        }
+        for (int j = 0; j < g->count; ++j)
+            f->objects[j] = o_refs[g->obj_indices[j]];
     }
 
     /* create connections between objrefs in each fuselage */
@@ -269,7 +216,7 @@ void loft_model(Arena *arena, Model *model) {
 
         /* make actual conns from conn candidates */
 
-        memset(infos, 0, sizeof(_ObjrefInfo) *fuselage->objects_count);
+        memset(infos, 0, sizeof(_ObjrefInfo) * fuselage->objects_count);
 
         for (int j = 0; j < conns2_count; ++j) {
             _Conn2 *c2 = conns2 + j;

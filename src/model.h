@@ -3,7 +3,7 @@
 
 #include "array.h"
 
-#define MAX_ELEMENTS    32 // TODO: rename to MAX_OBJECTS
+#define MAX_ELEMENTS    32 // TODO: rename to MAX_OBJECTS, or make it the same as MAX_FUSELAGE_OBJECTS
 #define MAX_FUSELAGES   32
 
 #define DRAW_CORRS      0 /* just for debugging */

@@ -203,20 +203,22 @@ static void _init_station(_Station *s, float x, OriginFlag t_objs, OriginFlag n_
 just update the old one with new object flags. */
 static int _insert_station(_Station *stations, int count, float x, OriginFlag t_objs, OriginFlag n_objs) {
     int i = 0;
+    _Station *s = 0;
+
     for (; i < count; ++i)
-        if (x <= stations[i].x)
+        if (x <= stations[i].x) {
+            s = stations + i;
             break;
+        }
 
-    _Station *s = stations + i;
-
-    if (s->x == x) {
+    if (s && s->x == x) {
         s->t_objs |= t_objs;
         s->n_objs |= n_objs;
     }
     else {
         for (int j = count; j > i; --j)
             stations[j] = stations[j - 1];
-        _init_station(s, x, t_objs, n_objs);
+        _init_station(stations + i, x, t_objs, n_objs);
         ++count;
     }
 
@@ -282,11 +284,11 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
         Objref *o_ref = fuselage->objects + i;
         Object *o = o_ref->object;
 
-        if (o_ref->t_conns_count == 0)
+        if (o_ref->t_conns_count == 0) /* tailwise opening */
             stations1_count = _insert_station(stations1, stations1_count,
                                               o->min_x, origin_index_to_flag(o_ref->origin), ZERO_ORIGIN_FLAG);
 
-        if (o_ref->n_conns_count == 0)
+        if (o_ref->n_conns_count == 0) /* nosewise opening */
             stations1_count = _insert_station(stations1, stations1_count,
                                               o->max_x, ZERO_ORIGIN_FLAG, origin_index_to_flag(o_ref->origin));
     }

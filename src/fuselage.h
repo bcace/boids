@@ -23,7 +23,6 @@ struct Objref {
     Former t_skin_former, n_skin_former; /* skin formers, model CS */
 
     /* only used while grouping objects into fuselages */
-    int fuselage_id;
     OriginFlag non_clone_origin; /* origin flag where original object and all its clones have the same origin */
 
     /* used for lofting */
