@@ -4,6 +4,7 @@
 #include "vec.h"
 #include "shape.h"
 #include "config.h"
+#include "origin.h"
 #include "constants.h"
 
 #define MAX_FUSELAGE_CONNS  32
@@ -23,7 +24,7 @@ struct Objref {
 
     /* only used while grouping objects into fuselages */
     int fuselage_id;
-    OriginFlags non_clone_origin; /* origin flag where original object and all its clones have the same origin */
+    OriginFlag non_clone_origin; /* origin flag where original object and all its clones have the same origin */
 
     /* used for lofting */
     short int t_conns_count;

@@ -121,7 +121,7 @@ void _parse_selig_airfoil(Airfoil *a, const char *path, int count) {
     int prev_u = lead_i;
     int prev_l = lead_i;
 
-    for (int i = 0; i < AIRFOIL_SUBDIVS - 1; ++i) {
+    for (int i = 0; i < AIRFOIL_X_SUBDIVS - 1; ++i) {
         double x = airfoil_get_subdiv_x(i);
 
         while (verts[prev_u - 1].x < x)
@@ -147,8 +147,8 @@ void _parse_selig_airfoil(Airfoil *a, const char *path, int count) {
         }
     }
 
-    a->upper.y[AIRFOIL_SUBDIVS - 1] = _get_y_fraction(&a->upper, verts[0].y);
-    a->lower.y[AIRFOIL_SUBDIVS - 1] = _get_y_fraction(&a->lower, verts[count - 1].y);
+    a->upper.y[AIRFOIL_X_SUBDIVS - 1] = _get_y_fraction(&a->upper, verts[0].y);
+    a->lower.y[AIRFOIL_X_SUBDIVS - 1] = _get_y_fraction(&a->lower, verts[count - 1].y);
 }
 
 void _print_airfoil_side_y(FILE *f, AirfoilSide *side, const char *label) {
@@ -157,7 +157,7 @@ void _print_airfoil_side_y(FILE *f, AirfoilSide *side, const char *label) {
 "        unsigned char %s_y[] = { "
     , label);
 
-    for (int i = 0; i < AIRFOIL_SUBDIVS; ++i)
+    for (int i = 0; i < AIRFOIL_X_SUBDIVS; ++i)
         fprintf(f, "%d, ", side->y[i]);
 
     fprintf(f,

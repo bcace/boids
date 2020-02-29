@@ -43,7 +43,7 @@ struct _Bounds {
 };
 
 struct _Poly {
-    Shape *shapes[SHAPE_MAX_ENVELOPE_SHAPES];
+    Shape *shapes[MAX_ENVELOPE_SHAPES];
     int shapes_count;
     dvec *verts;
     Origin origin;
@@ -90,10 +90,10 @@ static inline bool _should_bundle_shapes(Shape *a, Shape *b, double mx, double m
 }
 
 /* Main envelope tracing function. TODO: describe arguments. */
-int mesh_trace_envelope(EnvPoint *env_points, Shape **shapes, int shapes_count, int curve_subdivs, OriginFlags *object_like_flags) {
-    break_assert(shapes_count < SHAPE_MAX_ENVELOPE_SHAPES);
-    break_assert(curve_subdivs >= SHAPE_MIN_CURVE_SUBDIVS);
-    break_assert(curve_subdivs <= SHAPE_MAX_CURVE_SUBDIVS);
+int mesh_trace_envelope(EnvPoint *env_points, Shape **shapes, int shapes_count, int curve_subdivs, OriginFlag *object_like_flags) {
+    break_assert(shapes_count < MAX_ENVELOPE_SHAPES);
+    break_assert(curve_subdivs >= MIN_CURVE_SUBDIVS);
+    break_assert(curve_subdivs <= MAX_CURVE_SUBDIVS);
 
     env_arena.clear();
 
@@ -107,7 +107,7 @@ int mesh_trace_envelope(EnvPoint *env_points, Shape **shapes, int shapes_count, 
     merge situations we want those shapes that almost perfectly overlap each other to be represented
     by a single polygon when tracing. */
 
-    _Poly polys[SHAPE_MAX_ENVELOPE_SHAPES + 1];
+    _Poly polys[MAX_ENVELOPE_SHAPES + 1];
     int polys_count = 0;
 
     {
@@ -192,7 +192,7 @@ int mesh_trace_envelope(EnvPoint *env_points, Shape **shapes, int shapes_count, 
     for (int i = 0; i < polys_count; ++i) {
         _Poly *p = polys + i;
         if (p->origin.tail == p->origin.nose)
-            *object_like_flags |= ORIGIN_PART_TO_FLAG(p->origin.tail);
+            *object_like_flags |= origin_index_to_flag(p->origin.tail);
     }
 
     /* sample polygons */
@@ -297,8 +297,8 @@ int mesh_trace_envelope(EnvPoint *env_points, Shape **shapes, int shapes_count, 
     /* fill polygon */
 
     {
-        dvec centers[SHAPE_MAX_ENVELOPE_SHAPES];
-        bool ignored[SHAPE_MAX_ENVELOPE_SHAPES];
+        dvec centers[MAX_ENVELOPE_SHAPES];
+        bool ignored[MAX_ENVELOPE_SHAPES];
 
         for (int i = 0; i < polys_count; ++i) { /* prepare all the shapes' centers */
             centers[i] = polys[i].center;
@@ -331,7 +331,7 @@ int mesh_trace_envelope(EnvPoint *env_points, Shape **shapes, int shapes_count, 
             ignored[first_center] = true;
 
             int fill_guard = 0;
-            for (; fill_guard < SHAPE_MAX_ENVELOPE_SHAPES; ++fill_guard) {
+            for (; fill_guard < MAX_ENVELOPE_SHAPES; ++fill_guard) {
                 int min_i = -1;
                 double min_angle = DBL_MAX;
                 double min_sx, min_sy;
@@ -370,7 +370,7 @@ int mesh_trace_envelope(EnvPoint *env_points, Shape **shapes, int shapes_count, 
                 }
             }
 
-            if (fill_guard == SHAPE_MAX_ENVELOPE_SHAPES) /* tracing fill polygon failed */
+            if (fill_guard == MAX_ENVELOPE_SHAPES) /* tracing fill polygon failed */
                 return -1;
         }
 
@@ -455,7 +455,7 @@ int mesh_trace_envelope(EnvPoint *env_points, Shape **shapes, int shapes_count, 
         int point_poly_i = beg_point_poly_i;
 
         int env_guard = 0;
-        for (; env_guard < SHAPE_MAX_ENVELOPE_POINTS; ++env_guard) {
+        for (; env_guard < MAX_ENVELOPE_POINTS; ++env_guard) {
 
             bool is_fill_poly = polys[point_poly_i].shapes_count == 0;
             double try_offset_x = _try_offset_x(point_poly_i, try_i, try_angle_step);
@@ -655,7 +655,7 @@ int mesh_trace_envelope(EnvPoint *env_points, Shape **shapes, int shapes_count, 
                 env_points[env_count++] = point;
         }
 
-        if (env_guard >= SHAPE_MAX_ENVELOPE_POINTS) /* max envelope points exceeded */
+        if (env_guard >= MAX_ENVELOPE_POINTS) /* max envelope points exceeded */
             return -1;
 
         break; /* get out of the try loop */

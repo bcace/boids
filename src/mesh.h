@@ -2,6 +2,7 @@
 #define mesh_h
 
 #include "constants.h"
+#include "origin.h"
 
 
 struct EnvPoint {
@@ -31,13 +32,13 @@ struct MeshEnvSlice {
 };
 
 struct MeshEnv {
-    MeshPoint points[SHAPE_MAX_ENVELOPE_POINTS];
+    MeshPoint points[MAX_ENVELOPE_POINTS];
     int count;
-    MeshEnvSlice slices[SHAPE_MAX_ENVELOPE_POINTS];
+    MeshEnvSlice slices[MAX_ENVELOPE_POINTS];
     int slices_count;
     int verts_base_i; /* index of first vertex in model vertex buffer so we can map envelope points to their vertices */
     float x; /* section x, model CS */
-    OriginFlags object_like_flags; /* used for creating merge filter */
+    OriginFlag object_like_flags; /* used for creating merge filter */
 };
 
 struct dvec;
@@ -53,7 +54,7 @@ void mesh_apply_merge_filter(Arena *arena, int shape_subdivs,
                              Shape **n_shapes, int n_shapes_count, MeshEnv *n_env);
 
 /* trace */
-int mesh_trace_envelope(EnvPoint *env_points, Shape **shapes, int shapes_count, int curve_subdivs, OriginFlags *object_like_flags);
+int mesh_trace_envelope(EnvPoint *env_points, Shape **shapes, int shapes_count, int curve_subdivs, OriginFlag *object_like_flags);
 
 /* envelope */
 void mesh_make_envelopes(Model *model, Arena *arena, Arena *verts_arena, float section_x,

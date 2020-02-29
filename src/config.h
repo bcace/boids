@@ -1,15 +1,7 @@
 #ifndef config_h
 #define config_h
 
-#define MIN_SHAPE_CURVE_SAMPLES     2
-#define MAX_SHAPE_CURVE_SAMPLES     8
-
-#define MIN_STRUCTURAL_MARGIN       0.01
-#define MAX_STRUCTURAL_MARGIN       2.0
-
-#define LONGITUDINAL_SMOOTHNESS     0.5
-
-
+extern double LONGITUDINAL_SMOOTHNESS;
 extern int SHAPE_CURVE_SAMPLES;
 extern double STRUCTURAL_MARGIN;
 extern double MESH_ALPHA;

@@ -1,6 +1,7 @@
 #ifndef shape_h
 #define shape_h
 
+#include "origin.h"
 #include "constants.h"
 
 #define SHAPE_FILL_POLY_MARGIN          0.1 // TODO: this is very sensitive, doesn't work if set to a smaller number

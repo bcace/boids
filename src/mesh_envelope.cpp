@@ -326,7 +326,7 @@ static void _mesh_envs_pass_1(Model *model, Arena *verts_arena, float section_x,
                               MeshEnv *n_env, Shape **n_shapes, int n_shapes_count, EnvPoint *n_env_points) {
 
     if (corrs == 0)
-        corrs = (_Corr *)malloc(sizeof(_Corr) * SHAPE_MAX_ENVELOPE_POINTS);
+        corrs = (_Corr *)malloc(sizeof(_Corr) * MAX_ENVELOPE_POINTS);
     int corrs_count = 0;
 
     /* trace envelopes */
@@ -499,8 +499,8 @@ void mesh_make_envelopes(Model *model, Arena *arena, Arena *verts_arena, float s
 
     t_env->x = n_env->x = section_x;
 
-    EnvPoint *t_env_points = arena->lock<EnvPoint>(SHAPE_MAX_ENVELOPE_POINTS);
-    EnvPoint *n_env_points = arena->lock<EnvPoint>(SHAPE_MAX_ENVELOPE_POINTS);
+    EnvPoint *t_env_points = arena->lock<EnvPoint>(MAX_ENVELOPE_POINTS);
+    EnvPoint *n_env_points = arena->lock<EnvPoint>(MAX_ENVELOPE_POINTS);
 
     if (t_env == n_env) /* single envelope */
         _mesh_envs_pass_0(model, verts_arena, section_x,

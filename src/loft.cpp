@@ -139,7 +139,7 @@ void loft_model(Arena *arena, Model *model) {
         static Fuselage *fuselages_map[MAX_ELEMENTS];
         memset(fuselages_map, 0, sizeof(Fuselage *) * MAX_ELEMENTS);
 
-        OriginFlags last_non_clone_origin = ZERO_ORIGIN_FLAG; /* last non-clone is immediately followed by its clones */
+        OriginFlag last_non_clone_origin = ZERO_ORIGIN_FLAG; /* last non-clone is immediately followed by its clones */
 
         for (int i = 0; i < o_refs_count; ++i) { /* assign objects to fuselages, create fuselages if needed */
             Objref *o_ref = o_refs + i;
@@ -158,7 +158,7 @@ void loft_model(Arena *arena, Model *model) {
             if (o_ref->is_clone)
                 o_ref->non_clone_origin = last_non_clone_origin;
             else {
-                last_non_clone_origin = ORIGIN_PART_TO_FLAG(fuselage->objects_count);
+                last_non_clone_origin = origin_index_to_flag(fuselage->objects_count);
                 o_ref->non_clone_origin = last_non_clone_origin;
             }
 
@@ -183,8 +183,8 @@ void loft_model(Arena *arena, Model *model) {
 
     struct _ObjrefInfo {
         union {
-            OriginFlags conn_flags;
-            OriginFlags non_clone_origins;
+            OriginFlag conn_flags;
+            OriginFlag non_clone_origins;
         } t, n;
     } *infos = arena->alloc<_ObjrefInfo>(MAX_FUSELAGE_OBJECTS);
 
@@ -209,8 +209,8 @@ void loft_model(Arena *arena, Model *model) {
 
                 if (a->max_x < b->min_x - 0.1) {        /* a is tail, b is nose */
                     if (_object_circles_overlap(a_ref, b_ref)) {
-                        a_info->n.conn_flags |= ORIGIN_PART_TO_FLAG(b_i);
-                        b_info->t.conn_flags |= ORIGIN_PART_TO_FLAG(a_i);
+                        a_info->n.conn_flags |= origin_index_to_flag(b_i);
+                        b_info->t.conn_flags |= origin_index_to_flag(a_i);
                         _Conn1 *c1 = conns1 + conns1_count++;
                         c1->t_i = a_i;
                         c1->n_i = b_i;
@@ -218,8 +218,8 @@ void loft_model(Arena *arena, Model *model) {
                 }
                 else if (a->min_x > b->max_x + 0.1) {   /* a is nose, b is tail */
                     if (_object_circles_overlap(a_ref, b_ref)) {
-                        a_info->t.conn_flags |= ORIGIN_PART_TO_FLAG(b_i);
-                        b_info->n.conn_flags |= ORIGIN_PART_TO_FLAG(a_i);
+                        a_info->t.conn_flags |= origin_index_to_flag(b_i);
+                        b_info->n.conn_flags |= origin_index_to_flag(a_i);
                         _Conn1 *c1 = conns1 + conns1_count++;
                         c1->t_i = b_i;
                         c1->n_i = a_i;

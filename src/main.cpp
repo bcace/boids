@@ -286,7 +286,7 @@ void _main_loop_func() {
 
 int main() {
 
-#if AIRFOIL_MAKING_MODE
+#if AIRFOIL_GENERATE_BASE
     airfoil_generate_base();
     return 0;
 #endif

@@ -27,8 +27,8 @@ void mesh_apply_merge_filter(Arena *arena, int shape_subdivs,
                              Shape **n_shapes, int n_shapes_count, MeshEnv *n_env) {
 
     _ConnsForObject *conns = arena->lock<_ConnsForObject>(MAX_FUSELAGE_OBJECTS);
-    dvec *verts = arena->lock<dvec>(SHAPE_MAX_SHAPE_SUBDIVS * MAX_FUSELAGE_OBJECTS);
-    OriginFlags *filter = arena->lock<OriginFlags>(SHAPE_MAX_SHAPE_SUBDIVS);
+    dvec *verts = arena->lock<dvec>(MAX_SHAPE_SUBDIVS * MAX_FUSELAGE_OBJECTS);
+    OriginFlag *filter = arena->lock<OriginFlag>(MAX_SHAPE_SUBDIVS);
 
     /* collect all connection shapes on one side for each object-like shape on the other */
 
@@ -36,7 +36,7 @@ void mesh_apply_merge_filter(Arena *arena, int shape_subdivs,
 
     for (int i = 0; i < t_shapes_count; ++i) {
         Shape *s = t_shapes[i];
-        if (s->origin.tail != s->origin.nose && (n_env->object_like_flags & ORIGIN_PART_TO_FLAG(s->origin.nose))) {
+        if (s->origin.tail != s->origin.nose && (n_env->object_like_flags & origin_index_to_flag(s->origin.nose))) {
             _ConnsForObject *c = conns + s->origin.nose;
             c->shapes[c->count++] = s;
         }
@@ -44,7 +44,7 @@ void mesh_apply_merge_filter(Arena *arena, int shape_subdivs,
 
     for (int i = 0; i < n_shapes_count; ++i) {
         Shape *s = n_shapes[i];
-        if (s->origin.tail != s->origin.nose && (t_env->object_like_flags & ORIGIN_PART_TO_FLAG(s->origin.tail))) {
+        if (s->origin.tail != s->origin.nose && (t_env->object_like_flags & origin_index_to_flag(s->origin.tail))) {
             _ConnsForObject *c = conns + s->origin.tail;
             c->shapes[c->count++] = s;
         }
@@ -57,7 +57,7 @@ void mesh_apply_merge_filter(Arena *arena, int shape_subdivs,
     for (int object_like_i = 0; object_like_i < MAX_FUSELAGE_OBJECTS; ++object_like_i) {
         _ConnsForObject *c = conns + object_like_i;
 
-        OriginFlags object_like_flag = ORIGIN_PART_TO_FLAG(object_like_i);
+        OriginFlag object_like_flag = origin_index_to_flag(object_like_i);
         bool t_is_object_like = t_env->object_like_flags & object_like_flag;
         bool n_is_object_like = n_env->object_like_flags & object_like_flag;
 
@@ -67,7 +67,7 @@ void mesh_apply_merge_filter(Arena *arena, int shape_subdivs,
 
             /* form filter */
 
-            memset(filter, 0, sizeof(OriginFlags) * shape_subdivs); /* reset filter */
+            memset(filter, 0, sizeof(OriginFlag) * shape_subdivs); /* reset filter */
 
             static int outermost_shape_indices[MAX_FUSELAGE_OBJECTS];
             dvec centroid = mesh_polygonize_shape_bundle(c->shapes, c->count, shape_subdivs, verts);
@@ -78,9 +78,9 @@ void mesh_apply_merge_filter(Arena *arena, int shape_subdivs,
                 for (int j = 0; j < count; ++j) {
                     Shape *shape = c->shapes[outermost_shape_indices[j]];
                     if (t_is_object_like)
-                        filter[subdiv_i] |= ORIGIN_PART_TO_FLAG(shape->origin.nose);
+                        filter[subdiv_i] |= origin_index_to_flag(shape->origin.nose);
                     else
-                        filter[subdiv_i] |= ORIGIN_PART_TO_FLAG(shape->origin.tail);
+                        filter[subdiv_i] |= origin_index_to_flag(shape->origin.tail);
                 }
             }
 
@@ -94,7 +94,7 @@ void mesh_apply_merge_filter(Arena *arena, int shape_subdivs,
                     if (slice->origin.tail != object_like_i)
                         continue;
 
-                    OriginFlags conn_flag = ORIGIN_PART_TO_FLAG(slice->origin.nose);
+                    OriginFlag conn_flag = origin_index_to_flag(slice->origin.nose);
 
                     for (int j = slice->beg; ; j = period_incr(j, n_env->count)) {
                         MeshPoint *p = n_env->points + j;
@@ -115,7 +115,7 @@ void mesh_apply_merge_filter(Arena *arena, int shape_subdivs,
                     if (slice->origin.nose != object_like_i)
                         continue;
 
-                    OriginFlags conn_flag = ORIGIN_PART_TO_FLAG(slice->origin.tail);
+                    OriginFlag conn_flag = origin_index_to_flag(slice->origin.tail);
 
                     for (int j = slice->beg; ; j = period_incr(j, t_env->count)) {
                         MeshPoint *p = t_env->points + j;

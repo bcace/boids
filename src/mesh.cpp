@@ -225,8 +225,8 @@ static void _normalized_positions(MeshPoint *env_points, int env_count, int beg,
 static void _mesh_pass_4(Model *model,
                          int t_beg, int t_end, MeshEnv *t_env, int *t_neighbors_map,
                          int n_beg, int n_end, MeshEnv *n_env, int *n_neighbors_map) {
-    static double t_params[SHAPE_MAX_ENVELOPE_POINTS];
-    static double n_params[SHAPE_MAX_ENVELOPE_POINTS];
+    static double t_params[MAX_ENVELOPE_POINTS];
+    static double n_params[MAX_ENVELOPE_POINTS];
     _normalized_positions(t_env->points, t_env->count, t_beg, t_end, t_params);
     _normalized_positions(n_env->points, n_env->count, n_beg, n_end, n_params);
 
@@ -402,7 +402,7 @@ static void _mesh_pass_2(Model *model,
     Origin t_prev_o = t_env->points[prev_t_i].origin;
     Origin n_prev_o = n_env->points[prev_n_i].origin;
 
-    static _Isec t_isecs[SHAPE_MAX_ENVELOPE_POINTS]; /* envelope indices */
+    static _Isec t_isecs[MAX_ENVELOPE_POINTS]; /* envelope indices */
     int t_isecs_count = 0;
 
     for (int t_i = period_incr(prev_t_i, t_env->count); t_i != last_t_i; t_i = period_incr(t_i, t_env->count))
@@ -413,7 +413,7 @@ static void _mesh_pass_2(Model *model,
             isec->next_o = t_prev_o = t_env->points[t_i].origin;
         }
 
-    static _Isec n_isecs[SHAPE_MAX_ENVELOPE_POINTS]; /* envelope indices */
+    static _Isec n_isecs[MAX_ENVELOPE_POINTS]; /* envelope indices */
     int n_isecs_count = 0;
 
     for (int n_i = period_incr(prev_n_i, n_env->count); n_i != last_n_i; n_i = period_incr(n_i, n_env->count))
@@ -478,7 +478,7 @@ static void _mesh_pass_1(Model *model, int shape_subdivs,
                          MeshEnv *n_env, int *n_neighbors_map) {
 
     if (corrs == 0)
-        corrs = (_Corr *)malloc(sizeof(_Corr) * SHAPE_MAX_ENVELOPE_POINTS);
+        corrs = (_Corr *)malloc(sizeof(_Corr) * MAX_ENVELOPE_POINTS);
     int corrs_count = 0;
 
     /* make non-intersection point correlations */
@@ -495,7 +495,7 @@ static void _mesh_pass_1(Model *model, int shape_subdivs,
             int n_poly_beg = n_env->points[n_slice->beg].subdiv_i;
             int n_poly_end = n_env->points[n_slice->end].subdiv_i;
 
-            for (int l = 0; l < SHAPE_MAX_ENVELOPE_POINTS; ++l) {
+            for (int l = 0; l < MAX_ENVELOPE_POINTS; ++l) {
                 int t_env_i = (t_slice->beg + l) % t_env->count;
                 MeshPoint *t_p = t_env->points + t_env_i;
 
