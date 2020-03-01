@@ -2,23 +2,19 @@
 #define dvec_h
 
 
-// TODO: why do we have this?
 struct dvec {
     double x, y;
 };
 
-struct dvec2 {
-    double x, y;
+struct tvec {
+    double x, y, z;
 };
 
-dvec2 dvec_init(double x, double y);
-dvec2 dvec_plus(dvec2 a, dvec2 b);
-dvec2 dvec_minus(dvec2 a, dvec2 b);
-dvec2 dvec_divide(dvec2 a, double b);
-double dvec_dot(dvec2 a, dvec2 b);
-double dvec_cross(dvec2 a, dvec2 b);
-double dvec_length(dvec2 a);
-double dvec_distance(dvec2 a, dvec2 b);
-double dvec_angle(dvec2 a, dvec2 b); /* assumes both vectors are normalized */
+tvec tvec_init(double x, double y, double z);
+tvec tvec_zero();
+tvec tvec_norm(tvec v);
+tvec tvec_scale(tvec v, double s);
+tvec tvec_add(tvec a, tvec b);
+tvec tvec_sub(tvec a, tvec b);
 
 #endif

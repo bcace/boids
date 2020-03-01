@@ -55,7 +55,7 @@ void group_objects(int size, void *objs, int count, GROUP_FUNC func, GroupMaker 
         ++g->count;
     }
 
-    /* initialize groups' indices pointer */
+    /* set up object indices storage, now we have object counts */
 
     int offset = 0;
     for (int i = 0; i < maker->count; ++i) {

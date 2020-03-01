@@ -1,7 +1,7 @@
 #ifndef fuselage_h
 #define fuselage_h
 
-#include "vec.h"
+#include "dvec.h"
 #include "shape.h"
 #include "config.h"
 #include "origin.h"
@@ -22,15 +22,24 @@ struct Objref {
     double x, y, z; /* position, model CS */
     Former t_skin_former, n_skin_former; /* skin formers, model CS */
 
-    /* only used while grouping objects into fuselages */
-    OriginFlag non_clone_origin; /* origin flag where original object and all its clones have the same origin */
-
     /* used for lofting */
     short int t_conns_count;
     short int n_conns_count;
-    vec3 t_tangents[SHAPE_CURVES];
-    vec3 n_tangents[SHAPE_CURVES];
-    OriginPart origin; /* object lofting id */
+
+    union {
+        struct { /* used before lofting */
+            OriginFlag non_clone_origin; /* origin flag where original object and all its clones have the same origin */
+            struct {
+                OriginFlag conn_flags; /* all connected objrefs, in unique origins */
+                OriginFlag non_clone_origins; /* all connected objrefs, in non-clone origins */
+            } t, n;
+        };
+        struct { /* used for lofting */
+            tvec t_tangents[SHAPE_CURVES];
+            tvec n_tangents[SHAPE_CURVES];
+            OriginPart origin; /* object lofting id */
+        };
+    };
 };
 
 struct Conn {
@@ -45,6 +54,8 @@ struct Fuselage {
     int conns_count;
 };
 
+void fuselage_update_conns(Arena *arena, Fuselage *fuselage);
+void fuselage_update_longitudinal_tangents(Fuselage *fuselage);
 void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fuselage);
 
 #endif

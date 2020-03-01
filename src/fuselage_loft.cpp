@@ -7,128 +7,10 @@
 #include <float.h>
 
 
-// TODO: document
-vec3 _calculate_longitudinal_tangent_direction(vec3 pos, vec3 tail_pos, vec3 nose_pos) {
-    vec3 tail_dir = (tail_pos - pos).normalize();
-    vec3 nose_dir = (nose_pos - pos).normalize();
-
-    float tail_angle = acos(-tail_dir.x);
-    float nose_angle = acos(nose_dir.x);
-    float sum_angle = tail_angle + nose_angle;
-
-    if (sum_angle == 0.0)
-        return vec3(1, 0, 0);
-
-    return (nose_dir * tail_angle / sum_angle - tail_dir * nose_angle / sum_angle).normalize();
-}
-
-void _update_longitudinal_tangents(Fuselage *fuselage) {
-
-    /* zero longitudinal tangents */
-
-    for (int i = 0; i < fuselage->objects_count; ++i) {
-        Objref *o_ref = fuselage->objects + i;
-        for (int j = 0; j < SHAPE_CURVES; ++j) {
-            o_ref->t_tangents[j] = vec3(0, 0, 0);
-            o_ref->n_tangents[j] = vec3(0, 0, 0);
-        }
-    }
-
-    /* calculate conn tangents */
-
-    for (int i = 0; i < fuselage->conns_count; ++i) {
-        Conn *conn = fuselage->conns + i;
-        Objref *t_oref = conn->tail_o;
-        Objref *n_oref = conn->nose_o;
-
-        Former *tail_f = &t_oref->n_skin_former;
-        Former *tail_tail_f = &t_oref->t_skin_former;
-        Former *nose_f = &n_oref->t_skin_former;
-        Former *nose_nose_f = &n_oref->n_skin_former;
-        vec3 *t_tangents = t_oref->n_tangents;
-        vec3 *n_tangents = n_oref->t_tangents;
-
-        /* tail */
-
-        for (int j = 0; j < SHAPE_CURVES; ++j) {
-            t_tangents[j] += _calculate_longitudinal_tangent_direction(
-                vec3(tail_f->x, tail_f->shape.curves[j].x, tail_f->shape.curves[j].y),
-                vec3(tail_tail_f->x, tail_tail_f->shape.curves[j].x, tail_tail_f->shape.curves[j].y),
-                vec3(nose_f->x, nose_f->shape.curves[j].x, nose_f->shape.curves[j].y)
-            );
-        }
-
-        /* nose */
-
-        for (int j = 0; j < SHAPE_CURVES; ++j) {
-            n_tangents[j] += _calculate_longitudinal_tangent_direction(
-                vec3(nose_f->x, nose_f->shape.curves[j].x, nose_f->shape.curves[j].y),
-                vec3(tail_f->x, tail_f->shape.curves[j].x, tail_f->shape.curves[j].y),
-                vec3(nose_nose_f->x, nose_nose_f->shape.curves[j].x, nose_nose_f->shape.curves[j].y)
-            );
-        }
-    }
-
-    /* normalize conn tangents and calculate opening tangents */
-
-    for (int i = 0; i < fuselage->objects_count; ++i) {
-        Objref *o_ref = fuselage->objects + i;
-        Object *o = o_ref->object;
-        Former *tail_f = &o_ref->t_skin_former;
-        Former *nose_f = &o_ref->n_skin_former;
-
-        /* tail */
-
-        if (o_ref->t_conns_count == 0) { /* opening tangents */
-
-            for (int j = 0; j < SHAPE_CURVES; ++j) {
-                o_ref->t_tangents[j] = _calculate_longitudinal_tangent_direction(
-                    vec3(tail_f->x, tail_f->shape.curves[j].x, tail_f->shape.curves[j].y),
-                    vec3(tail_f->x - o->tail_endp_dx, o_ref->y, o_ref->z),
-                    vec3(nose_f->x, nose_f->shape.curves[j].x, nose_f->shape.curves[j].y)
-                );
-            }
-        }
-        else { /* conn tangents */
-
-            for (int j = 0; j < SHAPE_CURVES; ++j) {
-                vec3 *v = o_ref->t_tangents + j;
-                float l = sqrt(v->x * v->x + v->y * v->y + v->z * v->z);
-                v->x /= l;
-                v->y /= l;
-                v->z /= l;
-            }
-        }
-
-        /* nose */
-
-        if (o_ref->n_conns_count == 0) { /* opening tangents */
-
-            for (int j = 0; j < SHAPE_CURVES; ++j) {
-                o_ref->n_tangents[j] = _calculate_longitudinal_tangent_direction(
-                    vec3(nose_f->x, nose_f->shape.curves[j].x, nose_f->shape.curves[j].y),
-                    vec3(tail_f->x, tail_f->shape.curves[j].x, tail_f->shape.curves[j].y),
-                    vec3(nose_f->x + o->nose_endp_dx, o_ref->y, o_ref->z)
-                );
-            }
-        }
-        else { /* conn tangents */
-
-            for (int j = 0; j < SHAPE_CURVES; ++j) {
-                vec3 *v = o_ref->n_tangents + j;
-                float l = sqrt(v->x * v->x + v->y * v->y + v->z * v->z);
-                v->x /= l;
-                v->y /= l;
-                v->z /= l;
-            }
-        }
-    }
-}
-
 /* Returns a shape that represents a section of object or connection. */
 static void _get_skin_section(float x, Shape *shape,
-                              Former *tail_f, vec3 *tail_l_tangents, vec3 tail_o_p, bool t_is_merge,
-                              Former *nose_f, vec3 *nose_l_tangents, vec3 nose_o_p, bool n_is_merge) {
+                              Former *tail_f, tvec *t_tangents, vec3 tail_o_p, bool t_is_merge,
+                              Former *nose_f, tvec *n_tangents, vec3 nose_o_p, bool n_is_merge) {
     Curve *t_curves = tail_f->shape.curves;
     Curve *n_curves = nose_f->shape.curves;
 
@@ -141,14 +23,35 @@ static void _get_skin_section(float x, Shape *shape,
     float smooth_t = SMOOTHSTEP(t);
 
     for (int i = 0; i < SHAPE_CURVES; ++i) {
-        vec3 p1 = vec3(tail_f->x, (float)t_curves[i].x, (float)t_curves[i].y);
-        vec3 c1 = p1 + tail_l_tangents[i] * dc;
-        vec3 p2 = vec3(nose_f->x, (float)n_curves[i].x, (float)n_curves[i].y);
-        vec3 c2 = p2 - nose_l_tangents[i] * dc;
+        Curve *t_curve = t_curves + i;
+        Curve *n_curve = n_curves + i;
+        tvec t_tangent = t_tangents[i];
+        tvec n_tangent = n_tangents[i];
 
-        vec3 p = bezier(p1, c1, c2, p2, t);
+        tvec p1, c1, c2, p2;
+
+        p1.x = tail_f->x;
+        p1.y = t_curve->x;
+        p1.z = t_curve->y;
+
+        c1.x = p1.x + t_tangent.x * dc;
+        c1.y = p1.y + t_tangent.y * dc;
+        c1.z = p1.z + t_tangent.z * dc;
+
+        p2.x = nose_f->x;
+        p2.y = n_curve->x;
+        p2.z = n_curve->y;
+
+        c2.x = p2.x - n_tangent.x * dc;
+        c2.y = p2.y - n_tangent.y * dc;
+        c2.z = p2.z - n_tangent.z * dc;
+
+        tvec p = cube_bezier_3d(p1, c1, c2, p2, t);
+
         shape->curves[i].x = p.y;
         shape->curves[i].y = p.z;
+
+        /* merge delay */
 
         if (t_is_merge && n_is_merge) {
             if (t < TWO_SIDE_MERGE_DELAY)
@@ -241,7 +144,6 @@ struct _Section {
 
 /* Main fuselage lofting function. Generates fuselage skin panels. */
 void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fuselage) {
-    _update_longitudinal_tangents(fuselage);
 
     int shape_subdivs = SHAPE_CURVE_SAMPLES * SHAPE_CURVES;
 
@@ -300,6 +202,7 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
     /* create all section positions */
 
     const static int MAX_STATIONS = 1000;
+
     _Station *stations2 = arena->alloc<_Station>(MAX_STATIONS);
     int stations2_count = 1;
 

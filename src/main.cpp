@@ -1,7 +1,6 @@
 #include "model.h"
 #include "object.h"
 #include "warehouse.h"
-#include "loft.h"
 #include "mesh.h"
 #include "platform.h"
 #include "graphics.h"
@@ -15,8 +14,6 @@
 #include "vec.h"
 #define MAT_IMPL
 #include "mat.h"
-#define INTERP_IMPL
-#include "interp.h"
 #include "ochre.h"
 #include "arena.h"
 #include "apame.h"
@@ -339,10 +336,10 @@ int main() {
     plat_set_mousebutton_callback(_mousebutton_callback);
 
     vec2 screen = plat_get_screen();
-    crosshair_verts[0] = vec3(screen.x * 0.5 - 10.0, screen.y * 0.5, 0.0);
-    crosshair_verts[1] = vec3(screen.x * 0.5 + 10.0, screen.y * 0.5, 0.0);
-    crosshair_verts[2] = vec3(screen.x * 0.5, screen.y * 0.5 - 10.0, 0.0);
-    crosshair_verts[3] = vec3(screen.x * 0.5, screen.y * 0.5 + 10.0, 0.0);
+    crosshair_verts[0] = vec3(screen.x * 0.5f - 10.0f, screen.y * 0.5f, 0.0f);
+    crosshair_verts[1] = vec3(screen.x * 0.5f + 10.0f, screen.y * 0.5f, 0.0f);
+    crosshair_verts[2] = vec3(screen.x * 0.5f, screen.y * 0.5f - 10.0f, 0.0f);
+    crosshair_verts[3] = vec3(screen.x * 0.5f, screen.y * 0.5f + 10.0f, 0.0f);
 
     init_model_draw();
 

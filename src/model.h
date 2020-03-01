@@ -85,4 +85,6 @@ void model_dump_mesh(Model *model, const char *path);
 
 void model_update_skin_verts_values(Model *model, SkinVertColorSource source);
 
+void loft_model(struct Arena *arena, struct Model *model);
+
 #endif

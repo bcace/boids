@@ -2,57 +2,47 @@
 #include <math.h>
 
 
-dvec2 dvec_init(double x, double y) {
-    dvec2 c;
-    c.x = x;
-    c.y = y;
-    return c;
+tvec tvec_init(double x, double y, double z) {
+    tvec v;
+    v.x = x;
+    v.y = y;
+    v.z = z;
+    return v;
 }
 
-dvec2 dvec_plus(dvec2 a, dvec2 b) {
-    dvec2 c;
-    c.x = a.x + b.x;
-    c.y = a.y + b.y;
-    return c;
+tvec tvec_zero() {
+    tvec v;
+    v.x = v.y = v.z = 0.0;
+    return v;
 }
 
-dvec2 dvec_minus(dvec2 a, dvec2 b) {
-    dvec2 c;
-    c.x = a.x - b.x;
-    c.y = a.y - b.y;
-    return c;
+tvec tvec_norm(tvec v) {
+    double l = sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+    v.x /= l;
+    v.y /= l;
+    v.z /= l;
+    return v;
 }
 
-dvec2 dvec_divide(dvec2 a, double b) {
-    dvec2 c;
-    c.x = a.x / b;
-    c.y = a.y / b;
-    return c;
+tvec tvec_scale(tvec v, double s) {
+    v.x *= s;
+    v.y *= s;
+    v.z *= s;
+    return v;
 }
 
-double dvec_dot(dvec2 a, dvec2 b) {
-    return a.x * b.x + a.y * b.y;
+tvec tvec_add(tvec a, tvec b) {
+    tvec v;
+    v.x = a.x + b.x;
+    v.y = a.y + b.y;
+    v.z = a.z + b.z;
+    return v;
 }
 
-double dvec_cross(dvec2 a, dvec2 b) {
-    return a.x * b.y - a.y * b.x;
-}
-
-double dvec_length(dvec2 a) {
-    return sqrt(a.x * a.x + a.y * a.y);
-}
-
-double dvec_distance(dvec2 a, dvec2 b) {
-    double dx = b.x - a.x;
-    double dy = b.y - a.y;
-    return sqrt(dx * dx + dy * dy);
-}
-
-double dvec_angle(dvec2 a, dvec2 b) {
-    double dot = a.x * b.x + a.y * b.y;
-    if (dot < -1.0)
-        dot = -1.0;
-    else if (dot > 1.0)
-        dot = 1.0;
-    return acos(dot);
+tvec tvec_sub(tvec a, tvec b) {
+    tvec v;
+    v.x = a.x - b.x;
+    v.y = a.y - b.y;
+    v.z = a.z - b.z;
+    return v;
 }
