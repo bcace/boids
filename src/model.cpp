@@ -5,22 +5,25 @@
 #include <assert.h>
 
 
+Model::Model() : objects_count(0), wings_count(0) {}
+
 Model::~Model() {
     clear();
 }
 
 void Model::clear() {
-    for (int i = 0; i < objects.count; ++i)
+    for (int i = 0; i < objects_count; ++i)
         delete objects[i];
-    objects.clear();
+    objects_count = 0;
 }
 
 void Model::add_object(Object *o) {
-    objects.add(o);
+    break_assert(objects_count < MAX_ELEMENTS);
+    objects[objects_count++] = o;
 }
 
 void Model::deselect_all() {
-    for (int i = 0; i < objects.count; ++i) {
+    for (int i = 0; i < objects_count; ++i) {
         objects[i]->selected = false;
         objects[i]->deselect_all_handles();
     }
@@ -29,7 +32,7 @@ void Model::deselect_all() {
 bool Model::move_selected(vec3 move_xyz, vec3 target_yz) {
     bool requires_reloft = false;
 
-    for (int i = 0; i < objects.count; ++i) {
+    for (int i = 0; i < objects_count; ++i) {
         Object *obj = objects[i];
 
         /* move objects */
@@ -78,11 +81,13 @@ bool Model::delete_selected() {
 
     /* remove selected objects */
 
-    for (int i = 0; i < objects.count;) {
+    for (int i = 0; i < objects_count;) {
         Object *o = objects[i];
 
         if (o->selected) {
-            objects.remove_at(i);
+            --objects_count;
+            for (int j = i; j < objects_count; ++j)
+                objects[j] = objects[j + 1];
             requires_reloft = true;
         }
         else

@@ -15,14 +15,14 @@ unsigned int object_handle_pick_category;
 void Model::draw_triangles(ShaderProgram &program, mat4_stack &mv_stack, PickResult &pick_result) {
     void *hovered_pickable = decode_pick_result(pick_result);
 
-    for (int i = 0; i < objects.count; ++i)
+    for (int i = 0; i < objects_count; ++i)
         objects[i]->draw_triangles(program, mv_stack, hovered_pickable);
 }
 
 void Model::draw_outlines(ShaderProgram &program, mat4_stack &mv_stack, vec3 camera_pos) {
     graph_line_width(2);
 
-    for (int i = 0; i < objects.count; ++i)
+    for (int i = 0; i < objects_count; ++i)
         objects[i]->draw_outlines(program, mv_stack, camera_pos);
 }
 
@@ -36,7 +36,7 @@ void Model::draw_skin_triangles(ShaderProgram &program, mat4_stack &mv_stack, Pi
 void Model::draw_skin_outlines(ShaderProgram &program, mat4_stack &mv_stack, vec3 camera_pos) {
     graph_line_width(2);
 
-    for (int i = 0; i < objects.count; ++i)
+    for (int i = 0; i < objects_count; ++i)
         objects[i]->skin_mantle.draw_outlines(program, mv_stack, vec4(0.2, 0.2, 0.2, 1), camera_pos);
 }
 
@@ -67,7 +67,7 @@ void Model::pick(ShaderProgram &program, mat4_stack &mv_stack) {
     graph_enable_blend(false);
     graph_enable_smooth_line(false);
 
-    for (int i = 0; i < objects.count; ++i) {
+    for (int i = 0; i < objects_count; ++i) {
         objects[i]->model_mantle.draw_triangles(program, mv_stack, pick_encode(object_model_pick_category, i));
         objects[i]->pick_handles(program, mv_stack, object_handle_pick_category, i);
     }
@@ -101,7 +101,7 @@ bool Model::maybe_drag_selection(PickResult &pick_result, bool ctrl_pressed) {
 
             object->selected = !object->selected;
             if (object->selected) {
-                for (int i = 0; i < objects.count; ++i) /* prepare objects for dragging */
+                for (int i = 0; i < objects_count; ++i) /* prepare objects for dragging */
                     objects[i]->reset_drag_p();
                 do_drag = true;
             }
@@ -131,7 +131,7 @@ void init_model_draw() {
 }
 
 void model_update_object_mantles(Model *model) {
-    for (int i = 0; i < model->objects.count; ++i)
+    for (int i = 0; i < model->objects_count; ++i)
         object_update_mantle(model->objects[i]);
 }
 

@@ -14,12 +14,6 @@
 #define COLL_VERTS_PER_CURVE    4
 #define COLL_VERTS_PER_PRISM    (SHAPE_CURVES * COLL_VERTS_PER_CURVE)
 
-// TODO: divide these into drawing and collision versions
-#define SECTION_SPLINE_SUBDIVS  10
-#define SECTION_SPLINE_DT       (1.0f / SECTION_SPLINE_SUBDIVS)
-
-#define MAX_ENVELOPE_FORMERS    8
-
 #define HANDLE_VERTS            8
 #define HANDLE_SIZE             0.02f
 

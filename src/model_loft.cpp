@@ -39,7 +39,7 @@ bool _objects_overlap(Objref *a, Objref *b) {
 /* Main loft function. */
 void loft_model(Arena *arena, Model *model) {
 
-    if (model->objects.count == 0) /* if model has no objects we're done */
+    if (model->objects_count == 0) /* if model has no objects we're done */
         return;
 
     arena->clear();
@@ -49,12 +49,12 @@ void loft_model(Arena *arena, Model *model) {
 
     /* create object references from model objects, including clones */
 
-    Objref *o_refs = arena->alloc<Objref>(model->objects.count * 2);
+    Objref *o_refs = arena->alloc<Objref>(model->objects_count * 2);
     int o_refs_count = 0;
 
-    break_assert(model->objects.count <= MAX_FUSELAGE_OBJECTS); // TODO: remove this once max number of objects in the model is the same as that of fuselages
+    break_assert(model->objects_count <= MAX_FUSELAGE_OBJECTS); // TODO: remove this once max number of objects in the model is the same as that of fuselages
 
-    for (int i = 0; i < model->objects.count; ++i) {
+    for (int i = 0; i < model->objects_count; ++i) {
         Object *o = model->objects[i];
 
         Objref *o_ref = o_refs + o_refs_count++;

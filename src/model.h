@@ -1,9 +1,8 @@
 #ifndef model_h
 #define model_h
 
-#include "array.h"
-
 #define MAX_ELEMENTS    32 // TODO: rename to MAX_OBJECTS, or make it the same as MAX_FUSELAGE_OBJECTS
+#define MAX_WINGS       32
 #define MAX_FUSELAGES   32
 
 #define DRAW_CORRS      0 /* just for debugging */
@@ -11,6 +10,7 @@
 
 struct vec3;
 struct vec4;
+struct Wing;
 struct Arena;
 struct Serial;
 struct Object;
@@ -29,7 +29,10 @@ struct Panel {
 };
 
 struct Model {
-    array<Object *, MAX_ELEMENTS> objects;
+    Object *objects[MAX_ELEMENTS];
+    int objects_count;
+    Wing *wings[MAX_WINGS];
+    int wings_count;
 
     vec3 *skin_verts;
     int skin_verts_count;
@@ -50,6 +53,7 @@ struct Model {
     Panel *panels;
     int panels_count;
 
+    Model();
     ~Model();
 
     void clear();

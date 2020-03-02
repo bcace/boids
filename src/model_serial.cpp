@@ -34,8 +34,8 @@ void model_serialize(Model *model, const char *path) {
     serial_clear(&file);
 
     /* objects */
-    serial_write_i32(&file, &model->objects.count, 1);
-    for (int i = 0; i < model->objects.count; ++i) {
+    serial_write_i32(&file, &model->objects_count, 1);
+    for (int i = 0; i < model->objects_count; ++i) {
         Object *o = model->objects[i];
 
         /* object position */

@@ -30,7 +30,7 @@ bool Model::collide(Arena *arena, bool dragging) {
         ochre_clear_data(state);
 
         // object nodes
-        for (int i = 0; i < objects.count; ++i) {
+        for (int i = 0; i < objects_count; ++i) {
             Object *o = objects[i];
             o->dragging = o->selected && dragging;
             ochre_add_node(objects_group, o);
@@ -42,7 +42,7 @@ bool Model::collide(Arena *arena, bool dragging) {
         return false;
 
     // postprocess
-    for (int i = 0; i < objects.count; ++i) {
+    for (int i = 0; i < objects_count; ++i) {
         Object *o = objects[i];
         if (object_should_be_centered(o))
             o->p.y = 0.0f;
