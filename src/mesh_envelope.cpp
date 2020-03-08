@@ -52,7 +52,8 @@ static void _add_mesh_point(MeshEnv *env, EnvPoint *ep, int i1, int i2, int vert
     mp->n_is_outermost = true;
 }
 
-/* Check if current non-intersection point should be skipped. */
+/* Check if current non-intersection point should be skipped. This could be due
+to previous or next point being intersection. */
 static inline bool _do_we_skip_non_intersection(bool prev_is_intersection, double prev_t2,
                                                 bool next_is_intersection, double next_t1) {
     if (prev_is_intersection && prev_t2 > ONE_MINUS_COLLAPSE_MARGIN)
@@ -115,13 +116,13 @@ static int _mesh_envs_pass_3(float section_x, vec3 *verts, int verts_count,
             next_t1 = next_ep->t1;
         }
 
-        if (!ep->is_intersection)
-            skip = _do_we_skip_non_intersection(prev_is_intersection, prev_t2,
-                                                next_is_intersection, next_t1);
-        else
+        if (ep->is_intersection)
             _do_we_fix_intersection_i1_i2(prev_is_intersection, prev_i1,
                                           next_is_intersection, next_i2,
                                           ep->t1, ep->t2, &i1, &i2);
+        else
+            skip = _do_we_skip_non_intersection(prev_is_intersection, prev_t2,
+                                                next_is_intersection, next_t1);
 
         if (!skip) {
             _add_mesh_point(env, ep, i1, i2, verts_count);
@@ -437,7 +438,7 @@ static void _mesh_envs_pass_1(Model *model, Arena *verts_arena, float section_x,
     _update_mesh_envelope_slices(n_env);
 }
 
-/* Handles simple case when there's only one envelope. */
+/* Handles simple case when there's only one shape in envelope. */
 void _mesh_envs_pass_0(Model *model, Arena *verts_arena, float section_x,
                        MeshEnv *env, Shape **shapes, int shapes_count, EnvPoint *env_points) {
 
@@ -446,7 +447,7 @@ void _mesh_envs_pass_0(Model *model, Arena *verts_arena, float section_x,
     int count = mesh_trace_envelope(env_points, shapes, shapes_count, SHAPE_CURVE_SAMPLES, &env->object_like_flags);
     model_assert(model, count != -1, "envelope_trace_failed");
 
-    /* copy data from envelope points to mesh points */
+    /* make mesh envelope from trace envelope */
 
     env->count = 0;
     env->verts_base_i = model->skin_verts_count;
