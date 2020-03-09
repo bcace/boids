@@ -57,7 +57,7 @@ void model_serialize(Model *model, const char *path) {
 }
 
 void model_deserialize(Model *model, const char *path) {
-    model->clear();
+    model_clear(model);
 
     serial_read_from_file(&file, path);
 
@@ -66,7 +66,7 @@ void model_deserialize(Model *model, const char *path) {
     serial_read_i32(&file, &objects_count, 1);
     for (int i = 0; i < objects_count; ++i) {
         Object *o = new Object();
-        model->add_object(o);
+        model_add_object(model, o);
 
         /* object position */
         serial_read_f32(&file, o->p.v, 3);

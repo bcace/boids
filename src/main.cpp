@@ -41,7 +41,7 @@ Arena arena(1000000);
 void _recalculate_model() {
     mantle_clear_arena();
     model_update_object_mantles(&model);
-    loft_model(&arena, &model);
+    model_loft(&arena, &model);
 #ifdef BOIDS_USE_APAME
     boids_apame_run(&model);
     model_update_skin_verts_values(&model, VX);
@@ -54,7 +54,7 @@ void _mousebutton_callback(int button, int action, int mods) {
     if (button == PLATFORM_LEFT) {
         if (action == PLATFORM_PRESS) {
             if (warehouse.is_open) {
-                model.add_object(warehouse.make_selected_part(camera.pos, camera.dir));
+                model_add_object(&model, warehouse.make_selected_part(camera.pos, camera.dir));
                 _recalculate_model();
             }
             if (model.maybe_drag_selection(pick_result, (mods & PLATFORM_MOD_CTRL) != 0))

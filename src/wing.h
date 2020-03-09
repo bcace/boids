@@ -26,7 +26,7 @@ LOFTING:
 */
 
 /* Struct used for wing cutting through fuselage. */
-struct WStation {
+struct Cutter {
     union {
         struct {
             double lx, ly; /* left cutter point (origin of left line) */

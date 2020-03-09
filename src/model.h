@@ -3,7 +3,6 @@
 
 #include "element.h"
 
-#define MAX_WINGS       32
 #define MAX_FUSELAGES   32
 
 #define DRAW_CORRS      0 /* just for debugging */
@@ -32,7 +31,7 @@ struct Panel {
 struct Model {
     Object *objects[MAX_ELEMS];
     int objects_count;
-    Wing *wings[MAX_WINGS];
+    Wing *wings[MAX_ELEMS];
     int wings_count;
 
     vec3 *skin_verts;
@@ -57,8 +56,6 @@ struct Model {
     Model();
     ~Model();
 
-    void clear();
-    void add_object(Object *o);
     void deselect_all();
     bool move_selected(vec3 move_xyz, vec3 target_yz);
     bool delete_selected();
@@ -79,17 +76,21 @@ struct Model {
     bool maybe_drag_selection(PickResult &pick_result, bool ctrl_pressed);
 };
 
-void model_init_ochre_state();
-void init_model_draw();
-
-void model_update_object_mantles(Model *model);
+void model_clear(Model *m);
+void model_add_object(Model *m, Object *o);
+void model_add_wing(Model *m, Wing *w);
 
 void model_serialize(Model *model, const char *path);
 void model_deserialize(Model *model, const char *path);
 void model_dump_mesh(Model *model, const char *path);
 
+void model_init_ochre_state();
+void init_model_draw();
+
+void model_update_object_mantles(Model *model);
+
 void model_update_skin_verts_values(Model *model, SkinVertColorSource source);
 
-void loft_model(struct Arena *arena, struct Model *model);
+void model_loft(Arena *arena, Model *model);
 
 #endif

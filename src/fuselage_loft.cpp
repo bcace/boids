@@ -146,15 +146,19 @@ struct _Section {
 void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fuselage) {
     int shape_subdivs = SHAPE_CURVE_SAMPLES * SHAPE_CURVES;
 
-    /* set object origins and get fuselage extents */
+    /* assign object id, get fuselage extents and get required stations */
 
     float min_x = FLT_MAX, max_x = -FLT_MAX;
     float min_y = FLT_MAX, max_y = -FLT_MAX;
     float min_z = FLT_MAX, max_z = -FLT_MAX;
 
+    _Station *stations1 = arena->alloc<_Station>(MAX_ELEM_REFS * 2);
+    int stations1_count = 0;
+
     for (int i = 0; i < fuselage->objects_count; ++i) {
         Objref *o_ref = fuselage->objects + i;
         Object *o = o_ref->object;
+
         o_ref->id = i; /* assigning object origin */
 
         if (o->min_x < min_x)
@@ -170,20 +174,8 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
             max_y = o->max_y;
         if (o->max_z > max_z)
             max_z = o->max_z;
-    }
 
-    /* estimate mesh size along x */
-
-    float mesh_size = ((max_y - min_y) + (max_z - min_z)) * 2.0f / shape_subdivs;
-
-    /* find all the fixed section positions (stations) */
-
-    _Station *stations1 = arena->alloc<_Station>(MAX_ELEM_REFS * 2);
-    int stations1_count = 0;
-
-    for (int i = 0; i < fuselage->objects_count; ++i) {
-        Objref *o_ref = fuselage->objects + i;
-        Object *o = o_ref->object;
+        /* required stations */
 
         if (o_ref->t_conns_count == 0) /* tailwise opening */
             stations1_count = _insert_station(stations1, stations1_count,
@@ -193,6 +185,17 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
             stations1_count = _insert_station(stations1, stations1_count,
                                               o->max_x, flags_zero(), flags_make(o_ref->id));
     }
+
+    /* TODO: assign wing id, get required stations */
+
+    // float w_stations[MAX_ELEM_REFS];
+
+    // for (int i = 0; i < fuselage->wrefs_count; ++i) {
+    //     Wref *wref = fuselage->wrefs + i;
+    //     Wing *w = wref->wing;
+
+    //     int count = wing_get_required_stations()
+    // }
 
     // TODO: merge stations that are too close, use mesh size to estimate
 
@@ -206,6 +209,8 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
     int stations2_count = 1;
 
     stations2[0] = stations1[0];
+
+    float mesh_size = ((max_y - min_y) + (max_z - min_z)) * 2.0f / shape_subdivs;
 
     for (int i = 1; i < stations1_count; ++i) {
         _Station *s1 = stations1 + i - 1;

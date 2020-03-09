@@ -8,18 +8,26 @@
 Model::Model() : objects_count(0), wings_count(0) {}
 
 Model::~Model() {
-    clear();
+    model_clear(this);
 }
 
-void Model::clear() {
-    for (int i = 0; i < objects_count; ++i)
-        delete objects[i];
-    objects_count = 0;
+void model_clear(Model *m) {
+    for (int i = 0; i < m->objects_count; ++i)
+        delete m->objects[i];
+    m->objects_count = 0;
+    for (int i = 0; i < m->wings_count; ++i)
+        delete m->wings[i];
+    m->wings_count = 0;
 }
 
-void Model::add_object(Object *o) {
-    break_assert(objects_count < MAX_ELEMS);
-    objects[objects_count++] = o;
+void model_add_object(Model *m, Object *o) {
+    break_assert(m->objects_count + m->wings_count < MAX_ELEMS);
+    m->objects[m->objects_count++] = o;
+}
+
+void model_add_wing(Model *m, Wing *w) {
+    break_assert(m->objects_count + m->wings_count < MAX_ELEMS);
+    m->wings[m->wings_count++] = w;
 }
 
 void Model::deselect_all() {

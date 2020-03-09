@@ -37,7 +37,7 @@ bool _objects_overlap(Objref *a, Objref *b) {
 }
 
 /* Main loft function. */
-void loft_model(Arena *arena, Model *model) {
+void model_loft(Arena *arena, Model *model) {
 
     if (model->objects_count == 0) /* if model has no objects we're done */
         return;
