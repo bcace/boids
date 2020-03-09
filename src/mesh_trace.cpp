@@ -46,16 +46,16 @@ struct _Poly {
     Shape *shapes[MAX_ENVELOPE_SHAPES];
     int shapes_count;
     dvec *verts;
-    Origin origin;
+    Ids ids;
     int verts_count;
     _Bounds bounds[SHAPE_CURVES];
     dvec center;
 };
 
-static inline void _init_poly(_Poly *poly, OriginPart t_origin, OriginPart n_origin) {
+static inline void _init_poly(_Poly *poly, Id t_id, Id n_id) {
     poly->shapes_count = 0;
-    poly->origin.tail = t_origin;
-    poly->origin.nose = n_origin;
+    poly->ids.tail = t_id;
+    poly->ids.nose = n_id;
     for (int i = 0; i < SHAPE_CURVES; ++i) {
         _Bounds *bounds = poly->bounds + i;
         bounds->min.x = DBL_MAX;
@@ -90,7 +90,7 @@ static inline bool _should_bundle_shapes(Shape *a, Shape *b, double mx, double m
 }
 
 /* Main envelope tracing function. TODO: describe arguments. */
-int mesh_trace_envelope(EnvPoint *env_points, Shape **shapes, int shapes_count, int curve_subdivs, OriginFlag *object_like_flags) {
+int mesh_trace_envelope(EnvPoint *env_points, Shape **shapes, int shapes_count, int curve_subdivs, Flags *object_like_flags) {
     break_assert(shapes_count < MAX_ENVELOPE_SHAPES);
     break_assert(curve_subdivs >= MIN_CURVE_SUBDIVS);
     break_assert(curve_subdivs <= MAX_CURVE_SUBDIVS);
@@ -120,12 +120,12 @@ int mesh_trace_envelope(EnvPoint *env_points, Shape **shapes, int shapes_count, 
             - If conn shape whose neither origin parts are bundled - single shape poly.
             - Else, add shape to appropriate bundle poly. */
 
-        _Poly *bundle_polys_map[MAX_FUSELAGE_OBJECTS];
-        memset(bundle_polys_map, 0, sizeof(_Poly *) * MAX_FUSELAGE_OBJECTS);
+        _Poly *bundle_polys_map[MAX_ELEM_REFS];
+        memset(bundle_polys_map, 0, sizeof(_Poly *) * MAX_ELEM_REFS);
 
         for (int a_i = 0; a_i < shapes_count; ++a_i) {
             Shape *a = shapes[a_i];
-            if (a->origin.tail == a->origin.nose) /* conn shapes only */
+            if (a->ids.tail == a->ids.nose) /* conn shapes only */
                 continue;
 
             double a_dx = a->curves[0].x - a->curves[2].x;
@@ -133,11 +133,11 @@ int mesh_trace_envelope(EnvPoint *env_points, Shape **shapes, int shapes_count, 
 
             for (int b_i = a_i + 1; b_i < shapes_count; ++b_i) {
                 Shape *b = shapes[b_i];
-                if (b->origin.tail == b->origin.nose) /* conn shapes only */
+                if (b->ids.tail == b->ids.nose) /* conn shapes only */
                     continue;
 
-                bool t_merge = a->origin.tail == b->origin.tail;
-                bool n_merge = a->origin.nose == b->origin.nose;
+                bool t_merge = a->ids.tail == b->ids.tail;
+                bool n_merge = a->ids.nose == b->ids.nose;
 
                 if (t_merge == n_merge) /* must belong to same merge group */
                     continue;
@@ -148,7 +148,7 @@ int mesh_trace_envelope(EnvPoint *env_points, Shape **shapes, int shapes_count, 
                 double my = ((a_dy > b_dy) ? a_dy : b_dy) * BUNDLE_MARGIN_FACTOR;
 
                 if (_should_bundle_shapes(a, b, mx, my)) {
-                    OriginPart o_origin = t_merge ? a->origin.tail : a->origin.nose;
+                    Id o_origin = t_merge ? a->ids.tail : a->ids.nose;
                     if (bundle_polys_map[o_origin] == 0) {
                         _Poly *p = polys + polys_count++;
                         bundle_polys_map[o_origin] = p;
@@ -161,16 +161,16 @@ int mesh_trace_envelope(EnvPoint *env_points, Shape **shapes, int shapes_count, 
         for (int i = 0; i < shapes_count; ++i) {
             Shape *s = shapes[i];
 
-            if (s->origin.tail == s->origin.nose) { /* object shape */
+            if (s->ids.tail == s->ids.nose) { /* object shape */
                 _Poly *p = polys + polys_count++;
-                _init_poly(p, s->origin.tail, s->origin.nose);
+                _init_poly(p, s->ids.tail, s->ids.nose);
                 p->shapes[p->shapes_count++] = s;
             }
             else { /* conn shape */
-                _Poly *t_bundle_p = bundle_polys_map[s->origin.tail];
-                _Poly *n_bundle_p = bundle_polys_map[s->origin.nose];
+                _Poly *t_bundle_p = bundle_polys_map[s->ids.tail];
+                _Poly *n_bundle_p = bundle_polys_map[s->ids.nose];
 
-                break_assert(t_bundle_p == 0 || n_bundle_p == 0); /* shape sohuld not be in two bundles at the same time */
+                break_assert(t_bundle_p == 0 || n_bundle_p == 0); /* shape should not be in two bundles at the same time */
 
                 if (t_bundle_p)
                     t_bundle_p->shapes[t_bundle_p->shapes_count++] = s;
@@ -178,7 +178,7 @@ int mesh_trace_envelope(EnvPoint *env_points, Shape **shapes, int shapes_count, 
                     n_bundle_p->shapes[n_bundle_p->shapes_count++] = s;
                 else {
                     _Poly *p = polys + polys_count++;
-                    _init_poly(p, s->origin.tail, s->origin.nose);
+                    _init_poly(p, s->ids.tail, s->ids.nose);
                     p->shapes[p->shapes_count++] = s;
                 }
             }
@@ -187,12 +187,12 @@ int mesh_trace_envelope(EnvPoint *env_points, Shape **shapes, int shapes_count, 
 
     /* collect all object-like polygons */
 
-    *object_like_flags = 0ull;
+    flags_init(object_like_flags);
 
     for (int i = 0; i < polys_count; ++i) {
         _Poly *p = polys + i;
-        if (p->origin.tail == p->origin.nose)
-            *object_like_flags |= origin_index_to_flag(p->origin.tail);
+        if (p->ids.tail == p->ids.nose)
+            flags_add(object_like_flags, p->ids.tail);
     }
 
     /* sample polygons */
@@ -232,7 +232,7 @@ int mesh_trace_envelope(EnvPoint *env_points, Shape **shapes, int shapes_count, 
                 dvec *verts = env_arena.lock<dvec>(shape_subdivs * p->shapes_count);
                 dvec centroid = mesh_polygonize_shape_bundle(p->shapes, p->shapes_count, shape_subdivs, verts);
 
-                static int outermost_shape_indices[MAX_FUSELAGE_OBJECTS];
+                static int outermost_shape_indices[MAX_ELEM_REFS];
                 double subdiv_da = TAU / shape_subdivs;
 
                 for (int subdiv_i = 0; subdiv_i < shape_subdivs; ++subdiv_i) { /* find outermost vertex for each subdivision */
@@ -440,7 +440,7 @@ int mesh_trace_envelope(EnvPoint *env_points, Shape **shapes, int shapes_count, 
                         beg_point.i1 = (j == 0) ? (shape_subdivs - 1) : (j - 1);
                         beg_point.i2 = j;
                         beg_point.subdiv_i = j;
-                        beg_point.origin = poly->origin;
+                        beg_point.ids = poly->ids;
                         beg_min_x = p.x;
                     }
                 }
@@ -631,7 +631,7 @@ int mesh_trace_envelope(EnvPoint *env_points, Shape **shapes, int shapes_count, 
                 point.t2 = 0.0;
                 point.x = polys[point_poly_i].verts[point.subdiv_i].x;
                 point.y = polys[point_poly_i].verts[point.subdiv_i].y;
-                point.origin = polys[point_poly_i].origin;
+                point.ids = polys[point_poly_i].ids;
             }
             else {                      /* intersection found */
                 point.is_intersection = true;
@@ -643,7 +643,7 @@ int mesh_trace_envelope(EnvPoint *env_points, Shape **shapes, int shapes_count, 
                 point.t2 = min_t2;
                 point.x = min_p.x;
                 point.y = min_p.y;
-                point.origin = polys[min_poly_i].origin;
+                point.ids = polys[min_poly_i].ids;
             }
 
             if (!point.is_intersection &&

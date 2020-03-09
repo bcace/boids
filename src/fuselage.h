@@ -4,7 +4,7 @@
 #include "dvec.h"
 #include "shape.h"
 #include "config.h"
-#include "origin.h"
+#include "element.h"
 #include "constants.h"
 
 #define MAX_FUSELAGE_CONNS  32
@@ -28,16 +28,16 @@ struct Objref {
 
     union {
         struct { /* used before lofting */
-            OriginFlag non_clone_origin; /* origin flag where original object and all its clones have the same origin */
+            Flags non_clone_origin; /* origin flag where original object and all its clones have the same origin */
             struct {
-                OriginFlag conn_flags; /* all connected objrefs, in unique origins */
-                OriginFlag non_clone_origins; /* all connected objrefs, in non-clone origins */
+                Flags conn_flags; /* all connected objrefs, in unique origins */
+                Flags non_clone_origins; /* all connected objrefs, in non-clone origins */
             } t, n;
         };
         struct { /* used for lofting */
             tvec t_tangents[SHAPE_CURVES];
             tvec n_tangents[SHAPE_CURVES];
-            OriginPart origin; /* object lofting id */
+            Id id; /* object lofting id */
         };
     };
 };
@@ -48,7 +48,7 @@ struct Conn {
 };
 
 struct Fuselage {
-    Objref objects[MAX_FUSELAGE_OBJECTS];
+    Objref objects[MAX_ELEM_REFS];
     int objects_count;
     Conn conns[MAX_FUSELAGE_CONNS];
     int conns_count;

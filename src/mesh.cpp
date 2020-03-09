@@ -65,10 +65,10 @@ void mesh_init(Model *model) {
 }
 
 // TODO: maybe bundle this somewhere with Origin
-static bool _origins_related(Origin tail_origin, Origin nose_origin) {
-    if (tail_origin.nose == nose_origin.tail) /* two shapes of the same object, one object and one connection shape */
+static bool _origins_related(Ids t_ids, Ids n_ids) {
+    if (t_ids.nose == n_ids.tail) /* two shapes of the same object, one object and one connection shape */
         return true;
-    else if (tail_origin.tail == nose_origin.tail && tail_origin.nose == nose_origin.nose) /* two shapes of the same connection */
+    else if (t_ids.tail == n_ids.tail && t_ids.nose == n_ids.nose) /* two shapes of the same connection */
         return true;
     return false;
 }
@@ -318,7 +318,7 @@ static void _mesh_pass_4(Model *model,
 /* Additional intersection info used for intersection correlation. */
 struct _Isec {
     int env_i;
-    Origin prev_o, next_o;
+    Ids prev_o, next_o;
 };
 
 /* Handles intersection merges (two-to-one intersection correlations). */
@@ -399,8 +399,8 @@ static void _mesh_pass_3(Model *model,
 static void _mesh_pass_2(Model *model,
                          MeshEnv *t_env, int prev_t_i, int last_t_i, int *t_neighbors_map,
                          MeshEnv *n_env, int prev_n_i, int last_n_i, int *n_neighbors_map)  {
-    Origin t_prev_o = t_env->points[prev_t_i].origin;
-    Origin n_prev_o = n_env->points[prev_n_i].origin;
+    Ids t_prev_o = t_env->points[prev_t_i].ids;
+    Ids n_prev_o = n_env->points[prev_n_i].ids;
 
     static _Isec t_isecs[MAX_ENVELOPE_POINTS]; /* envelope indices */
     int t_isecs_count = 0;
@@ -410,7 +410,7 @@ static void _mesh_pass_2(Model *model,
             _Isec *isec = t_isecs + t_isecs_count++;
             isec->env_i = t_i;
             isec->prev_o = t_prev_o;
-            isec->next_o = t_prev_o = t_env->points[t_i].origin;
+            isec->next_o = t_prev_o = t_env->points[t_i].ids;
         }
 
     static _Isec n_isecs[MAX_ENVELOPE_POINTS]; /* envelope indices */
@@ -421,7 +421,7 @@ static void _mesh_pass_2(Model *model,
             _Isec *isec = n_isecs + n_isecs_count++;
             isec->env_i = n_i;
             isec->prev_o = n_prev_o;
-            isec->next_o = n_prev_o = n_env->points[n_i].origin;
+            isec->next_o = n_prev_o = n_env->points[n_i].ids;
         }
 
     int prev_t_j = -1;
@@ -489,7 +489,7 @@ static void _mesh_pass_1(Model *model, int shape_subdivs,
         for (int k = 0; k < n_env->slices_count; ++k) {
             MeshEnvSlice *n_slice = n_env->slices + k;
 
-            if (!_origins_related(t_slice->origin, n_slice->origin))
+            if (!_origins_related(t_slice->ids, n_slice->ids))
                 continue;
 
             int n_poly_beg = n_env->points[n_slice->beg].subdiv_i;

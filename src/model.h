@@ -1,7 +1,8 @@
 #ifndef model_h
 #define model_h
 
-#define MAX_ELEMENTS    32 // TODO: rename to MAX_OBJECTS, or make it the same as MAX_FUSELAGE_OBJECTS
+#include "element.h"
+
 #define MAX_WINGS       32
 #define MAX_FUSELAGES   32
 
@@ -29,7 +30,7 @@ struct Panel {
 };
 
 struct Model {
-    Object *objects[MAX_ELEMENTS];
+    Object *objects[MAX_ELEMS];
     int objects_count;
     Wing *wings[MAX_WINGS];
     int wings_count;

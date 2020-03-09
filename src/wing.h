@@ -1,9 +1,10 @@
 #ifndef wing_h
 #define wing_h
 
+#include "dvec.h"
 #include "airfoil.h"
 
-#define MAX_SPARS 32
+#define WING_MAX_SPARS 32
 
 /*
 
@@ -19,7 +20,24 @@ To determine LE intersection with LS:
 - Determine intersection line between that plane and x = LS.x plane.
 - Intersect this line with LS envelope polygon.
 
+LOFTING:
+    1. Wing tells fuselage how many stations it requires.
+    2. Fuselage fills in the rest of the stations and then requests a cutter from the wing at each station.
 */
+
+/* Struct used for wing cutting through fuselage. */
+struct WStation {
+    union {
+        struct {
+            double lx, ly; /* left cutter point (origin of left line) */
+            double rx, ry; /* right cutter point (origin of right line) */
+        };
+        struct { /* only in case of trailing or leading edge */
+            double x, y;
+        };
+    };
+    bool is_edge; /* is wing edge, contains only one point */
+};
 
 struct Spar {
     float x; /* fraction of LE - TE, [0, 1] */
@@ -30,13 +48,14 @@ struct Wing {
     float i_length; /* ideal root chord length */
     float dihedral;
     Airfoil i_airfoil;
-
-    Spar spars[MAX_SPARS];
+    Spar spars[WING_MAX_SPARS];
     int spars_count;
+
+    /* derived */
 };
 
 void wing_init(Wing *w);
 void wing_add_spar(Wing *w, float x);
-void wing_update(Wing *w, float dx_hint);
+int wing_get_required_stations(Wing *w, float *stations);
 
 #endif

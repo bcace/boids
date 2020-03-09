@@ -16,7 +16,7 @@ void fuselage_update_conns(Arena *arena, Fuselage *fuselage) {
 
     /* determine all the possible connected pairs of objects (don't overlap along x) */
 
-    _Conn *conns1 = arena->alloc<_Conn>(MAX_FUSELAGE_OBJECTS * MAX_FUSELAGE_OBJECTS);
+    _Conn *conns1 = arena->alloc<_Conn>(MAX_ELEM_REFS * MAX_ELEM_REFS);
     int conns1_count = 0;
 
     for (int a_i = 0; a_i < fuselage->objects_count; ++a_i) {
@@ -29,8 +29,8 @@ void fuselage_update_conns(Arena *arena, Fuselage *fuselage) {
 
             if (a->max_x < b->min_x - 0.1) {        /* a is tail, b is nose */
                 if (object_overlap_in_yz(a_ref->object, a_ref->is_clone, b_ref->object, b_ref->is_clone)) {
-                    a_ref->n.conn_flags |= origin_index_to_flag(b_i);
-                    b_ref->t.conn_flags |= origin_index_to_flag(a_i);
+                    flags_add(&a_ref->n.conn_flags, b_i);
+                    flags_add(&b_ref->t.conn_flags, a_i);
                     _Conn *c1 = conns1 + conns1_count++;
                     c1->t_i = a_i;
                     c1->n_i = b_i;
@@ -38,8 +38,8 @@ void fuselage_update_conns(Arena *arena, Fuselage *fuselage) {
             }
             else if (a->min_x > b->max_x + 0.1) {   /* a is nose, b is tail */
                 if (object_overlap_in_yz(a_ref->object, a_ref->is_clone, b_ref->object, b_ref->is_clone)) {
-                    a_ref->t.conn_flags |= origin_index_to_flag(b_i);
-                    b_ref->n.conn_flags |= origin_index_to_flag(a_i);
+                    flags_add(&a_ref->t.conn_flags, b_i);
+                    flags_add(&b_ref->n.conn_flags, a_i);
                     _Conn *c1 = conns1 + conns1_count++;
                     c1->t_i = b_i;
                     c1->n_i = a_i;
@@ -50,7 +50,7 @@ void fuselage_update_conns(Arena *arena, Fuselage *fuselage) {
 
     /* create connection candidates by filtering through possible ones */
 
-    _Conn *conns2 = arena->alloc<_Conn>(MAX_FUSELAGE_OBJECTS * MAX_FUSELAGE_OBJECTS);
+    _Conn *conns2 = arena->alloc<_Conn>(MAX_ELEM_REFS * MAX_ELEM_REFS);
     int conns2_count = 0;
 
     for (int j = 0; j < conns1_count; ++j) {
@@ -60,7 +60,7 @@ void fuselage_update_conns(Arena *arena, Fuselage *fuselage) {
 
         /* skip connection candidate if objects it connects can be connected through other objects in between */
 
-        if ((t_ref->n.conn_flags & n_ref->t.conn_flags) != 0) /* tail object is nosewise connected to some objects nose object is tailwise connected to */
+        if (flags_and(&t_ref->n.conn_flags, &n_ref->t.conn_flags)) /* tail object is nosewise connected to some objects nose object is tailwise connected to */
             continue;
 
         Object *t_obj = t_ref->object;
@@ -95,12 +95,12 @@ void fuselage_update_conns(Arena *arena, Fuselage *fuselage) {
 
         /* skip connection if both endpoints already have something connected */
 
-        if ((t_ref->n.non_clone_origins & ~n_ref->non_clone_origin) != ZERO_ORIGIN_FLAG &&
-            (n_ref->t.non_clone_origins & ~t_ref->non_clone_origin) != ZERO_ORIGIN_FLAG)
+        if (flags_has_anything_other_than(&t_ref->n.non_clone_origins, &n_ref->non_clone_origin) &&
+            flags_has_anything_other_than(&n_ref->t.non_clone_origins, &t_ref->non_clone_origin))
             continue;
 
-        t_ref->n.non_clone_origins |= n_ref->non_clone_origin;
-        n_ref->t.non_clone_origins |= t_ref->non_clone_origin;
+        flags_add_flags(&t_ref->n.non_clone_origins, &n_ref->non_clone_origin);
+        flags_add_flags(&n_ref->t.non_clone_origins, &t_ref->non_clone_origin);
 
         Conn *c = fuselage->conns + fuselage->conns_count++;
         c->tail_o = fuselage->objects + c2->t_i;

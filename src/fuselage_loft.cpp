@@ -91,12 +91,12 @@ static inline bool _intersects_connection(float x, Object *t_o, Object *n_o) {
 /* Marks position of fuselage sections. */
 struct _Station {
     float x;
-    OriginFlag t_objs; /* objects for which this station is tailmost */
-    OriginFlag n_objs; /* objects for which this station is nosemost */
+    Flags t_objs; /* objects for which this station is tailmost */
+    Flags n_objs; /* objects for which this station is nosemost */
 };
 
 /* Initialize station. */
-static void _init_station(_Station *s, float x, OriginFlag t_objs, OriginFlag n_objs) {
+static void _init_station(_Station *s, float x, Flags t_objs, Flags n_objs) {
     s->x = x;
     s->t_objs = t_objs;
     s->n_objs = n_objs;
@@ -104,7 +104,7 @@ static void _init_station(_Station *s, float x, OriginFlag t_objs, OriginFlag n_
 
 /* Insert new station sorted by x. If station with same x is found don't insert new station,
 just update the old one with new object flags. */
-static int _insert_station(_Station *stations, int count, float x, OriginFlag t_objs, OriginFlag n_objs) {
+static int _insert_station(_Station *stations, int count, float x, Flags t_objs, Flags n_objs) {
     int i = 0;
     _Station *s = 0;
 
@@ -115,8 +115,8 @@ static int _insert_station(_Station *stations, int count, float x, OriginFlag t_
         }
 
     if (s && s->x == x) {
-        s->t_objs |= t_objs;
-        s->n_objs |= n_objs;
+        flags_add_flags(&s->t_objs, &t_objs);
+        flags_add_flags(&s->n_objs, &n_objs);
     }
     else {
         for (int j = count; j > i; --j)
@@ -144,7 +144,6 @@ struct _Section {
 
 /* Main fuselage lofting function. Generates fuselage skin panels. */
 void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fuselage) {
-
     int shape_subdivs = SHAPE_CURVE_SAMPLES * SHAPE_CURVES;
 
     /* set object origins and get fuselage extents */
@@ -156,7 +155,7 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
     for (int i = 0; i < fuselage->objects_count; ++i) {
         Objref *o_ref = fuselage->objects + i;
         Object *o = o_ref->object;
-        o_ref->origin = i;
+        o_ref->id = i; /* assigning object origin */
 
         if (o->min_x < min_x)
             min_x = o->min_x;
@@ -179,7 +178,7 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
 
     /* find all the fixed section positions (stations) */
 
-    _Station *stations1 = arena->alloc<_Station>(MAX_FUSELAGE_OBJECTS * 2);
+    _Station *stations1 = arena->alloc<_Station>(MAX_ELEM_REFS * 2);
     int stations1_count = 0;
 
     for (int i = 0; i < fuselage->objects_count; ++i) {
@@ -188,11 +187,11 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
 
         if (o_ref->t_conns_count == 0) /* tailwise opening */
             stations1_count = _insert_station(stations1, stations1_count,
-                                              o->min_x, origin_index_to_flag(o_ref->origin), ZERO_ORIGIN_FLAG);
+                                              o->min_x, flags_make(o_ref->id), flags_zero());
 
         if (o_ref->n_conns_count == 0) /* nosewise opening */
             stations1_count = _insert_station(stations1, stations1_count,
-                                              o->max_x, ZERO_ORIGIN_FLAG, origin_index_to_flag(o_ref->origin));
+                                              o->max_x, flags_zero(), flags_make(o_ref->id));
     }
 
     // TODO: merge stations that are too close, use mesh size to estimate
@@ -218,7 +217,7 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
         for (int j = 0; j < count; ++j) {
             break_assert(stations2_count < MAX_STATIONS);
             _Station *s = stations2 + stations2_count++;
-            _init_station(s, s1->x + (j + 1) * ddx, ZERO_ORIGIN_FLAG, ZERO_ORIGIN_FLAG);
+            _init_station(s, s1->x + (j + 1) * ddx, flags_zero(), flags_zero());
         }
 
         stations2[stations2_count++] = stations1[i];
@@ -250,21 +249,21 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
         for (int j = 0; j < fuselage->objects_count; ++j) {
             Objref *o_ref = fuselage->objects + j;
             Object *o = o_ref->object;
-            OriginFlag flag = origin_index_to_flag(o_ref->origin);
+            Flags flag = flags_make(o_ref->id);
 
             if (_intersects_object(section_x, o)) {
                 break_assert(section->shapes_count < MAX_ENVELOPE_SHAPES);
                 Shape *s = section->shapes + section->shapes_count++;
 
-                bool is_tailmost = (i != beg_section) && (station->t_objs & flag);
-                bool is_nosemost = (i != end_section) && (station->n_objs & flag);
+                bool is_tailmost = (i != beg_section) && flags_and(&station->t_objs, &flag);
+                bool is_nosemost = (i != end_section) && flags_and(&station->n_objs, &flag);
 
                 _get_skin_section(section_x, s,
                                   &o_ref->t_skin_former, o_ref->t_tangents, o->p, false,
                                   &o_ref->n_skin_former, o_ref->n_tangents, o->p, false);
 
-                s->origin.tail = o_ref->origin;
-                s->origin.nose = o_ref->origin;
+                s->ids.tail = o_ref->id;
+                s->ids.nose = o_ref->id;
                 if (!is_tailmost)
                     section->t_shapes[section->t_shapes_count++] = s;
                 if (!is_nosemost)
@@ -291,8 +290,8 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
                                   &tail_o_ref->n_skin_former, tail_o_ref->n_tangents, tail_o->p, tail_o_ref->n_conns_count > 1,
                                   &nose_o_ref->t_skin_former, nose_o_ref->t_tangents, nose_o->p, nose_o_ref->t_conns_count > 1);
 
-                s->origin.tail = tail_o_ref->origin;
-                s->origin.nose = nose_o_ref->origin;
+                s->ids.tail = tail_o_ref->id;
+                s->ids.nose = nose_o_ref->id;
                 section->t_shapes[section->t_shapes_count++] = s;
                 section->n_shapes[section->n_shapes_count++] = s;
             }

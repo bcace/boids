@@ -17,7 +17,7 @@ static void _init_objref(Objref *r, Object *o, int index, bool is_clone) {
     memset(r, 0, sizeof(Objref));
     r->object = o;
     r->is_clone = is_clone;
-    r->non_clone_origin = origin_index_to_flag(index);
+    r->non_clone_origin = flags_make(index);
     r->x = (double)o->p.x;
     r->z = (double)o->p.z;
     if (r->is_clone) {
@@ -51,8 +51,6 @@ void loft_model(Arena *arena, Model *model) {
 
     Objref *o_refs = arena->alloc<Objref>(model->objects_count * 2);
     int o_refs_count = 0;
-
-    break_assert(model->objects_count <= MAX_FUSELAGE_OBJECTS); // TODO: remove this once max number of objects in the model is the same as that of fuselages
 
     for (int i = 0; i < model->objects_count; ++i) {
         Object *o = model->objects[i];

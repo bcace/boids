@@ -18,7 +18,7 @@ void Model::clear() {
 }
 
 void Model::add_object(Object *o) {
-    break_assert(objects_count < MAX_ELEMENTS);
+    break_assert(objects_count < MAX_ELEMS);
     objects[objects_count++] = o;
 }
 

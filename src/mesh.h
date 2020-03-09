@@ -2,14 +2,14 @@
 #define mesh_h
 
 #include "constants.h"
-#include "origin.h"
+#include "element.h"
 
 
 struct EnvPoint {
     double x, y;
     double t1, t2;  /* polygon edge t values, non-zero only for intersections */
     int i1, i2;     /* polygon vertex indices */
-    Origin origin;  /* second shape origin for intersections */
+    Ids ids;        /* second shape origin for intersections */
     int subdiv_i;   /* starting polygon vertex index of polygon side where the point is located */
     bool is_intersection;
 };
@@ -18,7 +18,7 @@ struct EnvPoint {
 struct MeshPoint {
     double x, y;
     int i1, i2;     /* polygon vertex indices */
-    Origin origin;  /* second shape origin for intersections */
+    Ids ids;        /* second shape origin for intersections */
     int subdiv_i;   /* starting polygon vertex index of polygon side where the point is located */
     int vert_i;     /* index of vertex created from the point, offset from envelope verts_base_i */
     bool is_intersection;
@@ -28,7 +28,7 @@ struct MeshPoint {
 
 struct MeshEnvSlice {
     int beg, end; /* envelope point indices, [beg, end] */
-    Origin origin;
+    Ids ids;
 };
 
 struct MeshEnv {
@@ -38,7 +38,7 @@ struct MeshEnv {
     int slices_count;
     int verts_base_i; /* index of first vertex in model vertex buffer so we can map envelope points to their vertices */
     float x; /* section x, model CS */
-    OriginFlag object_like_flags; /* used for creating merge filter */
+    Flags object_like_flags; /* used for creating merge filter */
 };
 
 struct dvec;
@@ -54,7 +54,7 @@ void mesh_apply_merge_filter(Arena *arena, int shape_subdivs,
                              Shape **n_shapes, int n_shapes_count, MeshEnv *n_env);
 
 /* trace */
-int mesh_trace_envelope(EnvPoint *env_points, Shape **shapes, int shapes_count, int curve_subdivs, OriginFlag *object_like_flags);
+int mesh_trace_envelope(EnvPoint *env_points, Shape **shapes, int shapes_count, int curve_subdivs, Flags *object_like_flags);
 
 /* envelope */
 void mesh_make_envelopes(Model *model, Arena *arena, Arena *verts_arena, float section_x,

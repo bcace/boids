@@ -121,13 +121,13 @@ bool Model::maybe_drag_selection(PickResult &pick_result, bool ctrl_pressed) {
 }
 
 void init_model_draw() {
-    const int OBJECTS_SIZE = 5;
-    assert((1 << OBJECTS_SIZE) >= MAX_ELEMENTS);
+    const int OBJECTS_SIZE = 6;
+    break_assert((1 << OBJECTS_SIZE) >= MAX_ELEMS);
 
     object_handle_pick_category = pick_register_category();
     object_model_pick_category = pick_register_category();
 
-    pick_define_encoding(object_handle_pick_category, OBJECTS_SIZE, 2); // object, tail/nose, handle
+    pick_define_encoding(object_handle_pick_category, OBJECTS_SIZE, 2); /* object, tail/nose, handle */
 }
 
 void model_update_object_mantles(Model *model) {

@@ -24,7 +24,7 @@ static void _update_mesh_envelope_slices(MeshEnv *env) {
             if (slice == 0) { /* start new slice */
                 slice = env->slices + env->slices_count++;
                 slice->beg = i;
-                slice->origin = p->origin;
+                slice->ids = p->ids;
             }
             slice->end = i; /* continue slice */
         }
@@ -44,7 +44,7 @@ static void _add_mesh_point(MeshEnv *env, EnvPoint *ep, int i1, int i2, int vert
     mp->y = ep->y;
     mp->i1 = i1;
     mp->i2 = i2;
-    mp->origin = ep->origin;
+    mp->ids = ep->ids;
     mp->vert_i = vert_i;
     mp->subdiv_i = ep->subdiv_i;
     mp->is_intersection = ep->is_intersection;
@@ -306,8 +306,8 @@ static inline EnvPoint *_beg_isec_point_from_corr(_Corr *corr, EnvPoint *t_env_p
 
 static bool _can_correlate_env_points(EnvPoint *a, EnvPoint *b) {
     if (a->is_intersection != b->is_intersection ||
-        a->origin.tail != b->origin.tail ||
-        a->origin.nose != b->origin.nose ||
+        a->ids.tail != b->ids.tail ||
+        a->ids.nose != b->ids.nose ||
         a->subdiv_i != b->subdiv_i)
         return false;
     if (!a->is_intersection) /* if non-intersection, we're done */
@@ -392,7 +392,7 @@ static void _mesh_envs_pass_1(Model *model, Arena *verts_arena, float section_x,
             int i2 = t_ep->i2;
             bool skip = false;
 
-            /* check for skip */
+            /* check for collapse */
 
             _Corr *prev_corr = corrs + period_decr(i, corrs_count);
             _Corr *next_corr = corrs + period_incr(i, corrs_count);
@@ -463,7 +463,7 @@ void _mesh_envs_pass_0(Model *model, Arena *verts_arena, float section_x,
         int i2 = ep->i2;
         bool skip = false;
 
-        /* tests for skipping current envelope point */
+        /* tests for collapsing points */
 
         if (!ep->is_intersection)
             skip = _do_we_skip_non_intersection(prev_ep->is_intersection, prev_ep->t2,
