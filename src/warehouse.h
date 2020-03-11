@@ -2,7 +2,6 @@
 #define warehouse_h
 
 #include "part.h"
-#include "array.h"
 
 #define MAX_PARTS   64
 
@@ -12,14 +11,15 @@ struct mat4_stack;
 struct ShaderProgram;
 
 struct Warehouse {
-    array<Part, MAX_PARTS> parts;
+    Part parts[MAX_PARTS];
+    int parts_count;
 
     int selected_part;
     bool is_open;
 
     Warehouse();
 
-    void open();
+    void open(bool wings);
     void close();
     void select_next_part();
     void select_prev_part();

@@ -2,7 +2,6 @@
 #include "object.h"
 #include "interp.h"
 #include "arena.h"
-#include "array.h"
 #include "config.h"
 #include "dvec.h"
 #include <assert.h>

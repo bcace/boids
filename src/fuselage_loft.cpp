@@ -3,6 +3,7 @@
 #include "interp.h"
 #include "mesh.h"
 #include "arena.h"
+#include "debug.h"
 #include <math.h>
 #include <float.h>
 

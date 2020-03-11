@@ -15,7 +15,7 @@ int SHAPE_CURVE_SAMPLES = MAX_CURVE_SUBDIVS;
 
 double STRUCTURAL_MARGIN = 0.1;
 
-double MESH_ALPHA = 0.1;
+float MESH_ALPHA = 0.1f;
 
 float ONE_SIDE_MERGE_DELAY = _MAX_ONE_SIDE_MERGE_DELAY;
 float ONE_MINUS_ONE_SIDE_MERGE_DELAY = 1.0f - ONE_SIDE_MERGE_DELAY;
@@ -49,15 +49,15 @@ void config_increase_structural_margin() {
 }
 
 void config_decrease_mesh_triangle_edge_transparency() {
-    MESH_ALPHA -= 0.1;
-    if (MESH_ALPHA < 0.0)
-        MESH_ALPHA = 0.0;
+    MESH_ALPHA -= 0.1f;
+    if (MESH_ALPHA < 0.0f)
+        MESH_ALPHA = 0.0f;
 }
 
 void config_increase_mesh_triangle_edge_transparency() {
-    MESH_ALPHA += 0.1;
-    if (MESH_ALPHA > 1.0)
-        MESH_ALPHA = 1.0;
+    MESH_ALPHA += 0.1f;
+    if (MESH_ALPHA > 1.0f)
+        MESH_ALPHA = 1.0f;
 }
 
 void _update_merge_delays() {

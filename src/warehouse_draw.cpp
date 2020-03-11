@@ -28,7 +28,7 @@ void Warehouse::draw_triangles(ShaderProgram &program, mat4_stack &mv_stack, vec
     mv_stack.translate(camera_pos + camera_dir * 10); // TODO: adapt distance to part size
     program.set_uniform_mat4(1, mv_stack.top());
 
-    mantle.draw_triangles(program, mv_stack, vec4(0.45, 0.65, 1, 1));
+    mantle.draw_triangles(program, mv_stack, vec4(0.45f, 0.65f, 1.0f, 1.0f));
 
     mv_stack.pop();
     program.set_uniform_mat4(1, mv_stack.top());

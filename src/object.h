@@ -3,7 +3,6 @@
 
 #include "ref.h"
 #include "vec.h"
-#include "array.h"
 #include "shape.h"
 #include "mantle.h"
 #include "constants.h"

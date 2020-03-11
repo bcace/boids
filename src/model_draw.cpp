@@ -3,6 +3,7 @@
 #include "graphics.h"
 #include "pick.h"
 #include "arena.h"
+#include "debug.h"
 #include "config.h"
 #include <math.h>
 #include <float.h>
@@ -37,13 +38,13 @@ void Model::draw_skin_outlines(ShaderProgram &program, mat4_stack &mv_stack, vec
     graph_line_width(2);
 
     for (int i = 0; i < objects_count; ++i)
-        objects[i]->skin_mantle.draw_outlines(program, mv_stack, vec4(0.2, 0.2, 0.2, 1), camera_pos);
+        objects[i]->skin_mantle.draw_outlines(program, mv_stack, vec4(0.2f, 0.2f, 0.2f, 1.0f), camera_pos);
 }
 
 void Model::draw_lines(ShaderProgram &program, mat4_stack &mv_stack, PickResult &pick_result) {
     graph_line_width(2);
 
-    program.set_uniform_vec4(2, vec4(0, 0, 0, MESH_ALPHA));
+    program.set_uniform_vec4(2, vec4(0.0f, 0.0f, 0.0f, MESH_ALPHA));
 
     graph_set_polygon_line_mode(true);
 

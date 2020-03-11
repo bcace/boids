@@ -66,7 +66,7 @@ void _mousebutton_callback(int button, int action, int mods) {
     else if (button == PLATFORM_RIGHT) {
         if (action == PLATFORM_PRESS) {
             if (!warehouse.is_open)
-                warehouse.open();
+                warehouse.open(mods & PLATFORM_MOD_CTRL);
         }
     }
 }
