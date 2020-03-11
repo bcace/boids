@@ -53,7 +53,7 @@ void _recalculate_model() {
 void _mousebutton_callback(int button, int action, int mods) {
     if (button == PLATFORM_LEFT) {
         if (action == PLATFORM_PRESS) {
-            if (warehouse.is_open) {
+            if (warehouse.mode == wmObject) {
                 model_add_object(&model, warehouse.make_selected_part(camera.pos, camera.dir));
                 _recalculate_model();
             }
@@ -65,7 +65,7 @@ void _mousebutton_callback(int button, int action, int mods) {
     }
     else if (button == PLATFORM_RIGHT) {
         if (action == PLATFORM_PRESS) {
-            if (!warehouse.is_open)
+            if (!warehouse.mode == wmObject)
                 warehouse.open(mods & PLATFORM_MOD_CTRL);
         }
     }
@@ -76,7 +76,7 @@ void _mousepos_callback(float x, float y) {
 }
 
 void _scroll_callback(float x, float y) {
-    if (warehouse.is_open) {
+    if (warehouse.mode != wmClosed) {
         if (y > 0)
             warehouse.select_next_part();
         else

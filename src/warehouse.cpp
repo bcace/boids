@@ -6,7 +6,7 @@
 
 Warehouse warehouse;
 
-Warehouse::Warehouse() : parts_count(0), selected_part(0), is_open(false) {
+Warehouse::Warehouse() : parts_count(0), selected_part(0), mode(wmClosed) {
 
     /* object parts */
 
@@ -60,12 +60,12 @@ Warehouse::Warehouse() : parts_count(0), selected_part(0), is_open(false) {
 }
 
 void Warehouse::open(bool wings) {
-    is_open = true;
+    mode = wmObject;
     update_drawing_geometry();
 }
 
 void Warehouse::close() {
-    is_open = false;
+    mode = wmClosed;
 }
 
 void Warehouse::select_next_part() {

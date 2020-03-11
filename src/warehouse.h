@@ -10,12 +10,13 @@ struct Object;
 struct mat4_stack;
 struct ShaderProgram;
 
+enum WarehouseMode { wmClosed, wmObject, wmWing };
+
 struct Warehouse {
     Part parts[MAX_PARTS];
     int parts_count;
-
     int selected_part;
-    bool is_open;
+    WarehouseMode mode;
 
     Warehouse();
 

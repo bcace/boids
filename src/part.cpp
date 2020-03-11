@@ -14,6 +14,7 @@ void part_init(Part *part, const char *name, float tail_endp_dx, float nose_endp
 #else
     strcpy(part->name, name);
 #endif
+    part->formers_count = 0;
     part->tail_endp_dx = tail_endp_dx;
     part->nose_endp_dx = nose_endp_dx;
     part->tail_opening = tail_opening;
@@ -21,10 +22,10 @@ void part_init(Part *part, const char *name, float tail_endp_dx, float nose_endp
 }
 
 void part_add_coll_former(Part *part, Shape shape, float x) {
-    assert(part->formers.count == 0 || x > part->formers.last().x); // new former must be in front of the old one
-    Former &f = part->formers.add();
-    f.shape = shape;
-    f.x = x;
+    assert(part->formers_count == 0 || x > part->formers[part->formers_count - 1].x); // new former must be in front of the old one
+    Former *f = part->formers + part->formers_count++;
+    f->shape = shape;
+    f->x = x;
 }
 
 void part_set_skin_formers(Part *part, Shape tail_shape, float tail_x, Shape nose_shape, float nose_x) {
@@ -38,9 +39,9 @@ Object *part_make_object(Part *part, vec3 p) {
     Object *o = new Object();
     o->p = p;
 
-    for (int i = 0; i < part->formers.count; ++i)
+    for (int i = 0; i < part->formers_count; ++i)
         o->formers[i] = part->formers[i];
-    o->formers_count = part->formers.count;
+    o->formers_count = part->formers_count;
 
     o->tail_skin_former = part->tail_skin_former;
     o->nose_skin_former = part->nose_skin_former;

@@ -1,6 +1,7 @@
 #include "model.h"
 #include "object.h"
 #include "part.h"
+#include "debug.h"
 #include <math.h>
 #include <assert.h>
 

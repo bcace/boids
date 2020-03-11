@@ -3,7 +3,6 @@
 
 #include "vec.h"
 #include "shape.h"
-#include "array.h"
 
 #define MAX_PROTO_NAME          128
 #define MAX_PROTO_FORMERS       8
@@ -17,7 +16,8 @@ struct Part {
     /* data copied onto objects */
     // TODO: think about making this a separate structure, shared between Object and Part
     // TODO: don't use array here
-    array<Former, MAX_PROTO_FORMERS> formers; /* initial collision formers */
+    Former formers[MAX_PROTO_FORMERS]; /* initial collision formers */
+    int formers_count;
     Former tail_skin_former, nose_skin_former;
     float tail_endp_dx, nose_endp_dx; /* endpoint distances from respective skin formers */
 
