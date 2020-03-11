@@ -155,8 +155,8 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
     _Station *stations1 = arena->alloc<_Station>(MAX_ELEM_REFS * 2);
     int stations1_count = 0;
 
-    for (int i = 0; i < fuselage->objects_count; ++i) {
-        Objref *o_ref = fuselage->objects + i;
+    for (int i = 0; i < fuselage->orefs_count; ++i) {
+        Oref *o_ref = fuselage->orefs + i;
         Object *o = o_ref->object;
 
         o_ref->id = i; /* assigning object origin */
@@ -251,8 +251,8 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
 
         /* intersect objects */
 
-        for (int j = 0; j < fuselage->objects_count; ++j) {
-            Objref *o_ref = fuselage->objects + j;
+        for (int j = 0; j < fuselage->orefs_count; ++j) {
+            Oref *o_ref = fuselage->orefs + j;
             Object *o = o_ref->object;
             Flags flag = flags_make(o_ref->id);
 
@@ -282,8 +282,8 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
 
         for (int j = 0; j < fuselage->conns_count; ++j) {
             Conn *c = fuselage->conns + j;
-            Objref *tail_o_ref = c->tail_o;
-            Objref *nose_o_ref = c->nose_o;
+            Oref *tail_o_ref = c->tail_o;
+            Oref *nose_o_ref = c->nose_o;
             Object *tail_o = tail_o_ref->object;
             Object *nose_o = nose_o_ref->object;
 

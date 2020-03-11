@@ -2,6 +2,7 @@
 #include "mesh.h"
 #include "fuselage.h"
 #include "object.h"
+#include "wing.h"
 #include "group.h"
 #include "arena.h"
 #include <math.h>
@@ -13,8 +14,8 @@ static Arena trias_arena(10000000);
 static Arena quads_arena(10000000);
 
 /* Initializes an Objref instance. */
-static void _init_objref(Objref *r, Object *o, int index, bool is_clone) {
-    memset(r, 0, sizeof(Objref));
+static void _init_objref(Oref *r, Object *o, int index, bool is_clone) {
+    memset(r, 0, sizeof(Oref));
     r->object = o;
     r->is_clone = is_clone;
     r->non_clone_origin = flags_make(index);
@@ -32,13 +33,13 @@ static void _init_objref(Objref *r, Object *o, int index, bool is_clone) {
     }
 }
 
-bool _objects_overlap(Objref *a, Objref *b) {
-    return object_overlap_in_yz(a->object, a->is_clone, b->object, b->is_clone);
+static void _init_wref(Wref *wref, Wing *w, int index, bool is_clone) {
+    wref->wing = w;
+    wref->is_clone = is_clone;
 }
 
 /* Main loft function. */
 void model_loft(Arena *arena, Model *model) {
-
     if (model->objects_count == 0) /* if model has no objects we're done */
         return;
 
@@ -46,38 +47,66 @@ void model_loft(Arena *arena, Model *model) {
 
     static Fuselage fuselages[MAX_FUSELAGES];
     int fuselages_count = 0;
+    int available_ref_index = 0;
 
     /* create object references from model objects, including clones */
 
-    Objref *o_refs = arena->alloc<Objref>(model->objects_count * 2);
-    int o_refs_count = 0;
-
+    Oref *orefs = arena->alloc<Oref>(model->objects_count * 2);
+    int orefs_count = 0;
     for (int i = 0; i < model->objects_count; ++i) {
         Object *o = model->objects[i];
-
-        Objref *o_ref = o_refs + o_refs_count++;
-        _init_objref(o_ref, o, i, false);
-
+        Oref *oref = orefs + orefs_count++;
+        _init_objref(oref, o, available_ref_index, false);
         if (object_should_be_mirrored(o)) {
-            Objref *c_ref = o_refs + o_refs_count++;
-            _init_objref(c_ref, o, i, true);
+            Oref *c_ref = orefs + orefs_count++;
+            _init_objref(c_ref, o, available_ref_index, true);
         }
+        ++available_ref_index;
+    }
+
+    /* create wing references */
+
+    Wref *wrefs = arena->alloc<Wref>(model->wings_count * 2);
+    int wrefs_count = 0;
+    for (int i = 0; i < model->wings_count; ++i) {
+        Wing *w = model->wings[i];
+        Wref *wref = wrefs + wrefs_count++;
+        _init_wref(wref, w, available_ref_index, false);
+        if (wing_should_be_mirrored(w)) {
+            Wref *_wref = wrefs + wrefs_count++;
+            _init_wref(_wref, w, available_ref_index, true);
+        }
+        ++available_ref_index;
     }
 
     /* group object references into fuselages */
 
     static GroupMaker maker;
-    group_objects(sizeof(Objref), o_refs, o_refs_count, (GROUP_FUNC)_objects_overlap, &maker);
-
+    group_objects(sizeof(Oref), orefs, orefs_count, (GROUP_FUNC)fuselage_objects_overlap, &maker);
     for (int i = 0; i < maker.count; ++i) {
         Group *g = maker.groups + i;
-
         Fuselage *f = fuselages + fuselages_count++;
-        f->objects_count = g->count;
+        f->orefs_count = g->count;
         f->conns_count = 0;
-
         for (int j = 0; j < g->count; ++j)
-            f->objects[j] = o_refs[g->obj_indices[j]];
+            f->orefs[j] = orefs[g->obj_indices[j]];
+    }
+
+    /* add wings to fuselages */
+
+    for (int i = 0; i < wrefs_count; ++i) {
+        Wref *wref = wrefs + i;
+        for (int j = 0; j < fuselages_count; ++j) {
+            Fuselage *f = fuselages + j;
+            for (int k = 0; k < f->orefs_count; ++k) {
+                Oref *oref = f->orefs + k;
+                if (fuselage_object_and_wing_overlap(oref, wref)) {
+                    f->wrefs[f->wrefs_count++] = *wref;
+                    goto FUSELAGE_FOR_WING_FOUND;
+                }
+            }
+        }
+        FUSELAGE_FOR_WING_FOUND:;
     }
 
     /* generate skin panels */

@@ -21,3 +21,11 @@ int wing_get_required_stations(Wing *w, float *stations) {
     stations[c++] = w->x + w->i_length * 0.5; /* last station */
     return c;
 }
+
+bool wing_should_be_centered(Wing *w) {
+    return w->y < WING_SNAP_WIDTH;
+}
+
+bool wing_should_be_mirrored(Wing *w) {
+    return !wing_should_be_centered(w);
+}

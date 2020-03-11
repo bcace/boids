@@ -10,11 +10,12 @@
 #define MAX_FUSELAGE_CONNS  32
 
 
+struct Wing;
 struct Arena;
 struct Model;
 struct Object;
 
-struct Objref {
+struct Oref {
     Object *object;
     bool is_clone;
 
@@ -42,14 +43,22 @@ struct Objref {
     };
 };
 
+struct Wref {
+    Wing *wing;
+    bool is_clone;
+    Id id;
+};
+
 struct Conn {
-    Objref *tail_o;
-    Objref *nose_o;
+    Oref *tail_o;
+    Oref *nose_o;
 };
 
 struct Fuselage {
-    Objref objects[MAX_ELEM_REFS];
-    int objects_count;
+    Oref orefs[MAX_ELEM_REFS];
+    int orefs_count;
+    Wref wrefs[MAX_ELEM_REFS];
+    int wrefs_count;
     Conn conns[MAX_FUSELAGE_CONNS];
     int conns_count;
 };
@@ -57,5 +66,7 @@ struct Fuselage {
 void fuselage_update_conns(Arena *arena, Fuselage *fuselage);
 void fuselage_update_longitudinal_tangents(Fuselage *fuselage);
 void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fuselage);
+bool fuselage_objects_overlap(Oref *a, Oref *b);
+bool fuselage_object_and_wing_overlap(Oref *o, Wref *w);
 
 #endif

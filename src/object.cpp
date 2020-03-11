@@ -1,10 +1,5 @@
 #include "object.h"
-#include "part.h"
-#include "interp.h"
-#include "math.h"
-#include <math.h>
 #include <float.h>
-#include <assert.h>
 
 
 void object_finish(Object *o) {
@@ -61,32 +56,4 @@ void Object::deselect_all_handles() {
 
 void object_update_mantle(Object *o) {
     o->model_mantle.generate_object_model(mantle_arena(), o);
-}
-
-/* Circle used to roughly describe object cross-section for grouping objects into fuselages. */
-struct _Circle {
-    double x, y, r;
-};
-
-/* Approximation of the area in y-z plane shadowed by the object. */
-static _Circle _object_circle(Object *o, bool is_clone) {
-    _Circle c;
-    double rx = ((double)o->max_y - (double)o->min_y) * 0.5;
-    double ry = ((double)o->max_z - (double)o->min_z) * 0.5;
-    c.x = o->min_y + rx;
-    c.y = o->min_z + ry;
-    c.r = max_d(rx, ry) + 0.05; /* a small margin is added to the circle */
-    if (is_clone)
-        c.x = -c.x;
-    return c;
-}
-
-/* Returns true if circles representing objects in the y-z plane overlap. */
-bool object_overlap_in_yz(Object *a, bool a_is_clone, Object *b, bool b_is_clone) {
-    _Circle c_a = _object_circle(a, a_is_clone);
-    _Circle c_b = _object_circle(b, b_is_clone);
-    double dx = c_a.x - c_b.x;
-    double dy = c_a.y - c_b.y;
-    double dl = sqrt(dx * dx + dy * dy); // FAST_SQRT
-    return dl < c_a.r + c_b.r;
 }

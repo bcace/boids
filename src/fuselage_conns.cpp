@@ -19,16 +19,16 @@ void fuselage_update_conns(Arena *arena, Fuselage *fuselage) {
     _Conn *conns1 = arena->alloc<_Conn>(MAX_ELEM_REFS * MAX_ELEM_REFS);
     int conns1_count = 0;
 
-    for (int a_i = 0; a_i < fuselage->objects_count; ++a_i) {
-        Objref *a_ref = fuselage->objects + a_i;
+    for (int a_i = 0; a_i < fuselage->orefs_count; ++a_i) {
+        Oref *a_ref = fuselage->orefs + a_i;
         Object *a = a_ref->object;
 
-        for (int b_i = a_i + 1; b_i < fuselage->objects_count; ++b_i) {
-            Objref *b_ref = fuselage->objects + b_i;
+        for (int b_i = a_i + 1; b_i < fuselage->orefs_count; ++b_i) {
+            Oref *b_ref = fuselage->orefs + b_i;
             Object *b = b_ref->object;
 
             if (a->max_x < b->min_x - 0.1) {        /* a is tail, b is nose */
-                if (object_overlap_in_yz(a_ref->object, a_ref->is_clone, b_ref->object, b_ref->is_clone)) {
+                if (fuselage_objects_overlap(a_ref, b_ref)) {
                     flags_add(&a_ref->n.conn_flags, b_i);
                     flags_add(&b_ref->t.conn_flags, a_i);
                     _Conn *c1 = conns1 + conns1_count++;
@@ -37,7 +37,7 @@ void fuselage_update_conns(Arena *arena, Fuselage *fuselage) {
                 }
             }
             else if (a->min_x > b->max_x + 0.1) {   /* a is nose, b is tail */
-                if (object_overlap_in_yz(a_ref->object, a_ref->is_clone, b_ref->object, b_ref->is_clone)) {
+                if (fuselage_objects_overlap(a_ref, b_ref)) {
                     flags_add(&a_ref->t.conn_flags, b_i);
                     flags_add(&b_ref->n.conn_flags, a_i);
                     _Conn *c1 = conns1 + conns1_count++;
@@ -55,8 +55,8 @@ void fuselage_update_conns(Arena *arena, Fuselage *fuselage) {
 
     for (int j = 0; j < conns1_count; ++j) {
         _Conn *c1 = conns1 + j;
-        Objref *t_ref = fuselage->objects + c1->t_i;
-        Objref *n_ref = fuselage->objects + c1->n_i;
+        Oref *t_ref = fuselage->orefs + c1->t_i;
+        Oref *n_ref = fuselage->orefs + c1->n_i;
 
         /* skip connection candidate if objects it connects can be connected through other objects in between */
 
@@ -90,8 +90,8 @@ void fuselage_update_conns(Arena *arena, Fuselage *fuselage) {
 
     for (int j = 0; j < conns2_count; ++j) {
         _Conn *c2 = conns2 + j;
-        Objref *t_ref = fuselage->objects + c2->t_i;
-        Objref *n_ref = fuselage->objects + c2->n_i;
+        Oref *t_ref = fuselage->orefs + c2->t_i;
+        Oref *n_ref = fuselage->orefs + c2->n_i;
 
         /* skip connection if both endpoints already have something connected */
 
@@ -103,8 +103,8 @@ void fuselage_update_conns(Arena *arena, Fuselage *fuselage) {
         flags_add_flags(&n_ref->t.non_clone_origins, &t_ref->non_clone_origin);
 
         Conn *c = fuselage->conns + fuselage->conns_count++;
-        c->tail_o = fuselage->objects + c2->t_i;
-        c->nose_o = fuselage->objects + c2->n_i;
+        c->tail_o = fuselage->orefs + c2->t_i;
+        c->nose_o = fuselage->orefs + c2->n_i;
         ++c->tail_o->n_conns_count;
         ++c->nose_o->t_conns_count;
     }
@@ -138,8 +138,8 @@ void fuselage_update_longitudinal_tangents(Fuselage *fuselage) {
 
     /* zero longitudinal tangents */
 
-    for (int i = 0; i < fuselage->objects_count; ++i) {
-        Objref *o_ref = fuselage->objects + i;
+    for (int i = 0; i < fuselage->orefs_count; ++i) {
+        Oref *o_ref = fuselage->orefs + i;
         for (int j = 0; j < SHAPE_CURVES; ++j) {
             o_ref->t_tangents[j] = tvec_zero();
             o_ref->n_tangents[j] = tvec_zero();
@@ -150,8 +150,8 @@ void fuselage_update_longitudinal_tangents(Fuselage *fuselage) {
 
     for (int i = 0; i < fuselage->conns_count; ++i) {
         Conn *conn = fuselage->conns + i;
-        Objref *t_ref = conn->tail_o;
-        Objref *n_ref = conn->nose_o;
+        Oref *t_ref = conn->tail_o;
+        Oref *n_ref = conn->nose_o;
 
         Former *f1 = &t_ref->n_skin_former;
         Former *f2 = &t_ref->t_skin_former;
@@ -185,8 +185,8 @@ void fuselage_update_longitudinal_tangents(Fuselage *fuselage) {
 
     /* normalize conn tangents and calculate opening tangents */
 
-    for (int i = 0; i < fuselage->objects_count; ++i) {
-        Objref *o_ref = fuselage->objects + i;
+    for (int i = 0; i < fuselage->orefs_count; ++i) {
+        Oref *o_ref = fuselage->orefs + i;
         Object *o = o_ref->object;
         Former *tail_f = &o_ref->t_skin_former;
         Former *nose_f = &o_ref->n_skin_former;

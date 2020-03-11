@@ -85,7 +85,6 @@ struct Object {
 
 void object_finish(Object *o);
 void object_update_extents(Object *o);
-bool object_overlap_in_yz(Object *a, bool a_is_clone, Object *b, bool b_is_clone);
 
 bool object_should_be_centered(Object *o);
 bool object_should_be_mirrored(Object *o);
