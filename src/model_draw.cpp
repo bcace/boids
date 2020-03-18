@@ -11,8 +11,16 @@
 #include <assert.h>
 
 
+unsigned int wing_pick_category;
 unsigned int object_model_pick_category;
 unsigned int object_handle_pick_category;
+
+vec4 _wing_color(Wing *w, void *hovered_pickable) {
+    if (w == hovered_pickable)
+        return vec4(0.25f, 0.7f, 0.0f, 1.0f);
+    else
+        return vec4(0.4f, 0.9f, 0.0f, 1.0f);
+}
 
 void Model::draw_triangles(ShaderProgram &program, mat4_stack &mv_stack, PickResult &pick_result) {
     void *hovered_pickable = decode_pick_result(pick_result);
@@ -20,8 +28,10 @@ void Model::draw_triangles(ShaderProgram &program, mat4_stack &mv_stack, PickRes
     for (int i = 0; i < objects_count; ++i)
         objects[i]->draw_triangles(program, mv_stack, hovered_pickable);
 
-    for (int i = 0; i < wings_count; ++i)
-        wings[i]->mantle.draw_triangles(program, mv_stack, vec4(1, 0, 0, 1));
+    for (int i = 0; i < wings_count; ++i) {
+        Wing *w = wings[i];
+        w->mantle.draw_triangles(program, mv_stack, _wing_color(w, hovered_pickable));
+    }
 }
 
 void Model::draw_outlines(ShaderProgram &program, mat4_stack &mv_stack, vec3 camera_pos) {
@@ -77,6 +87,9 @@ void Model::pick(ShaderProgram &program, mat4_stack &mv_stack) {
         objects[i]->pick_handles(program, mv_stack, object_handle_pick_category, i);
     }
 
+    for (int i = 0; i < wings_count; ++i)
+        wings[i]->mantle.draw_triangles(program, mv_stack, pick_encode(wing_pick_category, i));
+
     graph_enable_blend(true);
     graph_enable_smooth_line(true);
 }
@@ -84,6 +97,8 @@ void Model::pick(ShaderProgram &program, mat4_stack &mv_stack) {
 void *Model::decode_pick_result(PickResult &result) {
     if (!result.hit)
         return 0;
+    if (result.category_id == wing_pick_category)
+        return wings[result.ids[0]];
     if (result.category_id == object_model_pick_category)
         return objects[result.ids[0]];
     if (result.category_id == object_handle_pick_category)
@@ -131,6 +146,7 @@ void init_model_draw() {
 
     object_handle_pick_category = pick_register_category();
     object_model_pick_category = pick_register_category();
+    wing_pick_category = pick_register_category();
 
     pick_define_encoding(object_handle_pick_category, OBJECTS_SIZE, 2); /* object, tail/nose, handle */
 }
