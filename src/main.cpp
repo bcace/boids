@@ -53,7 +53,7 @@ void _recalculate_model() {
 void _mousebutton_callback(int button, int action, int mods) {
     if (button == PLATFORM_LEFT) {
         if (action == PLATFORM_PRESS) {
-            if (warehouse.mode == wmObject) {
+            if (warehouse.mode == WM_OBJECT) {
                 model_add_object(&model, warehouse.make_selected_part(camera.pos, camera.dir));
                 _recalculate_model();
             }
@@ -65,7 +65,7 @@ void _mousebutton_callback(int button, int action, int mods) {
     }
     else if (button == PLATFORM_RIGHT) {
         if (action == PLATFORM_PRESS) {
-            if (!warehouse.mode == wmObject)
+            if (!warehouse.mode == WM_OBJECT)
                 warehouse.open(mods & PLATFORM_MOD_CTRL);
         }
     }
@@ -76,7 +76,7 @@ void _mousepos_callback(float x, float y) {
 }
 
 void _scroll_callback(float x, float y) {
-    if (warehouse.mode != wmClosed) {
+    if (warehouse.mode != WM_CLOSED) {
         if (y > 0)
             warehouse.select_next_part();
         else
@@ -286,44 +286,46 @@ int main() {
 #if AIRFOIL_GENERATE_BASE
     airfoil_generate_base();
     return 0;
+#else
+    airfoil_init_base();
 #endif
 
     model_init_ochre_state();
 
-    // create window
+    /* create window */
 
     plat_create_window("Boids", 1800, 1000, false);
 
     program.init("src/glsl/default.vert", "src/glsl/default.frag");
-    program.define_in_float(3); // position
+    program.define_in_float(3); /* position */
     program.define_uniform("projection");
     program.define_uniform("modelview");
     program.define_uniform("color");
 
 #if DRAW_CORRS
     colored_program.init("src/glsl/colored.vert", "src/glsl/colored.frag");
-    colored_program.define_in_float(3); // position
-    colored_program.define_in_float(3); // color
+    colored_program.define_in_float(3); /* position */
+    colored_program.define_in_float(3); /* color */
     colored_program.define_uniform("projection");
     colored_program.define_uniform("modelview");
 #endif
 
     shaded_program.init("src/glsl/shaded.vert", "src/glsl/shaded.frag");
-    shaded_program.define_in_float(3); // position
+    shaded_program.define_in_float(3); /* position */
     shaded_program.define_uniform("projection");
     shaded_program.define_uniform("modelview");
     shaded_program.define_uniform("color");
 
     valued_program.init("src/glsl/valued.vert", "src/glsl/valued.frag");
-    valued_program.define_in_float(3); // position
-    valued_program.define_in_float(1); // value
+    valued_program.define_in_float(3); /* position */
+    valued_program.define_in_float(1); /* value */
     valued_program.define_uniform("projection");
     valued_program.define_uniform("modelview");
 
     outline_program.init("src/glsl/outline.vert", "src/glsl/default.frag");
-    outline_program.define_in_float(3); // position
-    outline_program.define_in_float(3); // norm1
-    outline_program.define_in_float(3); // norm2
+    outline_program.define_in_float(3); /* position */
+    outline_program.define_in_float(3); /* norm1 */
+    outline_program.define_in_float(3); /* norm2 */
     outline_program.define_uniform("projection");
     outline_program.define_uniform("modelview");
     outline_program.define_uniform("color");
@@ -343,7 +345,7 @@ int main() {
 
     init_model_draw();
 
-    // run window
+    /* run window */
 
     plat_run_window(_main_loop_func);
 

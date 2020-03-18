@@ -33,15 +33,15 @@ dvec airfoil_get_point(Airfoil *airfoil, int i) {
     return p;
 }
 
-void airfoil_init_from_base(Airfoil *airfoil,
-                            float u_base, float u_delta, unsigned char *u_y,
-                            float l_base, float l_delta, unsigned char *l_y) {
+void airfoil_init(Airfoil *airfoil,
+                  float u_base, float u_delta, unsigned char *u_y,
+                  float l_base, float l_delta, unsigned char *l_y) {
 
-        memcpy(airfoil->upper.y, u_y, sizeof(unsigned char) * AIRFOIL_X_SUBDIVS);
-        airfoil->upper.base = u_base;
-        airfoil->upper.delta = u_delta;
+    memcpy(airfoil->upper.y, u_y, sizeof(unsigned char) * AIRFOIL_X_SUBDIVS);
+    airfoil->upper.base = u_base;
+    airfoil->upper.delta = u_delta;
 
-        memcpy(airfoil->lower.y, l_y, sizeof(unsigned char) * AIRFOIL_X_SUBDIVS);
-        airfoil->lower.base = l_base;
-        airfoil->lower.delta = l_delta;
+    memcpy(airfoil->lower.y, l_y, sizeof(unsigned char) * AIRFOIL_X_SUBDIVS);
+    airfoil->lower.base = l_base;
+    airfoil->lower.delta = l_delta;
 }

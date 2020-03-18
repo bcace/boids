@@ -1,12 +1,18 @@
 #include "warehouse.h"
 #include "shape.h"
+#include "airfoil.h"
 #include <string.h>
 #include <assert.h>
 
 
 Warehouse warehouse;
 
-Warehouse::Warehouse() : parts_count(0), selected_part(0), mode(wmClosed) {
+Warehouse::Warehouse() {
+    parts_count = 0;
+    selected_part = 0;
+    wpros_count = 0;
+    selected_wpro = 0;
+    mode = WM_CLOSED;
 
     /* object parts */
 
@@ -57,15 +63,19 @@ Warehouse::Warehouse() : parts_count(0), selected_part(0), mode(wmClosed) {
     part_set_skin_formers(nose_endpoint,
                           shape_circle(0.0, 0.0, 0.1), 0.0f,
                           shape_circle(0.0, 0.0, 0.02), 0.2f);
+
+    /* create wing prototypes */
+
+
 }
 
 void Warehouse::open(bool wings) {
-    mode = wmObject;
+    mode = wings ? WM_WING : WM_OBJECT;
     update_drawing_geometry();
 }
 
 void Warehouse::close() {
-    mode = wmClosed;
+    mode = WM_CLOSED;
 }
 
 void Warehouse::select_next_part() {

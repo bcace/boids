@@ -34,9 +34,7 @@ struct Mantle {
     void update_data(); // TODO: make this private
 
     void generate_from_former_array(Arena &arena, Former *formers, int formers_count, vec3 obj_p);
-    void generate_from_skin_formers(Arena &arena, SkinFormer *tail_skin_former, vec3 tail_obj_p, SkinFormer *nose_skin_former, vec3 nose_obj_p);
     void generate_object_model(Arena &arena, Object *obj);
-    void generate_object_skin(Arena &arena, Object *obj);
 
     void draw_triangles(ShaderProgram &program, mat4_stack &mv_stack, const vec4 &color);
     void draw_outlines(ShaderProgram &program, mat4_stack &mv_stack, const vec4 &color, const vec3 &camera_pos);

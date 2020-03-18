@@ -169,7 +169,7 @@ struct _FileInfo {
     int count;
 };
 
-void _print_airfoil(FILE *f, _FileInfo *info, int index) {
+void _print_airfoil(FILE *f, _FileInfo *info) {
     Airfoil a;
     _parse_selig_airfoil(&a, info->path, info->count);
 
@@ -182,13 +182,10 @@ void _print_airfoil(FILE *f, _FileInfo *info, int index) {
 
     fprintf(f,
 "\n"
-"        airfoil_init_from_base(airfoils + %d,\n"
-"                               %g, %g, u_y,\n"
-"                               %g, %g, l_y);\n"
-"\n"
-"        ++count;\n"
+"        airfoil_init(airfoils_base + airfoils_base_count++,\n"
+"                     %gf, %gf, u_y,\n"
+"                     %gf, %gf, l_y);\n"
 "    }\n",
-    index,
     a.upper.base, a.upper.delta,
     a.lower.base, a.lower.delta);
 }
@@ -210,19 +207,17 @@ void airfoil_generate_base() {
     FILE *f = (FILE *)plat_fopen("src/airfoil_base.cpp", "w");
 
     fprintf(f,
-"#include \"airfoil.h\"\n\n\n"
-"int airfoil_init_base(Airfoil *airfoils) {\n"
-"    int count = 0;\n"
+"#include \"airfoil.h\"\n"
+"#include <assert.h>\n\n\n"
+"Airfoil airfoils_base[AIRFOIL_MAX_BASE_COUNT];\n"
+"int airfoils_base_count = 0;\n\n"
+"void airfoil_init_base() {\n"
+"    assert(airfoils_base_count == 0);\n"
     );
 
     for (int i = 0; i < infos_count; ++i)
-        _print_airfoil(f, infos + i, i);
+        _print_airfoil(f, infos + i);
 
-    fprintf(f,
-"\n"
-"    return count;\n"
-"}\n"
-    );
-
+    fprintf(f, "}\n");
     fclose(f);
 }

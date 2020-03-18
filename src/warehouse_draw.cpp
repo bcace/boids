@@ -3,6 +3,7 @@
 #include "arena.h"
 #include "graphics.h"
 #include "mat.h"
+#include "debug.h"
 
 
 Mantle mantle;
@@ -10,18 +11,20 @@ Mantle mantle;
 Arena warehouse_arena(100000);
 
 void Warehouse::update_drawing_geometry() {
-    if (mode == wmClosed)
+    if (mode == WM_CLOSED)
         return;
+    else if (mode == WM_OBJECT) {
+        Part *part = parts + selected_part;
+        warehouse_arena.clear();
+        mantle.generate_from_former_array(warehouse_arena, part->formers, part->formers_count, vec3(0, 0, 0));
+    }
+    else if (mode == WM_WING) {
 
-    Part &part = parts[selected_part];
-
-    warehouse_arena.clear();
-
-    mantle.generate_from_former_array(warehouse_arena, part.formers, part.formers_count, vec3(0, 0, 0));
+    }
 }
 
 void Warehouse::draw_triangles(ShaderProgram &program, mat4_stack &mv_stack, vec3 camera_pos, vec3 camera_dir) {
-    if (mode == wmClosed)
+    if (mode == WM_CLOSED)
         return;
 
     mv_stack.push();
@@ -35,7 +38,7 @@ void Warehouse::draw_triangles(ShaderProgram &program, mat4_stack &mv_stack, vec
 }
 
 void Warehouse::draw_outlines(ShaderProgram &program, mat4_stack &mv_stack, vec3 camera_pos, vec3 camera_dir) {
-    if (mode == wmClosed)
+    if (mode == WM_CLOSED)
         return;
 
     mv_stack.push();

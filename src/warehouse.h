@@ -2,20 +2,30 @@
 #define warehouse_h
 
 #include "part.h"
+#include "airfoil.h"
 
 #define MAX_PARTS   64
+#define MAX_WPROS   64
 
 
 struct Object;
 struct mat4_stack;
 struct ShaderProgram;
 
-enum WarehouseMode { wmClosed, wmObject, wmWing };
+/* Wing prototype. */
+struct Wpro {
+    Airfoil airfoil;
+};
+
+enum WarehouseMode { WM_CLOSED, WM_OBJECT, WM_WING };
 
 struct Warehouse {
     Part parts[MAX_PARTS];
     int parts_count;
     int selected_part;
+    Wpro wpros[MAX_WPROS];
+    int wpros_count;
+    int selected_wpro;
     WarehouseMode mode;
 
     Warehouse();
