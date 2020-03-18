@@ -63,10 +63,6 @@ Warehouse::Warehouse() {
     part_set_skin_formers(nose_endpoint,
                           shape_circle(0.0, 0.0, 0.1), 0.0f,
                           shape_circle(0.0, 0.0, 0.02), 0.2f);
-
-    /* create wing prototypes */
-
-
 }
 
 void Warehouse::open(bool wings) {
@@ -79,16 +75,30 @@ void Warehouse::close() {
 }
 
 void Warehouse::select_next_part() {
-    selected_part = ++selected_part;
-    if (selected_part > parts_count - 1)
-        selected_part = 0;
+    if (mode == WM_OBJECT) {
+        ++selected_part;
+        if (selected_part > parts_count - 1)
+            selected_part = 0;
+    }
+    else if (mode == WM_WING) {
+        ++selected_wpro;
+        if (selected_wpro > airfoils_base_count - 1)
+            selected_wpro = 0;
+    }
     update_drawing_geometry();
 }
 
 void Warehouse::select_prev_part() {
-    selected_part = --selected_part;
-    if (selected_part < 0)
-        selected_part = parts_count - 1;
+    if (mode == WM_OBJECT) {
+        --selected_part;
+        if (selected_part < 0)
+            selected_part = parts_count - 1;
+    }
+    else if (mode == WM_WING) {
+        --selected_wpro;
+        if (selected_wpro < 0)
+            selected_wpro = airfoils_base_count - 1;
+    }
     update_drawing_geometry();
 }
 

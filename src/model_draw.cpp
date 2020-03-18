@@ -36,9 +36,6 @@ void Model::draw_skin_triangles(ShaderProgram &program, mat4_stack &mv_stack, Pi
 
 void Model::draw_skin_outlines(ShaderProgram &program, mat4_stack &mv_stack, vec3 camera_pos) {
     graph_line_width(2);
-
-    for (int i = 0; i < objects_count; ++i)
-        objects[i]->skin_mantle.draw_outlines(program, mv_stack, vec4(0.2f, 0.2f, 0.2f, 1.0f), camera_pos);
 }
 
 void Model::draw_lines(ShaderProgram &program, mat4_stack &mv_stack, PickResult &pick_result) {

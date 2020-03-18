@@ -6,7 +6,7 @@
 #include "airfoil.h"
 
 #define WING_MAX_SPARS  32
-#define WING_SNAP_WIDTH 0.1
+#define WING_SNAP_WIDTH 1.0
 
 
 struct Spar {

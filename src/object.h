@@ -65,7 +65,6 @@ struct Object {
 
     /* drawing */
     Mantle model_mantle;
-    Mantle skin_mantle; /* TODO: move this to fuselage */
     Handle handles[2][SHAPE_CURVES]; /* [tail/nose][index] */
 
     void move(vec3 dp);

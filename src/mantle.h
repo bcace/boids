@@ -11,12 +11,14 @@ struct vec3;
 struct vec4;
 struct Arena;
 struct Object;
+struct Airfoil;
 struct SkinFormer;
 struct mat4_stack;
 struct ShaderProgram;
 
 struct Mantle {
     int sections_count;
+    int verts_per_section;
     int tri_verts_count;
     int tri_indices_count;
     int out_verts_count;
@@ -30,7 +32,6 @@ struct Mantle {
     Mantle();
 
     int wrap(int i, int j); // TODO: make this private
-    void update_storage(Arena &arena, int _sections_count); // TODO: make this private
     void update_data(); // TODO: make this private
 
     void generate_from_former_array(Arena &arena, Former *formers, int formers_count, vec3 obj_p);
@@ -42,5 +43,10 @@ struct Mantle {
 
 Arena &mantle_arena();
 void mantle_clear_arena();
+
+void mantle_update_storage(Mantle *mantle, Arena *arena,
+                           int sections_count, int verts_per_section);
+void mantle_generate_from_airfoil(Mantle *mantle, Arena *arena, Airfoil *airfoil,
+                                  float x, float y, float z);
 
 #endif

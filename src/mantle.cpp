@@ -7,28 +7,29 @@
 Mantle::Mantle() : tri_verts(0), tri_indices(0), out_verts(0), out_norms1(0), out_norms2(0),
                    tri_verts_count(0), tri_indices_count(0), out_verts_count(0) {}
 
-void Mantle::update_storage(Arena &arena, int _sections_count) {
-    sections_count = _sections_count;
+void mantle_update_storage(Mantle *mantle, Arena *arena, int sections_count, int verts_per_section) {
+    mantle->sections_count = sections_count;
+    mantle->verts_per_section = verts_per_section;
 
-    tri_verts_count = sections_count * DRAW_VERTS_PER_POLY;
-    tri_indices_count = (sections_count - 1) * DRAW_VERTS_PER_POLY * 2 * 3;
-    out_verts_count = ((sections_count * 2 - 1) * DRAW_VERTS_PER_POLY * 2);
+    mantle->tri_verts_count = sections_count * verts_per_section;
+    mantle->tri_indices_count = (sections_count - 1) * verts_per_section * 2 * 3;
+    mantle->out_verts_count = ((sections_count * 2 - 1) * verts_per_section * 2);
 
-    tri_verts = arena.alloc<vec3>(tri_verts_count);
-    tri_indices = arena.alloc<int>(tri_indices_count);
-    out_verts = arena.alloc<vec3>(out_verts_count);
-    out_norms1 = arena.alloc<vec3>(out_verts_count);
-    out_norms2 = arena.alloc<vec3>(out_verts_count);
+    mantle->tri_verts = arena->alloc<vec3>(mantle->tri_verts_count);
+    mantle->tri_indices = arena->alloc<int>(mantle->tri_indices_count);
+    mantle->out_verts = arena->alloc<vec3>(mantle->out_verts_count);
+    mantle->out_norms1 = arena->alloc<vec3>(mantle->out_verts_count);
+    mantle->out_norms2 = arena->alloc<vec3>(mantle->out_verts_count);
 }
 
 inline int Mantle::wrap(int i, int j) {
     if (j < 0)
-        j += DRAW_VERTS_PER_POLY;
+        j += verts_per_section;
     if (i < 0)
         i = 0;
     if (i >= sections_count)
         i = sections_count - 1;
-    return i * DRAW_VERTS_PER_POLY + (j % DRAW_VERTS_PER_POLY);
+    return i * verts_per_section + (j % verts_per_section);
 }
 
 void Mantle::update_data() {
@@ -37,7 +38,7 @@ void Mantle::update_data() {
     int *tri_index = tri_indices;
 
     for (int i = 1; i < sections_count; ++i) {
-        for (int j = 0; j < DRAW_VERTS_PER_POLY; ++j) {
+        for (int j = 0; j < verts_per_section; ++j) {
             *tri_index++ = wrap(i - 1, j);
             *tri_index++ = wrap(i, j);
             *tri_index++ = wrap(i, j + 1);
@@ -54,7 +55,7 @@ void Mantle::update_data() {
     vec3 *out_norm2 = out_norms2;
 
     for (int i = 0; i < sections_count; ++i) {
-        for (int j = 0; j < DRAW_VERTS_PER_POLY; ++j) {
+        for (int j = 0; j < verts_per_section; ++j) {
             vec3 curr = tri_verts[wrap(i, j)];
             vec3 tail = tri_verts[wrap(i - 1, j)];
             vec3 nose = tri_verts[wrap(i + 1, j)];

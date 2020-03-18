@@ -1,9 +1,12 @@
 #include "mantle.h"
 #include "object.h"
+//#include "airfoil.h"
+#include "wing.h"
 #include "interp.h"
 #include "arena.h"
 #include "config.h"
 #include "dvec.h"
+#include "vec.h"
 #include <assert.h>
 
 
@@ -27,7 +30,7 @@ void _get_shape_verts(Shape *shape, vec3 *verts, int verts_count, vec3 trans) {
 void Mantle::generate_from_former_array(Arena &arena, Former *formers, int formers_count, vec3 obj_p) {
     assert(formers_count > 1);
 
-    update_storage(arena, formers_count);
+    mantle_update_storage(this, &arena, formers_count, DRAW_VERTS_PER_POLY);
 
     /* fill in draw buffers data */
 
@@ -39,8 +42,8 @@ void Mantle::generate_from_former_array(Arena &arena, Former *formers, int forme
         Former *f = formers + i;
         vec3 p = obj_p;
         p.x += f->x;
-        _get_shape_verts(&f->shape, verts, DRAW_VERTS_PER_POLY, p);
-        verts += DRAW_VERTS_PER_POLY;
+        _get_shape_verts(&f->shape, verts, verts_per_section, p);
+        verts += verts_per_section;
     }
 
     update_data();
@@ -49,3 +52,24 @@ void Mantle::generate_from_former_array(Arena &arena, Former *formers, int forme
 void Mantle::generate_object_model(Arena &arena, Object *obj) {
     generate_from_former_array(arena, obj->formers, obj->formers_count, obj->p);
 }
+
+/* Used to generate a draggable representation of a wing root. */
+void mantle_generate_from_airfoil(Mantle *mantle, Arena *arena, Airfoil *airfoil,
+                                  float x, float y, float z) {
+
+    mantle_update_storage(mantle, arena, 2, AIRFOIL_POINTS);
+    vec3 *verts = mantle->tri_verts;
+
+    for (int i = 0; i < AIRFOIL_POINTS; ++i) {
+        dvec p = airfoil_get_point(airfoil, i);
+        vec3 *v1 = verts + i;
+        vec3 *v2 = v1 + AIRFOIL_POINTS;
+        v1->x = v2->x = x - (float)p.x * 2.0f;
+        v1->z = v2->z = z + (float)p.y * 2.0f;
+        v1->y = y - (float)WING_SNAP_WIDTH * 0.5f;
+        v2->y = y + (float)WING_SNAP_WIDTH * 0.5f;
+    }
+
+    mantle->update_data();
+}
+
