@@ -57,6 +57,10 @@ void _mousebutton_callback(int button, int action, int mods) {
                 model_add_object(&model, warehouse.make_selected_part(camera.pos, camera.dir));
                 _recalculate_model();
             }
+            else if (warehouse.mode == WM_WING) {
+                model_add_wing(&model, warehouse_make_selected_wing(&warehouse, camera.pos, camera.dir));
+                _recalculate_model();
+            }
             if (model.maybe_drag_selection(pick_result, (mods & PLATFORM_MOD_CTRL) != 0))
                 drag.begin(camera.pos, camera.dir, pick_result.depth);
         }

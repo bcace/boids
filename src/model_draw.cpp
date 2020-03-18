@@ -1,5 +1,6 @@
 #include "model.h"
 #include "object.h"
+#include "wing.h"
 #include "graphics.h"
 #include "pick.h"
 #include "arena.h"
@@ -18,6 +19,9 @@ void Model::draw_triangles(ShaderProgram &program, mat4_stack &mv_stack, PickRes
 
     for (int i = 0; i < objects_count; ++i)
         objects[i]->draw_triangles(program, mv_stack, hovered_pickable);
+
+    for (int i = 0; i < wings_count; ++i)
+        wings[i]->mantle.draw_triangles(program, mv_stack, vec4(1, 0, 0, 1));
 }
 
 void Model::draw_outlines(ShaderProgram &program, mat4_stack &mv_stack, vec3 camera_pos) {
@@ -25,6 +29,9 @@ void Model::draw_outlines(ShaderProgram &program, mat4_stack &mv_stack, vec3 cam
 
     for (int i = 0; i < objects_count; ++i)
         objects[i]->draw_outlines(program, mv_stack, camera_pos);
+
+    for (int i = 0; i < wings_count; ++i)
+        wings[i]->mantle.draw_outlines(program, mv_stack, vec4(0, 0, 0, 1), camera_pos);
 }
 
 void Model::draw_skin_triangles(ShaderProgram &program, mat4_stack &mv_stack, PickResult &pick_result) {
@@ -131,6 +138,10 @@ void init_model_draw() {
 void model_update_object_mantles(Model *model) {
     for (int i = 0; i < model->objects_count; ++i)
         object_update_mantle(model->objects[i]);
+    for (int i = 0; i < model->wings_count; ++i) {
+        Wing *w = model->wings[i];
+        mantle_generate_from_airfoil(&w->mantle, &mantle_arena(), &w->airfoil, w->x, w->y, w->z);
+    }
 }
 
 static Arena skin_vert_colors_arena(10000000);

@@ -1,15 +1,14 @@
 #ifndef mantle_h
 #define mantle_h
 
-#include "shape.h"
-
 #define DRAW_VERTS_PER_POINT    16
-#define DRAW_VERTS_PER_POLY     (SHAPE_CURVES * DRAW_VERTS_PER_POINT)
+#define DRAW_VERTS_PER_POLY     (4 * DRAW_VERTS_PER_POINT)
 
 
 struct vec3;
 struct vec4;
 struct Arena;
+struct Former;
 struct Object;
 struct Airfoil;
 struct SkinFormer;

@@ -2,11 +2,12 @@
 #define wing_h
 
 #include "dvec.h"
+#include "mantle.h"
 #include "element.h"
 #include "airfoil.h"
 
 #define WING_MAX_SPARS  32
-#define WING_SNAP_WIDTH 1.0
+#define WING_SNAP_WIDTH 0.2
 
 
 struct Spar {
@@ -15,10 +16,14 @@ struct Spar {
 
 struct Wing {
     float x, y, z; /* wing anchor position, places wing inside a fuselage */
-    float i_length; /* ideal root chord length */
+    float chord; /* ideal root chord length */
     float dihedral;
     Spar spars[WING_MAX_SPARS];
     int spars_count;
+    Airfoil airfoil;
+
+    /* drawing */
+    Mantle mantle;
 };
 
 void wing_init(Wing *w);
@@ -26,7 +31,7 @@ void wing_add_spar(Wing *w, float x);
 int wing_get_required_stations(Wing *w, float *stations);
 bool wing_should_be_centered(Wing *w);
 bool wing_should_be_mirrored(Wing *w);
-
+Wing *wing_make_from_selected_base_airfoil(int index, float x, float y, float z);
 
 /*
 

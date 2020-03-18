@@ -8,6 +8,7 @@
 #define MAX_WPROS   64
 
 
+struct Wing;
 struct Object;
 struct mat4_stack;
 struct ShaderProgram;
@@ -40,6 +41,8 @@ struct Warehouse {
     void draw_triangles(ShaderProgram &program, mat4_stack &mv_stack, vec3 camera_pos, vec3 camera_dir);
     void draw_outlines(ShaderProgram &program, mat4_stack &mv_stack, vec3 camera_pos, vec3 camera_dir);
 };
+
+Wing *warehouse_make_selected_wing(Warehouse *wh, vec3 camera_pos, vec3 camera_dir);
 
 extern Warehouse warehouse;
 

@@ -1,6 +1,6 @@
 #include "warehouse.h"
 #include "shape.h"
-#include "airfoil.h"
+#include "wing.h"
 #include <string.h>
 #include <assert.h>
 
@@ -106,4 +106,11 @@ Object *Warehouse::make_selected_part(vec3 camera_pos, vec3 camera_dir) {
     Object *o = part_make_object(&parts[selected_part], camera_pos + camera_dir * 10);
     close();
     return o;
+}
+
+Wing *warehouse_make_selected_wing(Warehouse *wh, vec3 camera_pos, vec3 camera_dir) {
+    vec3 p = camera_pos + camera_dir * 10;
+    Wing *w = wing_make_from_selected_base_airfoil(wh->selected_wpro, p.x, p.y, p.z);
+    wh->close();
+    return w;
 }

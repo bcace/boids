@@ -1,6 +1,5 @@
 #include "mantle.h"
 #include "object.h"
-//#include "airfoil.h"
 #include "wing.h"
 #include "interp.h"
 #include "arena.h"
@@ -64,8 +63,8 @@ void mantle_generate_from_airfoil(Mantle *mantle, Arena *arena, Airfoil *airfoil
         dvec p = airfoil_get_point(airfoil, i);
         vec3 *v1 = verts + i;
         vec3 *v2 = v1 + AIRFOIL_POINTS;
-        v1->x = v2->x = x - (float)p.x * 2.0f;
-        v1->z = v2->z = z + (float)p.y * 2.0f;
+        v1->x = v2->x = x - (float)p.x;
+        v1->z = v2->z = z + (float)p.y;
         v1->y = y - (float)WING_SNAP_WIDTH * 0.5f;
         v2->y = y + (float)WING_SNAP_WIDTH * 0.5f;
     }

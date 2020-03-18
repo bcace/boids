@@ -71,8 +71,6 @@ struct Object {
     void reset_drag_p();
     void deselect_all_handles();
 
-    void update_drawing_geometry(); /* TODO: move this to object drawing */
-
     void draw_triangles(ShaderProgram &program, mat4_stack &mv_stack, void *hovered_pickable);
     void draw_outlines(ShaderProgram &program, mat4_stack &mv_stack, vec3 camera_pos);
     void draw_handles(ShaderProgram &program, mat4_stack &mv_stack, void *hovered_pickable);

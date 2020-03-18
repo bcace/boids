@@ -1,10 +1,13 @@
 #include "wing.h"
 #include "debug.h"
 #include <math.h>
+#include <stdlib.h>
 
 
 void wing_init(Wing *w) {
     w->spars_count = 0;
+    wing_add_spar(w, 0.25);
+    wing_add_spar(w, 0.7);
 }
 
 void wing_add_spar(Wing *w, float x) {
@@ -15,10 +18,10 @@ void wing_add_spar(Wing *w, float x) {
 
 int wing_get_required_stations(Wing *w, float *stations) {
     int c = 0;
-    stations[c++] = w->x - w->i_length * 0.5; /* first station */
+    stations[c++] = w->x - w->chord * 0.5; /* first station */
     for (int i = 0; i < w->spars_count; ++i)
-        stations[c++] = w->x + w->i_length * w->spars[i].x;
-    stations[c++] = w->x + w->i_length * 0.5; /* last station */
+        stations[c++] = w->x + w->chord * w->spars[i].x;
+    stations[c++] = w->x + w->chord * 0.5; /* last station */
     return c;
 }
 
@@ -28,4 +31,14 @@ bool wing_should_be_centered(Wing *w) {
 
 bool wing_should_be_mirrored(Wing *w) {
     return !wing_should_be_centered(w);
+}
+
+Wing *wing_make_from_selected_base_airfoil(int index, float x, float y, float z) {
+    Wing *w = (Wing *)malloc(sizeof(Wing));
+    wing_init(w);
+    w->x = x;
+    w->y = y;
+    w->z = z;
+    w->airfoil = airfoils_base[index];
+    return w;
 }
