@@ -1,8 +1,6 @@
 #include "element.h"
 
 
-// TODO: move _origins_related here
-
 static const int _BUCKET = MAX_ELEMS;
 
 static inline unsigned long long int _to_subflag(int i) {

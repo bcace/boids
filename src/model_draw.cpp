@@ -16,10 +16,18 @@ unsigned int object_model_pick_category;
 unsigned int object_handle_pick_category;
 
 vec4 _wing_color(Wing *w, void *hovered_pickable) {
-    if (w == hovered_pickable)
-        return vec4(0.25f, 0.7f, 0.0f, 1.0f);
-    else
-        return vec4(0.4f, 0.9f, 0.0f, 1.0f);
+    if (w->selected) {
+        if (w == hovered_pickable)
+            return vec4(0.8, 0.7, 0.0, 1);
+        else
+            return vec4(1.0, 0.9, 0.0, 1);
+    }
+    else {
+        if (w == hovered_pickable)
+            return vec4(0.25f, 0.7f, 0.0f, 1.0f);
+        else
+            return vec4(0.4f, 0.9f, 0.0f, 1.0f);
+    }
 }
 
 void Model::draw_triangles(ShaderProgram &program, mat4_stack &mv_stack, PickResult &pick_result) {
@@ -116,7 +124,11 @@ bool Model::maybe_drag_selection(PickResult &pick_result, bool ctrl_pressed) {
 
     if (hovered_pickable) {
 
-        if (pick_result.category_id == object_model_pick_category) {
+        if (pick_result.category_id == wing_pick_category) {
+            Wing *w = (Wing *)hovered_pickable;
+            w->selected = !w->selected;
+        }
+        else if (pick_result.category_id == object_model_pick_category) {
             Object *object = (Object *)hovered_pickable;
 
             object->selected = !object->selected;

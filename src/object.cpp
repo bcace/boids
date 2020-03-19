@@ -4,7 +4,7 @@
 
 void object_finish(Object *o) {
     o->selected = false;
-    o->drag_p = o->p;
+    o->reset_drag_p();
     object_update_extents(o);
 }
 

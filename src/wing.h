@@ -15,6 +15,7 @@ struct Spar {
 };
 
 struct Wing {
+    /* serialize */
     float x, y, z; /* wing anchor position, places wing inside a fuselage */
     float chord; /* ideal root chord length */
     float dihedral;
@@ -22,16 +23,22 @@ struct Wing {
     int spars_count;
     Airfoil airfoil;
 
+    /* control */
+    float tx, ty, tz; /* target position, used for dragging */
+    float fx, fy, fz; /* forces acting on wing during collision */
+    bool selected;
+
     /* drawing */
     Mantle mantle;
 };
 
-void wing_init(Wing *w);
 void wing_add_spar(Wing *w, float x);
 int wing_get_required_stations(Wing *w, float *stations);
 bool wing_should_be_centered(Wing *w);
 bool wing_should_be_mirrored(Wing *w);
 Wing *wing_make_from_selected_base_airfoil(int index, float x, float y, float z);
+void wing_move_target_position(Wing *w, float dx, float dy, float dz);
+void wing_reset_target_position(Wing *w);
 
 /*
 

@@ -8,10 +8,16 @@
 
 
 struct Shape;
+struct Arena;
 
 struct CollPrism {
     dvec verts[COLL_PRISM_VERTS];
     double x, min_x, max_x;
+};
+
+struct CollContext {
+    Arena *arena;
+    bool dragging;
 };
 
 void coll_get_prism(Shape *shape, CollPrism *prism, double dx, double dy, double margin);

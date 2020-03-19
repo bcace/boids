@@ -1,5 +1,6 @@
 #include "model.h"
 #include "object.h"
+#include "wing.h"
 #include "part.h"
 #include "debug.h"
 #include <math.h>
@@ -36,50 +37,23 @@ void Model::deselect_all() {
         objects[i]->selected = false;
         objects[i]->deselect_all_handles();
     }
+    for (int i = 0; i < wings_count; ++i)
+        wings[i]->selected = false;
 }
 
 bool Model::move_selected(vec3 move_xyz, vec3 target_yz) {
     bool requires_reloft = false;
 
     for (int i = 0; i < objects_count; ++i) {
-        Object *obj = objects[i];
+        Object *o = objects[i];
+        if (o->selected)
+            o->move(move_xyz);
+    }
 
-        /* move objects */
-
-        if (obj->selected)
-            obj->move(move_xyz);
-
-        /* move skin former handles */
-
-        // for (int j = 0; j < 2; ++j) {
-
-        //     SkinFormer *former = (j == 0) ? obj->tail_skin_former : obj->nose_skin_former;
-        //     SkinPoint *proto_points = (j == 0) ? obj->part.tail_points : obj->part.nose_points;
-
-        //     for (int k = 0; k < SHAPE_CURVES; ++k) {
-        //         Handle &handle = obj->handles[j][k];
-        //         SkinPoint &proto_point = proto_points[k];
-
-        //         if (!handle.selected)
-        //             continue;
-
-        //         ShapePoint &former_point = former->shape.points[k];
-
-        //         /* move handle */
-
-        //         vec2 old_p = former_point.p;
-        //         former_point.p = vec2(target_yz.y, target_yz.z) - obj->p.yz();
-
-        //         /* degrees of freedom constraints */
-
-        //         if (!proto_point.move_x)
-        //             former_point.p.x = old_p.x;
-        //         if (!proto_point.move_y)
-        //             former_point.p.y = old_p.y;
-
-        //         requires_reloft = true;
-        //     }
-        // }
+    for (int i = 0; i < wings_count; ++i) {
+        Wing *w = wings[i];
+        if (w->selected)
+            wing_move_target_position(w, move_xyz.x, move_xyz.y, move_xyz.z);
     }
 
     return requires_reloft;

@@ -39,9 +39,6 @@ struct Handle {
 };
 
 struct Object {
-    /* admin */
-    bool selected;
-
     /* serialize */
     vec3 p;
     Former formers[MAX_OBJECT_FORMERS]; /* collision formers */
@@ -51,7 +48,6 @@ struct Object {
 
     /* collision */
     vec3 f;
-    bool dragging;
     CollPrism *prisms; /* allocated in arena */
     int prisms_count;
     box2 bounds; /* y-z bounds */
@@ -61,6 +57,7 @@ struct Object {
     float coll_min_x, coll_max_x; /* with refs */
 
     /* control */
+    bool selected;
     vec3 drag_p;
 
     /* drawing */
@@ -75,8 +72,6 @@ struct Object {
     void draw_outlines(ShaderProgram &program, mat4_stack &mv_stack, vec3 camera_pos);
     void draw_handles(ShaderProgram &program, mat4_stack &mv_stack, void *hovered_pickable);
     void pick_handles(ShaderProgram &program, mat4_stack &mv_stack, unsigned pick_category, int object_index);
-
-    void prepare_for_collision(Arena *arena);
 };
 
 void object_finish(Object *o);
@@ -84,11 +79,6 @@ void object_update_extents(Object *o);
 
 bool object_should_be_centered(Object *o);
 bool object_should_be_mirrored(Object *o);
-
-void object_preparation(void *agent, void *exec_context);
-void object_interaction(void *agent1, void *agent2, void *exec_context);
-void object_plane_interaction(void *agent, void *exec_context);
-void object_action(void *agent, void *exec_context);
 
 void object_clear_dynamic_arena();
 
