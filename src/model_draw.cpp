@@ -127,10 +127,14 @@ bool Model::maybe_drag_selection(PickResult &pick_result, bool ctrl_pressed) {
         if (pick_result.category_id == wing_pick_category) {
             Wing *w = (Wing *)hovered_pickable;
             w->selected = !w->selected;
+            if (w->selected) {
+                for (int i = 0; i < wings_count; ++i)
+                    wing_reset_target_position(wings[i]);
+                do_drag = true;
+            }
         }
         else if (pick_result.category_id == object_model_pick_category) {
             Object *object = (Object *)hovered_pickable;
-
             object->selected = !object->selected;
             if (object->selected) {
                 for (int i = 0; i < objects_count; ++i) /* prepare objects for dragging */

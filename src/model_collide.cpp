@@ -1,5 +1,6 @@
 #include "model.h"
 #include "object.h"
+#include "wing.h"
 #include "ochre.h"
 #include "collision.h"
 #include "arena.h"
@@ -8,6 +9,7 @@
 
 static OcState *state;
 static OcNodeGroup *objects_group;
+static OcNodeGroup *wings_group;
 
 /* Action callback that prepares an object for interaction. */
 static void _object_preparation(void *agent, void *exec_context) {
@@ -107,7 +109,8 @@ static void _object_plane_interaction(void *agent, void *exec_context) {
         o->f.y -= o->p.y * 1.0f; // TODO: experiment and document what this factor is
 }
 
-/* Action callback for objects to finalize stuff. */
+/* Action callback where objects turn difference between their position and target
+position into force that will move them towards target position. */
 static void _object_action(void *agent, void *exec_context) {
     CollContext *c = (CollContext *)exec_context;
     Object *o = (Object *)agent;
@@ -115,30 +118,49 @@ static void _object_action(void *agent, void *exec_context) {
         o->f -= o->p - o->drag_p;
 }
 
+/* Action callback where wings turn difference between their position and target
+position into force that will move them towards target position. */
+static void _wing_action(void *agent, void *exec_context) {
+    CollContext *c = (CollContext *)exec_context;
+    Wing *w = (Wing *)agent;
+    if (w->selected && c->dragging) {
+        w->fx -= w->x - w->tx;
+        w->fy -= w->y - w->ty;
+        w->fz -= w->z - w->tz;
+    }
+}
+
 /* Initialize ochre state for model elements collision. */
 void model_init_ochre_state() {
     state = ochre_add_state();
+
     objects_group = ochre_add_node_group(state, OFFSETOF(Object, f), OFFSETOF(Object, p), OC_LAYOUT_F32_3);
+    wings_group = ochre_add_node_group(state, OFFSETOF(Wing, fx), OFFSETOF(Wing, x), OC_LAYOUT_F32_3);
+
     ochre_add_node_action(state, objects_group, _object_preparation, 0);
     ochre_add_node_interaction(state, objects_group, objects_group, _object_interaction, 1);
     ochre_add_node_action(state, objects_group, _object_plane_interaction, 1);
     ochre_add_node_action(state, objects_group, _object_action, 2);
+
+    ochre_add_node_action(state, wings_group, _wing_action, 2);
 }
 
 /* Main model elements collision procedure. Returns true if some elements moved
 which would require relofting. */
 bool Model::collide(Arena *arena, bool dragging) {
-    CollContext ctx;
-    ctx.arena = arena;
-    ctx.dragging = dragging;
+    CollContext c;
+    c.arena = arena;
+    c.dragging = dragging;
 
     arena->clear();
-    ochre_set_exec_context(state, &ctx);
+    ochre_set_exec_context(state, &c);
 
-    /* to collider */
+    /* add elements (objects, wings) to ochre */
     ochre_clear_data(state);
-    for (int i = 0; i < objects_count; ++i) /* object nodes */
+    for (int i = 0; i < objects_count; ++i)
         ochre_add_node(objects_group, objects[i]);
+    for (int i = 0; i < wings_count; ++i)
+        ochre_add_node(wings_group, wings[i]);
 
     /* collide */
     if (!ochre_run(state, 10))
