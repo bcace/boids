@@ -87,6 +87,7 @@ void model_loft(Arena *arena, Model *model) {
         Group *g = maker.groups + i;
         Fuselage *f = fuselages + fuselages_count++;
         f->orefs_count = g->count;
+        f->wrefs_count = 0;
         f->conns_count = 0;
         for (int j = 0; j < g->count; ++j)
             f->orefs[j] = orefs[g->obj_indices[j]];

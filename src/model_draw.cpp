@@ -115,45 +115,33 @@ void *Model::decode_pick_result(PickResult &result) {
 }
 
 bool Model::maybe_drag_selection(PickResult &pick_result, bool ctrl_pressed) {
-    bool do_drag = false;
-
     if (!ctrl_pressed)
         deselect_all();
 
     void *hovered_pickable = decode_pick_result(pick_result);
+    if (hovered_pickable == 0)
+        return false;
 
-    if (hovered_pickable) {
-
-        if (pick_result.category_id == wing_pick_category) {
-            Wing *w = (Wing *)hovered_pickable;
-            w->selected = !w->selected;
-            if (w->selected) {
-                for (int i = 0; i < wings_count; ++i)
-                    wing_reset_target_position(wings[i]);
-                do_drag = true;
-            }
+    if (pick_result.category_id == wing_pick_category) {
+        Wing *w = (Wing *)hovered_pickable;
+        w->selected = !w->selected;
+        if (w->selected) {
+            for (int i = 0; i < wings_count; ++i)
+                wing_reset_target_position(wings[i]);
+            return true;
         }
-        else if (pick_result.category_id == object_model_pick_category) {
-            Object *object = (Object *)hovered_pickable;
-            object->selected = !object->selected;
-            if (object->selected) {
-                for (int i = 0; i < objects_count; ++i) /* prepare objects for dragging */
-                    objects[i]->reset_drag_p();
-                do_drag = true;
-            }
-        }
-        else if (pick_result.category_id == object_handle_pick_category) {
-            Handle *handle = (Handle *)hovered_pickable;
-
-            handle->selected = !handle->selected;
-            if (handle->selected) {
-                /* TODO: prepare handles for dragging */
-                do_drag = true;
-            }
+    }
+    else if (pick_result.category_id == object_model_pick_category) {
+        Object *o = (Object *)hovered_pickable;
+        o->selected = !o->selected;
+        if (o->selected) {
+            for (int i = 0; i < objects_count; ++i)
+                objects[i]->reset_drag_p();
+            return true;
         }
     }
 
-    return do_drag;
+    return false;
 }
 
 void init_model_draw() {
