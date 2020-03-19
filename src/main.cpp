@@ -197,7 +197,7 @@ void _main_loop_func() {
 
     // step colliders
 
-    if (model.collide(&arena, drag.dragging))
+    if (model_collide(&model, &arena, drag.dragging))
         reloft = true;
 
     // reloft fuselages

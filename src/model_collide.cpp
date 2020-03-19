@@ -147,7 +147,7 @@ void model_init_ochre_state() {
 
 /* Main model elements collision procedure. Returns true if some elements moved
 which would require relofting. */
-bool Model::collide(Arena *arena, bool dragging) {
+bool model_collide(Model *model, Arena *arena, bool dragging) {
     CollContext c;
     c.arena = arena;
     c.dragging = dragging;
@@ -157,18 +157,18 @@ bool Model::collide(Arena *arena, bool dragging) {
 
     /* add elements (objects, wings) to ochre */
     ochre_clear_data(state);
-    for (int i = 0; i < objects_count; ++i)
-        ochre_add_node(objects_group, objects[i]);
-    for (int i = 0; i < wings_count; ++i)
-        ochre_add_node(wings_group, wings[i]);
+    for (int i = 0; i < model->objects_count; ++i)
+        ochre_add_node(objects_group, model->objects[i]);
+    for (int i = 0; i < model->wings_count; ++i)
+        ochre_add_node(wings_group, model->wings[i]);
 
     /* collide */
     if (!ochre_run(state, 10))
         return false;
 
     /* postprocess */
-    for (int i = 0; i < objects_count; ++i) {
-        Object *o = objects[i];
+    for (int i = 0; i < model->objects_count; ++i) {
+        Object *o = model->objects[i];
         if (object_should_be_centered(o))
             o->p.y = 0.0f;
         object_update_extents(o);

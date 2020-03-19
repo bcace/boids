@@ -71,8 +71,6 @@ struct Model {
     void pick(ShaderProgram &program, mat4_stack &mv_stack);
     void *decode_pick_result(PickResult &result);
 
-    bool collide(Arena *arena, bool dragging);
-
     bool maybe_drag_selection(PickResult &pick_result, bool ctrl_pressed);
 };
 
@@ -90,6 +88,8 @@ void init_model_draw();
 void model_update_object_mantles(Model *model);
 
 void model_update_skin_verts_values(Model *model, SkinVertColorSource source);
+
+bool model_collide(Model *model, Arena *arena, bool dragging);
 
 void model_loft(Arena *arena, Model *model);
 

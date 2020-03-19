@@ -15,12 +15,12 @@ unsigned int wing_pick_category;
 unsigned int object_model_pick_category;
 unsigned int object_handle_pick_category;
 
-vec4 _wing_color(Wing *w, void *hovered_pickable) {
+static vec4 _wing_color(Wing *w, void *hovered_pickable) {
     if (w->selected) {
         if (w == hovered_pickable)
-            return vec4(0.8, 0.7, 0.0, 1);
+            return vec4(0.8f, 0.7f, 0.0f, 1.0f);
         else
-            return vec4(1.0, 0.9, 0.0, 1);
+            return vec4(1.0f, 0.9f, 0.0f, 1.0f);
     }
     else {
         if (w == hovered_pickable)
@@ -30,11 +30,28 @@ vec4 _wing_color(Wing *w, void *hovered_pickable) {
     }
 }
 
+static vec4 _object_color(Object *o, void *hovered_pickable) {
+    if (o->selected) {
+        if (o == hovered_pickable)
+            return vec4(0.8f, 0.7f, 0.0f, 1.0f);
+        else
+            return vec4(1.0f, 0.9f, 0.0f, 1.0f);
+    }
+    else {
+        if (o == hovered_pickable)
+            return vec4(0.25f, 0.7f, 0.0f, 1.0f);
+        else
+            return vec4(0.4f, 0.9f, 0.0f, 1.0f);
+    }
+}
+
 void Model::draw_triangles(ShaderProgram &program, mat4_stack &mv_stack, PickResult &pick_result) {
     void *hovered_pickable = decode_pick_result(pick_result);
 
-    for (int i = 0; i < objects_count; ++i)
-        objects[i]->draw_triangles(program, mv_stack, hovered_pickable);
+    for (int i = 0; i < objects_count; ++i) {
+        Object *o = objects[i];
+        o->model_mantle.draw_triangles(program, mv_stack, _object_color(o, hovered_pickable));
+    }
 
     for (int i = 0; i < wings_count; ++i) {
         Wing *w = wings[i];
@@ -46,10 +63,10 @@ void Model::draw_outlines(ShaderProgram &program, mat4_stack &mv_stack, vec3 cam
     graph_line_width(2);
 
     for (int i = 0; i < objects_count; ++i)
-        objects[i]->draw_outlines(program, mv_stack, camera_pos);
+        objects[i]->model_mantle.draw_outlines(program, mv_stack, vec4(0.2f, 0.2f, 0.2f, 1.0f), camera_pos);
 
     for (int i = 0; i < wings_count; ++i)
-        wings[i]->mantle.draw_outlines(program, mv_stack, vec4(0, 0, 0, 1), camera_pos);
+        wings[i]->mantle.draw_outlines(program, mv_stack, vec4(0.2f, 0.2f, 0.2f, 1.0f), camera_pos);
 }
 
 void Model::draw_skin_triangles(ShaderProgram &program, mat4_stack &mv_stack, PickResult &pick_result) {
@@ -90,10 +107,8 @@ void Model::pick(ShaderProgram &program, mat4_stack &mv_stack) {
     graph_enable_blend(false);
     graph_enable_smooth_line(false);
 
-    for (int i = 0; i < objects_count; ++i) {
+    for (int i = 0; i < objects_count; ++i)
         objects[i]->model_mantle.draw_triangles(program, mv_stack, pick_encode(object_model_pick_category, i));
-        objects[i]->pick_handles(program, mv_stack, object_handle_pick_category, i);
-    }
 
     for (int i = 0; i < wings_count; ++i)
         wings[i]->mantle.draw_triangles(program, mv_stack, pick_encode(wing_pick_category, i));

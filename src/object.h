@@ -67,11 +67,6 @@ struct Object {
     void move(vec3 dp);
     void reset_drag_p();
     void deselect_all_handles();
-
-    void draw_triangles(ShaderProgram &program, mat4_stack &mv_stack, void *hovered_pickable);
-    void draw_outlines(ShaderProgram &program, mat4_stack &mv_stack, vec3 camera_pos);
-    void draw_handles(ShaderProgram &program, mat4_stack &mv_stack, void *hovered_pickable);
-    void pick_handles(ShaderProgram &program, mat4_stack &mv_stack, unsigned pick_category, int object_index);
 };
 
 void object_finish(Object *o);
