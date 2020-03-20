@@ -23,20 +23,16 @@ struct Mantle {
 
     vec3 *verts;
     int *indices;
-    bool draw_caps;
+    bool is_wing;
 
     Mantle();
-
-    void update_data(); // TODO: make this private
-    void generate_from_former_array(Arena &arena, Former *formers, int formers_count, vec3 obj_p);
-    void generate_object_model(Arena &arena, Object *obj);
 };
 
 Arena &mantle_arena();
 void mantle_clear_arena();
 
+void mantle_generate_from_former_array(Mantle *m, Arena *arena, Former *formers, int formers_count, float x, float y, float z);
+void mantle_generate_from_airfoil(Mantle *m, Arena *arena, Airfoil *airfoil, float x, float y, float z);
 void mantle_draw_quads(Mantle *m, ShaderProgram &program, mat4_stack &mv_stack, const vec4 &color);
-void mantle_generate_from_airfoil(Mantle *m, Arena *arena, Airfoil *airfoil,
-                                  float x, float y, float z);
 
 #endif

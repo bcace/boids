@@ -55,5 +55,5 @@ void Object::deselect_all_handles() {
 }
 
 void object_update_mantle(Object *o) {
-    o->model_mantle.generate_object_model(mantle_arena(), o);
+    mantle_generate_from_former_array(&o->model_mantle, &mantle_arena(), o->formers, o->formers_count, o->p.x, o->p.y, o->p.z);
 }

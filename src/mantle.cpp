@@ -7,7 +7,7 @@
 Mantle::Mantle() : verts(0), verts_count(0),
                    indices(0), indices_count(0),
                    sections_count(0), verts_per_section(0),
-                   draw_caps(false) {}
+                   is_wing(false) {}
 
 void mantle_draw_quads(Mantle *m, ShaderProgram &program, mat4_stack &mv_stack, const vec4 &color) {
     program.set_uniform_vec4(2, color);
