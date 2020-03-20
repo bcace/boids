@@ -50,23 +50,13 @@ void Model::draw_triangles(ShaderProgram &program, mat4_stack &mv_stack, PickRes
 
     for (int i = 0; i < objects_count; ++i) {
         Object *o = objects[i];
-        o->model_mantle.draw_triangles(program, mv_stack, _object_color(o, hovered_pickable));
+        mantle_draw_quads(&o->model_mantle, program, mv_stack, _object_color(o, hovered_pickable));
     }
 
     for (int i = 0; i < wings_count; ++i) {
         Wing *w = wings[i];
-        w->mantle.draw_triangles(program, mv_stack, _wing_color(w, hovered_pickable));
+        mantle_draw_quads(&w->mantle, program, mv_stack, _wing_color(w, hovered_pickable));
     }
-}
-
-void Model::draw_outlines(ShaderProgram &program, mat4_stack &mv_stack, vec3 camera_pos) {
-    graph_line_width(2);
-
-    for (int i = 0; i < objects_count; ++i)
-        objects[i]->model_mantle.draw_outlines(program, mv_stack, vec4(0.2f, 0.2f, 0.2f, 1.0f), camera_pos);
-
-    for (int i = 0; i < wings_count; ++i)
-        wings[i]->mantle.draw_outlines(program, mv_stack, vec4(0.2f, 0.2f, 0.2f, 1.0f), camera_pos);
 }
 
 void Model::draw_skin_triangles(ShaderProgram &program, mat4_stack &mv_stack, PickResult &pick_result) {
@@ -76,20 +66,25 @@ void Model::draw_skin_triangles(ShaderProgram &program, mat4_stack &mv_stack, Pi
     graph_draw_quads_indexed(skin_quads_count * 4, skin_quads);
 }
 
-void Model::draw_skin_outlines(ShaderProgram &program, mat4_stack &mv_stack, vec3 camera_pos) {
-    graph_line_width(2);
-}
-
 void Model::draw_lines(ShaderProgram &program, mat4_stack &mv_stack, PickResult &pick_result) {
     graph_line_width(2);
 
-    program.set_uniform_vec4(2, vec4(0.0f, 0.0f, 0.0f, MESH_ALPHA));
-
     graph_set_polygon_line_mode(true);
 
+    program.set_uniform_vec4(2, vec4(0.0f, 0.0f, 0.0f, MESH_ALPHA));
     program.set_data<vec3>(0, skin_verts_count, skin_verts);
     graph_draw_triangles_indexed(skin_trias_count * 3, skin_trias);
     graph_draw_quads_indexed(skin_quads_count * 4, skin_quads);
+
+    for (int i = 0; i < objects_count; ++i) {
+        Object *o = objects[i];
+        mantle_draw_quads(&o->model_mantle, program, mv_stack, vec4(0.0f, 0.0f, 0.0f, MESH_ALPHA));
+    }
+
+    for (int i = 0; i < wings_count; ++i) {
+        Wing *w = wings[i];
+        mantle_draw_quads(&w->mantle, program, mv_stack, vec4(0.0f, 0.0f, 0.0f, MESH_ALPHA));
+    }
 
     graph_set_polygon_line_mode(false);
 }
@@ -108,10 +103,10 @@ void Model::pick(ShaderProgram &program, mat4_stack &mv_stack) {
     graph_enable_smooth_line(false);
 
     for (int i = 0; i < objects_count; ++i)
-        objects[i]->model_mantle.draw_triangles(program, mv_stack, pick_encode(object_model_pick_category, i));
+        mantle_draw_quads(&objects[i]->model_mantle, program, mv_stack, pick_encode(object_model_pick_category, i));
 
     for (int i = 0; i < wings_count; ++i)
-        wings[i]->mantle.draw_triangles(program, mv_stack, pick_encode(wing_pick_category, i));
+        mantle_draw_quads(&wings[i]->mantle, program, mv_stack, pick_encode(wing_pick_category, i));
 
     graph_enable_blend(true);
     graph_enable_smooth_line(true);

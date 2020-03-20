@@ -3,6 +3,7 @@
 #include "arena.h"
 #include "graphics.h"
 #include "mat.h"
+#include "config.h"
 #include "debug.h"
 
 
@@ -31,13 +32,13 @@ void Warehouse::draw_triangles(ShaderProgram &program, mat4_stack &mv_stack, vec
     mv_stack.translate(camera_pos + camera_dir * 10); // TODO: adapt distance to part size
     program.set_uniform_mat4(1, mv_stack.top());
 
-    mantle.draw_triangles(program, mv_stack, vec4(0.45f, 0.65f, 1.0f, 1.0f));
+    mantle_draw_quads(&mantle, program, mv_stack, vec4(0.45f, 0.65f, 1.0f, 1.0f));
 
     mv_stack.pop();
     program.set_uniform_mat4(1, mv_stack.top());
 }
 
-void Warehouse::draw_outlines(ShaderProgram &program, mat4_stack &mv_stack, vec3 camera_pos, vec3 camera_dir) {
+void Warehouse::draw_lines(ShaderProgram &program, mat4_stack &mv_stack, vec3 camera_pos, vec3 camera_dir) {
     if (mode == WM_CLOSED)
         return;
 
@@ -45,7 +46,9 @@ void Warehouse::draw_outlines(ShaderProgram &program, mat4_stack &mv_stack, vec3
     mv_stack.translate(camera_pos + camera_dir * 10); // TODO: adapt distance to part size
     program.set_uniform_mat4(1, mv_stack.top());
 
-    mantle.draw_outlines(program, mv_stack, vec4(0.0, 0.0, 0.0, 1), camera_pos - camera_dir);
+    graph_set_polygon_line_mode(true);
+    mantle_draw_quads(&mantle, program, mv_stack, vec4(0.0f, 0.0f, 0.0f, MESH_ALPHA));
+    graph_set_polygon_line_mode(false);
 
     mv_stack.pop();
     program.set_uniform_mat4(1, mv_stack.top());

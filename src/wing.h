@@ -1,13 +1,12 @@
 #ifndef wing_h
 #define wing_h
 
-#include "dvec.h"
 #include "mantle.h"
 #include "element.h"
 #include "airfoil.h"
 
 #define WING_MAX_SPARS  32
-#define WING_SNAP_WIDTH 0.2
+#define WING_SNAP_WIDTH 0.05
 
 
 struct Spar {

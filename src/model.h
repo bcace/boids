@@ -61,9 +61,7 @@ struct Model {
     bool delete_selected();
 
     void draw_triangles(ShaderProgram &program, mat4_stack &mv_stack, PickResult &pick_result);
-    void draw_outlines(ShaderProgram &program, mat4_stack &mv_stack, vec3 camera_pos);
     void draw_skin_triangles(ShaderProgram &program, mat4_stack &mv_stack, PickResult &pick_result);
-    void draw_skin_outlines(ShaderProgram &program, mat4_stack &mv_stack, vec3 camera_pos);
     void draw_lines(ShaderProgram &program, mat4_stack &mv_stack, PickResult &pick_result);
 #if DRAW_CORRS
     void draw_corrs(ShaderProgram &program);

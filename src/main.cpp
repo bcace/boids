@@ -22,7 +22,7 @@
 #include <stdio.h>
 
 
-ShaderProgram program, outline_program, shaded_program, valued_program, colored_program;
+ShaderProgram program, shaded_program, valued_program, colored_program;
 mat4 projection;
 mat4_stack mv_stack;
 
@@ -234,12 +234,6 @@ void _main_loop_func() {
         model.draw_corrs(colored_program);
 #endif
 
-        program.use();
-        program.set_uniform_mat4(0, projection);
-        program.set_uniform_mat4(1, mv_stack.top());
-
-        model.draw_lines(program, mv_stack, pick_result);
-
         // graph_clear_depth();
 
         // draw objects
@@ -250,13 +244,14 @@ void _main_loop_func() {
         model.draw_triangles(shaded_program, mv_stack, pick_result);
         warehouse.draw_triangles(shaded_program, mv_stack, camera.pos, camera.dir);
 
-        outline_program.use();
-        outline_program.set_uniform_mat4(0, projection);
-        outline_program.set_uniform_mat4(1, mv_stack.top());
+        // draw lines
 
-        model.draw_outlines(outline_program, mv_stack, camera.pos - camera.dir);
-        // model.draw_skin_outlines(outline_program, mv_stack, camera.pos - camera.dir);
-        warehouse.draw_outlines(outline_program, mv_stack, camera.pos, camera.dir);
+        program.use();
+        program.set_uniform_mat4(0, projection);
+        program.set_uniform_mat4(1, mv_stack.top());
+
+        model.draw_lines(program, mv_stack, pick_result);
+        warehouse.draw_lines(program, mv_stack, camera.pos, camera.dir);
 
         // draw headup
 
@@ -325,15 +320,6 @@ int main() {
     valued_program.define_in_float(1); /* value */
     valued_program.define_uniform("projection");
     valued_program.define_uniform("modelview");
-
-    outline_program.init("src/glsl/outline.vert", "src/glsl/default.frag");
-    outline_program.define_in_float(3); /* position */
-    outline_program.define_in_float(3); /* norm1 */
-    outline_program.define_in_float(3); /* norm2 */
-    outline_program.define_uniform("projection");
-    outline_program.define_uniform("modelview");
-    outline_program.define_uniform("color");
-    outline_program.define_uniform("camera_pos");
 
     plat_set_cursor_hidden(true);
     plat_set_key_callback(_key_callback);
