@@ -1,5 +1,6 @@
 #include "fuselage.h"
 #include "object.h"
+#include "wing.h"
 #include "interp.h"
 #include "mesh.h"
 #include "arena.h"
@@ -8,20 +9,20 @@
 #include <float.h>
 
 
-/* Returns a shape that represents a section of object or connection. */
+/* Returns a shape that represents a section of object or connection (pair of
+formers with associated longitudinal tangents). */
 static void _get_skin_section(float x, Shape *shape,
-                              Former *tail_f, tvec *t_tangents, vec3 tail_o_p, bool t_is_merge,
-                              Former *nose_f, tvec *n_tangents, vec3 nose_o_p, bool n_is_merge) {
-    Curve *t_curves = tail_f->shape.curves;
-    Curve *n_curves = nose_f->shape.curves;
+                              Former *t_form, tvec *t_tangents, bool t_is_merge,
+                              Former *n_form, tvec *n_tangents, bool n_is_merge) {
+    Curve *t_curves = t_form->shape.curves;
+    Curve *n_curves = n_form->shape.curves;
 
-    float min_x = tail_f->x;
-    float max_x = nose_f->x;
+    float min_x = t_form->x;
+    float max_x = n_form->x;
     float dx = max_x - min_x;
     float dc = dx * (float)LONGITUDINAL_SMOOTHNESS;
 
     float t = (x - min_x) / dx;
-    float smooth_t = SMOOTHSTEP(t);
 
     for (int i = 0; i < SHAPE_CURVES; ++i) {
         Curve *t_curve = t_curves + i;
@@ -29,53 +30,53 @@ static void _get_skin_section(float x, Shape *shape,
         tvec t_tangent = t_tangents[i];
         tvec n_tangent = n_tangents[i];
 
-        tvec p1, c1, c2, p2;
-
-        p1.x = tail_f->x;
+        tvec p1, c1, c2, p2; /* create the bezier curve */
+        p1.x = t_form->x;
         p1.y = t_curve->x;
         p1.z = t_curve->y;
-
         c1.x = p1.x + t_tangent.x * dc;
         c1.y = p1.y + t_tangent.y * dc;
         c1.z = p1.z + t_tangent.z * dc;
-
-        p2.x = nose_f->x;
+        p2.x = n_form->x;
         p2.y = n_curve->x;
         p2.z = n_curve->y;
-
         c2.x = p2.x - n_tangent.x * dc;
         c2.y = p2.y - n_tangent.y * dc;
         c2.z = p2.z - n_tangent.z * dc;
 
-        tvec p = cube_bezier_3d(p1, c1, c2, p2, t);
+        tvec p = cube_bezier_3d(p1, c1, c2, p2, t); /* sample bezier curve */
 
         shape->curves[i].x = p.y;
         shape->curves[i].y = p.z;
 
-        /* merge delay */
+        /* merge delay, delays interpolation of curve w parameter to keep shapes
+        similar to each other if they're close together */
+
+        float f1, f2;
 
         if (t_is_merge && n_is_merge) {
-            if (t < TWO_SIDE_MERGE_DELAY)
-                shape->curves[i].w = t_curves[i].w;
-            else if (t < ONE_MINUS_TWO_SIDE_MERGE_DELAY)
-                shape->curves[i].w = lerp_1d(t_curves[i].w, n_curves[i].w, SMOOTHSTEP((t - TWO_SIDE_MERGE_DELAY) / (ONE_MINUS_TWO_SIDE_MERGE_DELAY - TWO_SIDE_MERGE_DELAY)));
-            else
-                shape->curves[i].w = n_curves[i].w;
+            f1 = TWO_SIDE_MERGE_DELAY;
+            f2 = 1.0f - TWO_SIDE_MERGE_DELAY;
         }
         else if (t_is_merge) {
-            if (t < ONE_SIDE_MERGE_DELAY)
-                shape->curves[i].w = t_curves[i].w;
-            else
-                shape->curves[i].w = lerp_1d(t_curves[i].w, n_curves[i].w, SMOOTHSTEP((t - ONE_SIDE_MERGE_DELAY) / ONE_MINUS_ONE_SIDE_MERGE_DELAY));
+            f1 = ONE_SIDE_MERGE_DELAY;
+            f2 = 1.0f;
         }
         else if (n_is_merge) {
-            if (t < ONE_MINUS_ONE_SIDE_MERGE_DELAY)
-                shape->curves[i].w = lerp_1d(t_curves[i].w, n_curves[i].w, SMOOTHSTEP(t / ONE_MINUS_ONE_SIDE_MERGE_DELAY));
-            else
-                shape->curves[i].w = n_curves[i].w;
+            f1 = 0.0f;
+            f2 = 1.0f - ONE_SIDE_MERGE_DELAY;
         }
+        else {
+            f1 = 0.0f;
+            f2 = 1.0f;
+        }
+
+        if (t < f1)
+            shape->curves[i].w = t_curve->w;
+        else if (t <= f2)
+            shape->curves[i].w = lerp_1d(t_curve->w, n_curve->w, SMOOTHSTEP((t - f1) / (f2 - f1)));
         else
-            shape->curves[i].w = lerp_1d(t_curves[i].w, n_curves[i].w, smooth_t);
+            shape->curves[i].w = n_curve->w;
     }
 
     shape_update_curve_control_points(shape->curves);
@@ -157,10 +158,10 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
     int stations1_count = 0;
 
     for (int i = 0; i < fuselage->orefs_count; ++i) {
-        Oref *o_ref = fuselage->orefs + i;
-        Object *o = o_ref->object;
+        Oref *oref = fuselage->orefs + i;
+        Object *o = oref->object;
 
-        o_ref->id = i; /* assigning object origin */
+        oref->id = i; /* assigning object origin */
 
         if (o->min_x < min_x)
             min_x = o->min_x;
@@ -178,25 +179,32 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
 
         /* required stations */
 
-        if (o_ref->t_conns_count == 0) /* tailwise opening */
+        if (oref->t_conns_count == 0) /* tailwise opening */
             stations1_count = _insert_station(stations1, stations1_count,
-                                              o->min_x, flags_make(o_ref->id), flags_zero());
+                                              o->min_x, flags_make(oref->id), flags_zero());
 
-        if (o_ref->n_conns_count == 0) /* nosewise opening */
+        if (oref->n_conns_count == 0) /* nosewise opening */
             stations1_count = _insert_station(stations1, stations1_count,
-                                              o->max_x, flags_zero(), flags_make(o_ref->id));
+                                              o->max_x, flags_zero(), flags_make(oref->id));
     }
 
     /* TODO: assign wing id, get required stations */
 
-    // float w_stations[MAX_ELEM_REFS];
+    float w_stations[MAX_ELEM_REFS];
 
-    // for (int i = 0; i < fuselage->wrefs_count; ++i) {
-    //     Wref *wref = fuselage->wrefs + i;
-    //     Wing *w = wref->wing;
+    for (int i = 0; i < fuselage->wrefs_count; ++i) {
+        Wref *wref = fuselage->wrefs + i;
+        Wing *w = wref->wing;
+        Flags f = flags_make(wref->id);
 
-    //     int count = wing_get_required_stations()
-    // }
+        int count = wing_get_required_stations(w, w_stations);
+
+        stations1_count = _insert_station(stations1, stations1_count,
+                                          w_stations[0], f, flags_zero());
+
+        stations1_count = _insert_station(stations1, stations1_count,
+                                          w_stations[count - 1], flags_zero(), f);
+    }
 
     // TODO: merge stations that are too close, use mesh size to estimate
 
@@ -253,9 +261,9 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
         /* intersect objects */
 
         for (int j = 0; j < fuselage->orefs_count; ++j) {
-            Oref *o_ref = fuselage->orefs + j;
-            Object *o = o_ref->object;
-            Flags flag = flags_make(o_ref->id);
+            Oref *oref = fuselage->orefs + j;
+            Object *o = oref->object;
+            Flags flag = flags_make(oref->id);
 
             if (_intersects_object(section_x, o)) {
                 break_assert(section->shapes_count < MAX_ENVELOPE_SHAPES);
@@ -265,11 +273,11 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
                 bool is_nosemost = (i != end_section) && flags_and(&station->n_objs, &flag);
 
                 _get_skin_section(section_x, s,
-                                  &o_ref->t_skin_former, o_ref->t_tangents, o->p, false,
-                                  &o_ref->n_skin_former, o_ref->n_tangents, o->p, false);
+                                  &oref->t_skin_former, oref->t_tangents, false,
+                                  &oref->n_skin_former, oref->n_tangents, false);
 
-                s->ids.tail = o_ref->id;
-                s->ids.nose = o_ref->id;
+                s->ids.tail = oref->id;
+                s->ids.nose = oref->id;
                 if (!is_tailmost)
                     section->t_shapes[section->t_shapes_count++] = s;
                 if (!is_nosemost)
@@ -293,8 +301,8 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
                 Shape *s = section->shapes + section->shapes_count++;
 
                 _get_skin_section(section_x, s,
-                                  &tail_o_ref->n_skin_former, tail_o_ref->n_tangents, tail_o->p, tail_o_ref->n_conns_count > 1,
-                                  &nose_o_ref->t_skin_former, nose_o_ref->t_tangents, nose_o->p, nose_o_ref->t_conns_count > 1);
+                                  &tail_o_ref->n_skin_former, tail_o_ref->n_tangents, tail_o_ref->n_conns_count > 1,
+                                  &nose_o_ref->t_skin_former, nose_o_ref->t_tangents, nose_o_ref->t_conns_count > 1);
 
                 s->ids.tail = tail_o_ref->id;
                 s->ids.nose = nose_o_ref->id;

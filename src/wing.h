@@ -18,7 +18,7 @@ struct Wing {
     float x, y, z; /* wing anchor position, places wing inside a fuselage */
     float chord; /* ideal root chord length */
     float dihedral;
-    Spar spars[WING_MAX_SPARS];
+    Spar spars[WING_MAX_SPARS]; /* defined from leading to trailing edge */
     int spars_count;
     Airfoil airfoil;
 

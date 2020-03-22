@@ -22,7 +22,7 @@ static void _get_shape_verts(Shape *shape, vec3 *verts, int verts_count, float d
     static dvec _verts[128];
     shape_get_vertices(shape, verts_count, _verts);
     for (int i = 0; i < verts_count; ++i)
-        verts[i] = vec3(dx, _verts[i].x + dy, _verts[i].y + dz);
+        verts[i] = vec3(dx, (float)_verts[i].x + dy, (float)_verts[i].y + dz);
 }
 
 static void _init_mantle(Mantle *m, int sections_count, int verts_per_section, bool draw_caps) {

@@ -63,8 +63,6 @@ void config_increase_mesh_triangle_edge_transparency() {
 void _update_merge_delays() {
     ONE_SIDE_MERGE_DELAY = _MAX_ONE_SIDE_MERGE_DELAY * _MERGE_DELAY_FACTOR;
     TWO_SIDE_MERGE_DELAY = _MAX_TWO_SIDE_MERGE_DELAY * _MERGE_DELAY_FACTOR;
-    ONE_MINUS_ONE_SIDE_MERGE_DELAY = 1.0f - ONE_SIDE_MERGE_DELAY;
-    ONE_MINUS_TWO_SIDE_MERGE_DELAY = 1.0f - TWO_SIDE_MERGE_DELAY;
 }
 
 void config_decrease_merge_interpolation_delay() {
