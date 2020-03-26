@@ -9,11 +9,51 @@
 #include <float.h>
 
 
+/* Marks position of fuselage sections. */
+struct _Station {
+    float x;
+    Flags t_objs; /* objects for which this station is tailmost */
+    Flags n_objs; /* objects for which this station is nosemost */
+};
+
+/* Initialize station. */
+static void _init_station(_Station *s, float x, Flags t_objs, Flags n_objs) {
+    s->x = x;
+    s->t_objs = t_objs;
+    s->n_objs = n_objs;
+}
+
+/* Insert new station sorted by x. If station with same x is found don't insert new station,
+just update the old one with new object flags. */
+static int _insert_station(_Station *stations, int count, float x, Flags t_objs, Flags n_objs) {
+    int i = 0;
+    _Station *s = 0;
+
+    for (; i < count; ++i)
+        if (x <= stations[i].x) {
+            s = stations + i;
+            break;
+        }
+
+    if (s && s->x == x) {
+        flags_add_flags(&s->t_objs, &t_objs);
+        flags_add_flags(&s->n_objs, &n_objs);
+    }
+    else {
+        for (int j = count; j > i; --j)
+            stations[j] = stations[j - 1];
+        _init_station(stations + i, x, t_objs, n_objs);
+        ++count;
+    }
+
+    return count;
+}
+
 /* Returns a shape that represents a section of object or connection (pair of
 formers with associated longitudinal tangents). */
-static void _get_skin_section(float x, Shape *shape,
-                              Former *t_form, tvec *t_tangents, bool t_is_merge,
-                              Former *n_form, tvec *n_tangents, bool n_is_merge) {
+static void _get_section_shape(float x, Shape *shape,
+                               Former *t_form, tvec *t_tangents, bool t_is_merge,
+                               Former *n_form, tvec *n_tangents, bool n_is_merge) {
     Curve *t_curves = t_form->shape.curves;
     Curve *n_curves = n_form->shape.curves;
 
@@ -82,63 +122,79 @@ static void _get_skin_section(float x, Shape *shape,
     shape_update_curve_control_points(shape->curves);
 }
 
-static inline bool _intersects_object(float x, Object *o) {
-    return x >= o->min_x && x <= o->max_x;
-}
-
-static inline bool _intersects_connection(float x, Object *t_o, Object *n_o) {
-    return x > t_o->max_x && x < n_o->min_x;
-}
-
-/* Marks position of fuselage sections. */
-struct _Station {
-    float x;
-    Flags t_objs; /* objects for which this station is tailmost */
-    Flags n_objs; /* objects for which this station is nosemost */
-};
-
-/* Initialize station. */
-static void _init_station(_Station *s, float x, Flags t_objs, Flags n_objs) {
-    s->x = x;
-    s->t_objs = t_objs;
-    s->n_objs = n_objs;
-}
-
-/* Insert new station sorted by x. If station with same x is found don't insert new station,
-just update the old one with new object flags. */
-static int _insert_station(_Station *stations, int count, float x, Flags t_objs, Flags n_objs) {
-    int i = 0;
-    _Station *s = 0;
-
-    for (; i < count; ++i)
-        if (x <= stations[i].x) {
-            s = stations + i;
-            break;
-        }
-
-    if (s && s->x == x) {
-        flags_add_flags(&s->t_objs, &t_objs);
-        flags_add_flags(&s->n_objs, &n_objs);
-    }
-    else {
-        for (int j = count; j > i; --j)
-            stations[j] = stations[j - 1];
-        _init_station(stations + i, x, t_objs, n_objs);
-        ++count;
-    }
-
-    return count;
-}
-
-/* Fuselage section at specific station. Contains all object and connection section shapes
-and the resulting envelopes. Only two exist in memory at any time. */
-struct _Section {
+struct _SectionShapes {
     Shape shapes[MAX_ENVELOPE_SHAPES]; /* actual storage */
     int shapes_count;
     Shape *t_shapes[MAX_ENVELOPE_SHAPES]; /* aliases, shapes looking tailwise */
     int t_shapes_count;
     Shape *n_shapes[MAX_ENVELOPE_SHAPES]; /* aliases, shapes looking nosewise */
     int n_shapes_count;
+};
+
+static bool _get_fuselage_section_shapes(Fuselage *fuselage, _Station *station, _SectionShapes *shapes, bool is_first_section, bool is_last_section) {
+    shapes->shapes_count = 0;
+    shapes->t_shapes_count = 0;
+    shapes->n_shapes_count = 0;
+
+    bool two_envelopes = false;
+
+    /* intersect objects */
+
+    for (int i = 0; i < fuselage->orefs_count; ++i) {
+        Oref *oref = fuselage->orefs + i;
+
+        if (station->x >= oref->object->min_x && station->x <= oref->object->max_x) {
+            break_assert(shapes->shapes_count < MAX_ENVELOPE_SHAPES);
+            Shape *s = shapes->shapes + shapes->shapes_count++;
+
+            Flags f = flags_make(oref->id);
+            bool is_tailmost = !is_first_section && flags_and(&station->t_objs, &f);
+            bool is_nosemost = !is_last_section && flags_and(&station->n_objs, &f);
+
+            _get_section_shape(station->x, s,
+                               &oref->t_skin_former, oref->t_tangents, false,
+                               &oref->n_skin_former, oref->n_tangents, false);
+
+            s->ids.tail = oref->id;
+            s->ids.nose = oref->id;
+            if (!is_tailmost)
+                shapes->t_shapes[shapes->t_shapes_count++] = s;
+            if (!is_nosemost)
+                shapes->n_shapes[shapes->n_shapes_count++] = s;
+            if (is_tailmost || is_nosemost)
+                two_envelopes = true;
+        }
+    }
+
+    /* intersect connections between objects */
+
+    for (int i = 0; i < fuselage->conns_count; ++i) {
+        Conn *c = fuselage->conns + i;
+        Oref *t_oref = c->tail_o;
+        Oref *n_oref = c->nose_o;
+
+        if (station->x > t_oref->object->max_x && station->x < n_oref->object->min_x) {
+            break_assert(shapes->shapes_count < MAX_ENVELOPE_SHAPES);
+            Shape *s = shapes->shapes + shapes->shapes_count++;
+
+            _get_section_shape(station->x, s,
+                               &t_oref->n_skin_former, t_oref->n_tangents, t_oref->n_conns_count > 1,
+                               &n_oref->t_skin_former, n_oref->t_tangents, n_oref->t_conns_count > 1);
+
+            s->ids.tail = t_oref->id;
+            s->ids.nose = n_oref->id;
+            shapes->t_shapes[shapes->t_shapes_count++] = s;
+            shapes->n_shapes[shapes->n_shapes_count++] = s;
+        }
+    }
+
+    return two_envelopes;
+}
+
+/* Fuselage section at specific station. Contains all object and connection section shapes
+and the resulting envelopes. Only two exist in memory at any time. */
+struct _Section {
+    _SectionShapes shapes;
     MeshEnv envs[2]; /* actual storage */
     MeshEnv *t_env, *n_env; /* aliases of the above */
     int neighbors_map[MAX_ENVELOPE_POINTS]; /* maps tailwise envelope point indices to tailwise triangles */
@@ -148,34 +204,26 @@ struct _Section {
 void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fuselage) {
     int shape_subdivs = SHAPE_CURVE_SAMPLES * SHAPE_CURVES;
 
-    /* assign object id, get fuselage extents and get required stations */
+    /* assign fuselage elements' ids */
 
-    float min_x = FLT_MAX, max_x = -FLT_MAX;
-    float min_y = FLT_MAX, max_y = -FLT_MAX;
-    float min_z = FLT_MAX, max_z = -FLT_MAX;
+    int next_elem_id = 0;
+
+    for (int i = 0; i < fuselage->orefs_count; ++i)
+        fuselage->orefs[i].id = next_elem_id++;
+
+    for (int i = 0; i < fuselage->wrefs_count; ++i)
+        fuselage->wrefs[i].id = next_elem_id++;
+
+    /* get required stations */
 
     _Station *stations1 = arena->alloc<_Station>(MAX_ELEM_REFS * 2);
     int stations1_count = 0;
 
+    /* object required stations (openings) */
+
     for (int i = 0; i < fuselage->orefs_count; ++i) {
         Oref *oref = fuselage->orefs + i;
         Object *o = oref->object;
-
-        oref->id = i; /* assigning object origin */
-
-        if (o->min_x < min_x)
-            min_x = o->min_x;
-        if (o->min_y < min_y)
-            min_y = o->min_y;
-        if (o->min_z < min_z)
-            min_z = o->min_z;
-
-        if (o->max_x > max_x)
-            max_x = o->max_x;
-        if (o->max_y > max_y)
-            max_y = o->max_y;
-        if (o->max_z > max_z)
-            max_z = o->max_z;
 
         /* required stations */
 
@@ -188,7 +236,7 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
                                               o->max_x, flags_zero(), flags_make(oref->id));
     }
 
-    /* TODO: assign wing id, get required stations */
+    /* get wing required stations (leading and trailing edge root points, spars) */
 
     float w_stations[MAX_ELEM_REFS];
 
@@ -199,18 +247,41 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
 
         int count = wing_get_required_stations(w, w_stations);
 
+        /* trailing edge */
         stations1_count = _insert_station(stations1, stations1_count,
                                           w_stations[0], f, flags_zero());
 
+        // TODO: add spar stations
+
+        /* leading edge */
         stations1_count = _insert_station(stations1, stations1_count,
                                           w_stations[count - 1], flags_zero(), f);
     }
 
-    // TODO: merge stations that are too close, use mesh size to estimate
+    // TODO: merge stations that are too close along x, use mesh size to estimate
 
-    model_assert(model, stations1_count >= 2, "stations_count_less_than_2");
+    /* approximate mesh size */
 
-    /* create all section positions */
+    float min_y = FLT_MAX, max_y = -FLT_MAX;
+    float min_z = FLT_MAX, max_z = -FLT_MAX;
+
+    for (int i = 0; i < fuselage->orefs_count; ++i) {
+        Oref *oref = fuselage->orefs + i;
+        Object *o = oref->object;
+
+        if (o->min_y < min_y)
+            min_y = o->min_y;
+        if (o->min_z < min_z)
+            min_z = o->min_z;
+        if (o->max_y > max_y)
+            max_y = o->max_y;
+        if (o->max_z > max_z)
+            max_z = o->max_z;
+    }
+
+    float mesh_size = ((max_y - min_y) + (max_z - min_z)) * 2.0f / shape_subdivs; /* estimate mesh size */
+
+    /* once we have required stations we can calculate all the in-between ones */
 
     const static int MAX_STATIONS = 1000;
 
@@ -218,8 +289,6 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
     int stations2_count = 1;
 
     stations2[0] = stations1[0];
-
-    float mesh_size = ((max_y - min_y) + (max_z - min_z)) * 2.0f / shape_subdivs;
 
     for (int i = 1; i < stations1_count; ++i) {
         _Station *s1 = stations1 + i - 1;
@@ -237,95 +306,36 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
         stations2[stations2_count++] = stations1[i];
     }
 
-    int beg_section = 0;
-    int end_section = stations2_count - 1;
-
-    /* get fuselage section envelopes */
+    /* trace fuselage envelope at each station and if we have the previous
+    station already traced, mesh the skin between them */
 
     _Section *sections[2];
-
     sections[0] = arena->alloc<_Section>();
     sections[1] = arena->alloc<_Section>();
 
     for (int i = 0; i < stations2_count; ++i) {
         _Section *section = sections[i % 2];
         _Station *station = stations2 + i;
-        float section_x = station->x;
+        _SectionShapes *shapes = &section->shapes;
 
-        section->shapes_count = 0;
-        section->t_shapes_count = 0;
-        section->n_shapes_count = 0;
+        bool has_two_envs = _get_fuselage_section_shapes(fuselage, station, shapes,
+                                                         i == 0, i == stations2_count - 1);
 
-        bool two_envelopes = false;
-
-        /* intersect objects */
-
-        for (int j = 0; j < fuselage->orefs_count; ++j) {
-            Oref *oref = fuselage->orefs + j;
-            Object *o = oref->object;
-            Flags flag = flags_make(oref->id);
-
-            if (_intersects_object(section_x, o)) {
-                break_assert(section->shapes_count < MAX_ENVELOPE_SHAPES);
-                Shape *s = section->shapes + section->shapes_count++;
-
-                bool is_tailmost = (i != beg_section) && flags_and(&station->t_objs, &flag);
-                bool is_nosemost = (i != end_section) && flags_and(&station->n_objs, &flag);
-
-                _get_skin_section(section_x, s,
-                                  &oref->t_skin_former, oref->t_tangents, false,
-                                  &oref->n_skin_former, oref->n_tangents, false);
-
-                s->ids.tail = oref->id;
-                s->ids.nose = oref->id;
-                if (!is_tailmost)
-                    section->t_shapes[section->t_shapes_count++] = s;
-                if (!is_nosemost)
-                    section->n_shapes[section->n_shapes_count++] = s;
-                if (is_tailmost || is_nosemost)
-                    two_envelopes = true;
-            }
-        }
-
-        /* intersect connections between objects */
-
-        for (int j = 0; j < fuselage->conns_count; ++j) {
-            Conn *c = fuselage->conns + j;
-            Oref *tail_o_ref = c->tail_o;
-            Oref *nose_o_ref = c->nose_o;
-            Object *tail_o = tail_o_ref->object;
-            Object *nose_o = nose_o_ref->object;
-
-            if (_intersects_connection(section_x, tail_o_ref->object, nose_o_ref->object)) {
-                break_assert(section->shapes_count < MAX_ENVELOPE_SHAPES);
-                Shape *s = section->shapes + section->shapes_count++;
-
-                _get_skin_section(section_x, s,
-                                  &tail_o_ref->n_skin_former, tail_o_ref->n_tangents, tail_o_ref->n_conns_count > 1,
-                                  &nose_o_ref->t_skin_former, nose_o_ref->t_tangents, nose_o_ref->t_conns_count > 1);
-
-                s->ids.tail = tail_o_ref->id;
-                s->ids.nose = nose_o_ref->id;
-                section->t_shapes[section->t_shapes_count++] = s;
-                section->n_shapes[section->n_shapes_count++] = s;
-            }
-        }
-
-        if (section->t_shapes_count == 0 || section->n_shapes_count == 0) /* skip if there are no shapes on either side */
+        if (shapes->t_shapes_count == 0 || shapes->n_shapes_count == 0) /* skip if there are no shapes on either side */
             continue;
 
         /* trace envelopes */
 
-        if (two_envelopes) {
+        if (has_two_envs) {
             section->t_env = section->envs;
             section->n_env = section->envs + 1;
         }
         else
             section->t_env = section->n_env = section->envs;
 
-        mesh_make_envelopes(model, arena, verts_arena, section_x,
-                            section->t_env, section->t_shapes, section->t_shapes_count,
-                            section->n_env, section->n_shapes, section->n_shapes_count);
+        mesh_make_envelopes(model, arena, verts_arena, station->x,
+                            section->t_env, shapes->t_shapes, shapes->t_shapes_count,
+                            section->n_env, shapes->n_shapes, shapes->n_shapes_count);
 
         /* mesh */
 
@@ -337,8 +347,8 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
             _Section *n_s = section;
 
             mesh_apply_merge_filter(arena, shape_subdivs,
-                                    t_s->n_shapes, t_s->n_shapes_count, t_s->n_env,
-                                    n_s->t_shapes, n_s->t_shapes_count, n_s->t_env);
+                                    t_s->shapes.n_shapes, t_s->shapes.n_shapes_count, t_s->n_env,
+                                    n_s->shapes.t_shapes, n_s->shapes.t_shapes_count, n_s->t_env);
 
             mesh_between_two_sections(model, shape_subdivs,
                                       t_s->n_env, t_s->neighbors_map,
