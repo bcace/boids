@@ -11,6 +11,8 @@ void wing_add_spar(Wing *w, float x) {
     w->spars[w->spars_count++].x = x;
 }
 
+/* Returns required stations' x positions, from trailing to leading edge.
+Includes stations for edges and spars. */
 int wing_get_required_stations(Wing *w, float *stations) {
     int c = 0;
     stations[c++] = w->x - w->chord; /* trailing station */

@@ -25,28 +25,29 @@ static void _init_station(_Station *s, float x, Flags t_objs, Flags n_objs) {
 
 /* Insert new station sorted by x. If station with same x is found don't insert new station,
 just update the old one with new object flags. */
-static int _insert_station(_Station *stations, int count, float x, Flags t_objs, Flags n_objs) {
+static _Station *_insert_station(_Station *stations, int *count, float x, Flags t_objs, Flags n_objs) {
     int i = 0;
     _Station *s = 0;
 
-    for (; i < count; ++i)
+    for (; i < *count; ++i)
         if (x <= stations[i].x) {
             s = stations + i;
             break;
         }
 
-    if (s && s->x == x) {
+    if (s && s->x == x) { /* just add flags to found station if it has the same x */
         flags_add_flags(&s->t_objs, &t_objs);
         flags_add_flags(&s->n_objs, &n_objs);
     }
-    else {
-        for (int j = count; j > i; --j)
+    else { /* insert new station at i */
+        s = stations + i;
+        for (int j = *count; j > i; --j)
             stations[j] = stations[j - 1];
-        _init_station(stations + i, x, t_objs, n_objs);
-        ++count;
+        _init_station(s, x, t_objs, n_objs);
+        ++(*count);
     }
 
-    return count;
+    return s;
 }
 
 /* Returns a shape that represents a section of object or connection (pair of
@@ -129,14 +130,14 @@ struct _SectionShapes {
     int t_shapes_count;
     Shape *n_shapes[MAX_ENVELOPE_SHAPES]; /* aliases, shapes looking nosewise */
     int n_shapes_count;
+    bool two_envelopes;
 };
 
-static bool _get_fuselage_section_shapes(Fuselage *fuselage, _Station *station, _SectionShapes *shapes, bool is_first_section, bool is_last_section) {
+static void _get_fuselage_section_shapes(Fuselage *fuselage, _Station *station, _SectionShapes *shapes, bool is_first_section, bool is_last_section) {
     shapes->shapes_count = 0;
     shapes->t_shapes_count = 0;
     shapes->n_shapes_count = 0;
-
-    bool two_envelopes = false;
+    shapes->two_envelopes = false;
 
     /* intersect objects */
 
@@ -162,7 +163,7 @@ static bool _get_fuselage_section_shapes(Fuselage *fuselage, _Station *station, 
             if (!is_nosemost)
                 shapes->n_shapes[shapes->n_shapes_count++] = s;
             if (is_tailmost || is_nosemost)
-                two_envelopes = true;
+                shapes->two_envelopes = true;
         }
     }
 
@@ -187,8 +188,6 @@ static bool _get_fuselage_section_shapes(Fuselage *fuselage, _Station *station, 
             shapes->n_shapes[shapes->n_shapes_count++] = s;
         }
     }
-
-    return two_envelopes;
 }
 
 /* Fuselage section at specific station. Contains all object and connection section shapes
@@ -228,34 +227,52 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
         /* required stations */
 
         if (oref->t_conns_count == 0) /* tailwise opening */
-            stations1_count = _insert_station(stations1, stations1_count,
-                                              o->min_x, flags_make(oref->id), flags_zero());
+            _insert_station(stations1, &stations1_count,
+                            o->min_x, flags_make(oref->id), flags_zero());
 
         if (oref->n_conns_count == 0) /* nosewise opening */
-            stations1_count = _insert_station(stations1, stations1_count,
-                                              o->max_x, flags_zero(), flags_make(oref->id));
+            _insert_station(stations1, &stations1_count,
+                            o->max_x, flags_zero(), flags_make(oref->id));
     }
+
+    _Station *beg_station1 = stations1;
+    _Station *end_station1 = stations1 + stations1_count - 1;
 
     /* get wing required stations (leading and trailing edge root points, spars) */
 
-    float w_stations[MAX_ELEM_REFS];
+    _SectionShapes *w_shapes = arena->alloc<_SectionShapes>();
 
     for (int i = 0; i < fuselage->wrefs_count; ++i) {
         Wref *wref = fuselage->wrefs + i;
         Wing *w = wref->wing;
-        Flags f = flags_make(wref->id);
 
+        static float w_stations[MAX_ELEM_REFS];
         int count = wing_get_required_stations(w, w_stations);
 
         /* trailing edge */
-        stations1_count = _insert_station(stations1, stations1_count,
-                                          w_stations[0], f, flags_zero());
+        _Station *t_station = _insert_station(stations1, &stations1_count, w_stations[0],
+                                              flags_make(wref->id), flags_zero());
+
+        /* Now would probably be the time to figure out the root point.
+        Probably start with
+
+        _get_fuselage_section_shapes(fuselage, t_station, w_shapes,
+                                     t_station == beg_station1,
+                                     t_station == end_station1);
+
+        Flags dummy_flags;
+        int count = mesh_trace_envelope(env_points,
+                                        shapes->n_shapes, shapes->n_shapes_count,
+                                        SHAPE_CURVE_SAMPLES, &dummy_flags);
+
+        Now intersect line from proto with the gotten envelope.
+         */
 
         // TODO: add spar stations
 
         /* leading edge */
-        stations1_count = _insert_station(stations1, stations1_count,
-                                          w_stations[count - 1], flags_zero(), f);
+        _Station *l_station = _insert_station(stations1, &stations1_count, w_stations[count - 1],
+                                              flags_zero(), flags_make(wref->id));
     }
 
     // TODO: merge stations that are too close along x, use mesh size to estimate
@@ -318,15 +335,15 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
         _Station *station = stations2 + i;
         _SectionShapes *shapes = &section->shapes;
 
-        bool has_two_envs = _get_fuselage_section_shapes(fuselage, station, shapes,
-                                                         i == 0, i == stations2_count - 1);
+        _get_fuselage_section_shapes(fuselage, station, shapes,
+                                     i == 0, i == stations2_count - 1);
 
         if (shapes->t_shapes_count == 0 || shapes->n_shapes_count == 0) /* skip if there are no shapes on either side */
             continue;
 
         /* trace envelopes */
 
-        if (has_two_envs) {
+        if (shapes->two_envelopes) {
             section->t_env = section->envs;
             section->n_env = section->envs + 1;
         }
