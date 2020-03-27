@@ -323,8 +323,8 @@ static bool _can_correlate_env_points(EnvPoint *a, EnvPoint *b) {
 
 /* Creates mesh points from two envelopes. */
 static void _mesh_envs_pass_1(Model *model, Arena *verts_arena, float section_x,
-                              MeshEnv *t_env, Shape **t_shapes, int t_shapes_count, EnvPoint *t_env_points,
-                              MeshEnv *n_env, Shape **n_shapes, int n_shapes_count, EnvPoint *n_env_points) {
+                              MeshEnv *t_env, Shape **t_shapes, int t_shapes_count, TraceEnv *t_trace_env,
+                              MeshEnv *n_env, Shape **n_shapes, int n_shapes_count, TraceEnv *n_trace_env) {
 
     if (corrs == 0)
         corrs = (_Corr *)malloc(sizeof(_Corr) * MAX_ENVELOPE_POINTS);
@@ -332,21 +332,28 @@ static void _mesh_envs_pass_1(Model *model, Arena *verts_arena, float section_x,
 
     /* trace envelopes */
 
-    int t_count = mesh_trace_envelope(t_env_points, t_shapes, t_shapes_count, SHAPE_CURVE_SAMPLES, &t_env->object_like_flags);
-    model_assert(model, t_count != -1, "envelope_trace_failed");
+    bool t_success = mesh_trace_envelope(t_trace_env, t_shapes, t_shapes_count, SHAPE_CURVE_SAMPLES);
+    model_assert(model, t_success, "envelope_trace_failed");
 
-    int n_count = mesh_trace_envelope(n_env_points, n_shapes, n_shapes_count, SHAPE_CURVE_SAMPLES, &n_env->object_like_flags);
-    model_assert(model, n_count != -1, "envelope_trace_failed");
+    bool n_success = mesh_trace_envelope(n_trace_env, n_shapes, n_shapes_count, SHAPE_CURVE_SAMPLES);
+    model_assert(model, n_success, "envelope_trace_failed");
 
     t_env->count = 0;
     n_env->count = 0;
     t_env->verts_base_i = model->skin_verts_count;
     n_env->verts_base_i = model->skin_verts_count;
+    t_env->object_like_flags = t_trace_env->object_like_flags;
+    n_env->object_like_flags = n_trace_env->object_like_flags;
 
     vec3 *verts = verts_arena->rest<vec3>();
     int verts_count = 0;
 
     /* collect all direct and opening correlations */
+
+    EnvPoint *t_env_points = t_trace_env->points;
+    EnvPoint *n_env_points = n_trace_env->points;
+    int t_count = t_trace_env->count;
+    int n_count = n_trace_env->count;
 
     _Corr *first_corr = 0;
     _Corr *prev_corr = 0;
@@ -440,25 +447,26 @@ static void _mesh_envs_pass_1(Model *model, Arena *verts_arena, float section_x,
 
 /* Handles simple case when there's only one shape in envelope. */
 void _mesh_envs_pass_0(Model *model, Arena *verts_arena, float section_x,
-                       MeshEnv *env, Shape **shapes, int shapes_count, EnvPoint *env_points) {
+                       MeshEnv *env, Shape **shapes, int shapes_count, TraceEnv *trace_env) {
 
     /* trace envelope */
 
-    int count = mesh_trace_envelope(env_points, shapes, shapes_count, SHAPE_CURVE_SAMPLES, &env->object_like_flags);
-    model_assert(model, count != -1, "envelope_trace_failed");
+    bool success = mesh_trace_envelope(trace_env, shapes, shapes_count, SHAPE_CURVE_SAMPLES);
+    model_assert(model, success, "envelope_trace_failed");
 
     /* make mesh envelope from trace envelope */
 
     env->count = 0;
     env->verts_base_i = model->skin_verts_count;
+    env->object_like_flags = trace_env->object_like_flags;
 
     vec3 *verts = verts_arena->rest<vec3>();
     int verts_count = 0;
 
-    for (int i = 0; i < count; ++i) {
-        EnvPoint *ep = env_points + i;
-        EnvPoint *prev_ep = env_points + ((i == 0) ? (count - 1) : (i - 1));
-        EnvPoint *next_ep = env_points + ((i == (count - 1)) ? 0 : (i + 1));
+    for (int i = 0; i < trace_env->count; ++i) {
+        EnvPoint *ep = trace_env->points + i;
+        EnvPoint *prev_ep = trace_env->points + ((i == 0) ? (trace_env->count - 1) : (i - 1));
+        EnvPoint *next_ep = trace_env->points + ((i == (trace_env->count - 1)) ? 0 : (i + 1));
         int i1 = ep->i1;
         int i2 = ep->i2;
         bool skip = false;
@@ -500,16 +508,16 @@ void mesh_make_envelopes(Model *model, Arena *arena, Arena *verts_arena, float s
 
     t_env->x = n_env->x = section_x;
 
-    EnvPoint *t_env_points = arena->lock<EnvPoint>(MAX_ENVELOPE_POINTS);
-    EnvPoint *n_env_points = arena->lock<EnvPoint>(MAX_ENVELOPE_POINTS);
+    TraceEnv *t_trace_env = arena->lock<TraceEnv>();
+    TraceEnv *n_trace_env = arena->lock<TraceEnv>();
 
     if (t_env == n_env) /* single envelope */
         _mesh_envs_pass_0(model, verts_arena, section_x,
-                          t_env, t_shapes, t_shapes_count, t_env_points);
+                          t_env, t_shapes, t_shapes_count, t_trace_env);
     else                /* double envelope */
         _mesh_envs_pass_1(model, verts_arena, section_x,
-                          t_env, t_shapes, t_shapes_count, t_env_points,
-                          n_env, n_shapes, n_shapes_count, n_env_points);
+                          t_env, t_shapes, t_shapes_count, t_trace_env,
+                          n_env, n_shapes, n_shapes_count, n_trace_env);
 
     arena->unlock();
     arena->unlock();

@@ -14,6 +14,12 @@ struct EnvPoint {
     bool is_intersection;
 };
 
+struct TraceEnv {
+    EnvPoint points[MAX_ENVELOPE_POINTS];
+    int count;
+    Flags object_like_flags;
+};
+
 // TODO: think about merging this with EnvPoint struct
 struct MeshPoint {
     double x, y;
@@ -54,7 +60,7 @@ void mesh_apply_merge_filter(Arena *arena, int shape_subdivs,
                              Shape **n_shapes, int n_shapes_count, MeshEnv *n_env);
 
 /* trace */
-int mesh_trace_envelope(EnvPoint *env_points, Shape **shapes, int shapes_count, int curve_subdivs, Flags *object_like_flags);
+bool mesh_trace_envelope(TraceEnv *env, Shape **shapes, int shapes_count, int curve_subdivs);
 
 /* envelope */
 void mesh_make_envelopes(Model *model, Arena *arena, Arena *verts_arena, float section_x,

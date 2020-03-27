@@ -90,17 +90,18 @@ static inline bool _should_bundle_shapes(Shape *a, Shape *b, double mx, double m
 }
 
 /* Main envelope tracing function. TODO: describe arguments. */
-int mesh_trace_envelope(EnvPoint *env_points, Shape **shapes, int shapes_count, int curve_subdivs, Flags *object_like_flags) {
+bool mesh_trace_envelope(TraceEnv *env, Shape **shapes, int shapes_count, int curve_subdivs) {
     break_assert(shapes_count < MAX_ENVELOPE_SHAPES);
     break_assert(curve_subdivs >= MIN_CURVE_SUBDIVS);
     break_assert(curve_subdivs <= MAX_CURVE_SUBDIVS);
 
+    env->count = 0;
+
     env_arena.clear();
 
     if (shapes_count == 0) /* no shapes, no envelope */
-        return 0;
+        return true;
 
-    int env_count = 0;
     int shape_subdivs = SHAPE_CURVES * curve_subdivs;
 
     /* Bundle shapes into polygons. Most of the polygons will only contain a single shape, but in
@@ -187,12 +188,12 @@ int mesh_trace_envelope(EnvPoint *env_points, Shape **shapes, int shapes_count, 
 
     /* collect all object-like polygons */
 
-    flags_init(object_like_flags);
+    flags_init(&env->object_like_flags);
 
     for (int i = 0; i < polys_count; ++i) {
         _Poly *p = polys + i;
         if (p->ids.tail == p->ids.nose)
-            flags_add(object_like_flags, p->ids.tail);
+            flags_add(&env->object_like_flags, p->ids.tail);
     }
 
     /* sample polygons */
@@ -371,7 +372,7 @@ int mesh_trace_envelope(EnvPoint *env_points, Shape **shapes, int shapes_count, 
             }
 
             if (fill_guard == MAX_ENVELOPE_SHAPES) /* tracing fill polygon failed */
-                return -1;
+                return false;
         }
 
         env_arena.unlock();
@@ -450,8 +451,8 @@ int mesh_trace_envelope(EnvPoint *env_points, Shape **shapes, int shapes_count, 
         /* trace envelope */
 
         EnvPoint point = beg_point;
-        env_count = 0;
-        env_points[env_count++] = point;
+        env->count = 0;
+        env->points[env->count++] = point;
         int point_poly_i = beg_point_poly_i;
 
         int env_guard = 0;
@@ -652,11 +653,11 @@ int mesh_trace_envelope(EnvPoint *env_points, Shape **shapes, int shapes_count, 
                 break;
             }
             else /* add points to envelope */
-                env_points[env_count++] = point;
+                env->points[env->count++] = point;
         }
 
         if (env_guard >= MAX_ENVELOPE_POINTS) /* max envelope points exceeded */
-            return -1;
+            return false;
 
         break; /* get out of the try loop */
 
@@ -664,7 +665,7 @@ int mesh_trace_envelope(EnvPoint *env_points, Shape **shapes, int shapes_count, 
     }
 
     if (try_i == MAX_TRIES) /* max retries exceeded */
-        return -1;
+        return false;
 
-    return env_count;
+    return true;
 }
