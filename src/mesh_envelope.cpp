@@ -502,14 +502,11 @@ void _mesh_envs_pass_0(Model *model, Arena *verts_arena, float section_x,
 }
 
 /* Main mesh envelope making procedure. */
-void mesh_make_envelopes(Model *model, Arena *arena, Arena *verts_arena, float section_x,
-                         MeshEnv *t_env, Shape **t_shapes, int t_shapes_count,
-                         MeshEnv *n_env, Shape **n_shapes, int n_shapes_count) {
+void mesh_make_envelopes(Model *model, Arena *verts_arena, float section_x,
+                         MeshEnv *t_env, Shape **t_shapes, int t_shapes_count, TraceEnv *t_trace_env,
+                         MeshEnv *n_env, Shape **n_shapes, int n_shapes_count, TraceEnv *n_trace_env) {
 
     t_env->x = n_env->x = section_x;
-
-    TraceEnv *t_trace_env = arena->lock<TraceEnv>();
-    TraceEnv *n_trace_env = arena->lock<TraceEnv>();
 
     if (t_env == n_env) /* single envelope */
         _mesh_envs_pass_0(model, verts_arena, section_x,
@@ -518,9 +515,6 @@ void mesh_make_envelopes(Model *model, Arena *arena, Arena *verts_arena, float s
         _mesh_envs_pass_1(model, verts_arena, section_x,
                           t_env, t_shapes, t_shapes_count, t_trace_env,
                           n_env, n_shapes, n_shapes_count, n_trace_env);
-
-    arena->unlock();
-    arena->unlock();
 }
 
 void mesh_verts_merge_margin(bool increase) {

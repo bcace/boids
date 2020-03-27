@@ -330,6 +330,9 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
     sections[0] = arena->alloc<_Section>();
     sections[1] = arena->alloc<_Section>();
 
+    TraceEnv *t_trace_env = arena->alloc<TraceEnv>();
+    TraceEnv *n_trace_env = arena->alloc<TraceEnv>();
+
     for (int i = 0; i < stations2_count; ++i) {
         _Section *section = sections[i % 2];
         _Station *station = stations2 + i;
@@ -350,9 +353,9 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
         else
             section->t_env = section->n_env = section->envs;
 
-        mesh_make_envelopes(model, arena, verts_arena, station->x,
-                            section->t_env, shapes->t_shapes, shapes->t_shapes_count,
-                            section->n_env, shapes->n_shapes, shapes->n_shapes_count);
+        mesh_make_envelopes(model, verts_arena, station->x,
+                            section->t_env, shapes->t_shapes, shapes->t_shapes_count, t_trace_env,
+                            section->n_env, shapes->n_shapes, shapes->n_shapes_count, n_trace_env);
 
         /* mesh */
 
