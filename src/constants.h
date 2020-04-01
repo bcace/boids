@@ -4,8 +4,6 @@
 /* This module sohuld contain an absolute minimum of constants that get
 used throughout the entire project and should be true compile-time constants. */
 
-#define PI                        3.1415926535897932384626433832795
-#define TAU                       6.283185307179586476925286766559
 #define SHAPE_CURVES              4
 #define MIN_CURVE_SUBDIVS         2
 #define MAX_CURVE_SUBDIVS         8

@@ -45,3 +45,12 @@ void airfoil_init(Airfoil *airfoil,
     airfoil->lower.base = l_base;
     airfoil->lower.delta = l_delta;
 }
+
+float _get_side_trailing_offset(AirfoilSide *s) {
+    return s->base + s->y[AIRFOIL_X_SUBDIVS - 1] * s->delta;
+}
+
+float airfoil_get_trailing_y_offset(Airfoil *a) {
+    return (_get_side_trailing_offset(&a->upper) +
+            _get_side_trailing_offset(&a->lower)) * 0.5f;
+}

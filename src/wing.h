@@ -17,7 +17,10 @@ struct Wing {
     /* serialize */
     float x, y, z; /* wing anchor position, places wing inside a fuselage */
     float chord; /* ideal root chord length */
-    float dihedral;
+    float taper; /* tip chord / root chord */
+    float span;
+    float sweep; /* leading edge angle, degrees */
+    float dihedral; /* degrees */
     Spar spars[WING_MAX_SPARS]; /* defined from leading to trailing edge */
     int spars_count;
     Airfoil airfoil;
@@ -38,24 +41,5 @@ bool wing_should_be_mirrored(Wing *w);
 Wing *wing_make_from_selected_base_airfoil(int index, float x, float y, float z);
 void wing_move_target_position(Wing *w, float dx, float dy, float dz);
 void wing_reset_target_position(Wing *w);
-
-/*
-
-LE - leading edge.
-TE - trailing edge.
-LS - leading fuselage station.
-TS - trailing fuselage station.
-L - line segment between two anchors.
-
-LS position is anchor plus half of chord.
-To determine LE intersection with LS:
-- Determine the plane using both anchors and a point that's unit distance from anchor and rotated by AOA around vector that's a projection of L in the x = anchor.x plane.
-- Determine intersection line between that plane and x = LS.x plane.
-- Intersect this line with LS envelope polygon.
-
-LOFTING:
-    1. Wing tells fuselage how many stations it requires.
-    2. Fuselage fills in the rest of the stations and then requests a cutter from the wing at each station.
-*/
 
 #endif

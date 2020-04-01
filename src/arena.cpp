@@ -26,9 +26,6 @@ void Arena::unlock() {
 }
 
 char *Arena::alloc_bytes(int bytes, bool zero) {
-    if (taken + bytes >= capacity) {
-        int cond_break = 0;
-    }
     break_assert(taken + bytes < capacity);
     break_assert(locked_stack == 0);
     char *mem = data + taken;
@@ -39,9 +36,6 @@ char *Arena::alloc_bytes(int bytes, bool zero) {
 }
 
 char *Arena::lock_bytes(int bytes) {
-    if (taken + bytes >= capacity) {
-        int cond_break = 0;
-    }
     break_assert(taken + bytes < capacity);
     char *mem = data + taken;
     taken += bytes;

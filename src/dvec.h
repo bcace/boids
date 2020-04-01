@@ -6,6 +6,8 @@ struct dvec {
     double x, y;
 };
 
+dvec dvec_rotate(dvec v, double a);
+
 struct tvec {
     double x, y, z;
 };

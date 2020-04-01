@@ -32,16 +32,23 @@ bool wing_should_be_mirrored(Wing *w) {
 
 Wing *wing_make_from_selected_base_airfoil(int index, float x, float y, float z) {
     Wing *w = (Wing *)malloc(sizeof(Wing));
-    w->selected = false;
-    w->chord = 1.0f;
-    w->spars_count = 0;
-    wing_add_spar(w, 0.25f);
-    wing_add_spar(w, 0.7f);
+
     w->x = x;
     w->y = y;
     w->z = z;
+    w->chord = 1.0f;
+    w->taper = 0.5f;
+    w->span = 10.0f;
+    w->sweep = 20.0f;
+    w->dihedral = 0.0f;
+    w->spars_count = 0;
+
+    w->selected = false;
+    wing_add_spar(w, 0.25f);
+    wing_add_spar(w, 0.7f);
     w->airfoil = airfoils_base[index];
     wing_reset_target_position(w);
+
     return w;
 }
 

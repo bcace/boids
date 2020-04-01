@@ -2,6 +2,15 @@
 #include <math.h>
 
 
+dvec dvec_rotate(dvec v, double a) {
+    dvec r;
+    double c = cos(a);
+    double s = sin(a);
+    r.x = v.x * c - v.y * s;
+    r.y = v.y * c - v.x * s;
+    return r;
+}
+
 tvec tvec_init(double x, double y, double z) {
     tvec v;
     v.x = x;

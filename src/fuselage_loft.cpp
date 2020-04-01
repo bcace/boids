@@ -2,6 +2,7 @@
 #include "object.h"
 #include "wing.h"
 #include "interp.h"
+#include "periodic.h"
 #include "mesh.h"
 #include "arena.h"
 #include "debug.h"
@@ -9,18 +10,12 @@
 #include <float.h>
 
 
-/* Marks position of fuselage sections. */
-struct _Station {
-    float x;
-    Flags t_objs; /* objects for which this station is tailmost */
-    Flags n_objs; /* objects for which this station is nosemost */
-};
-
 /* Initialize station. */
 static void _init_station(_Station *s, float x, Flags t_objs, Flags n_objs) {
     s->x = x;
     s->t_objs = t_objs;
     s->n_objs = n_objs;
+    s->type = ST_NONE;
 }
 
 /* Insert new station sorted by x. If station with same x is found don't insert new station,
@@ -123,17 +118,7 @@ static void _get_section_shape(float x, Shape *shape,
     shape_update_curve_control_points(shape->curves);
 }
 
-struct _SectionShapes {
-    Shape shapes[MAX_ENVELOPE_SHAPES]; /* actual storage */
-    int shapes_count;
-    Shape *t_shapes[MAX_ENVELOPE_SHAPES]; /* aliases, shapes looking tailwise */
-    int t_shapes_count;
-    Shape *n_shapes[MAX_ENVELOPE_SHAPES]; /* aliases, shapes looking nosewise */
-    int n_shapes_count;
-    bool two_envelopes;
-};
-
-static void _get_fuselage_section_shapes(Fuselage *fuselage, _Station *station, _SectionShapes *shapes, bool is_first_section, bool is_last_section) {
+void fuselage_get_shapes_at_station(Fuselage *fuselage, _Station *station, _Shapes *shapes) {
     shapes->shapes_count = 0;
     shapes->t_shapes_count = 0;
     shapes->n_shapes_count = 0;
@@ -149,8 +134,8 @@ static void _get_fuselage_section_shapes(Fuselage *fuselage, _Station *station, 
             Shape *s = shapes->shapes + shapes->shapes_count++;
 
             Flags f = flags_make(oref->id);
-            bool is_tailmost = !is_first_section && flags_and(&station->t_objs, &f);
-            bool is_nosemost = !is_last_section && flags_and(&station->n_objs, &f);
+            bool is_tailmost = station->type != ST_TAIL && flags_and(&station->t_objs, &f);
+            bool is_nosemost = station->type != ST_NOSE && flags_and(&station->n_objs, &f);
 
             _get_section_shape(station->x, s,
                                &oref->t_skin_former, oref->t_tangents, false,
@@ -193,7 +178,7 @@ static void _get_fuselage_section_shapes(Fuselage *fuselage, _Station *station, 
 /* Fuselage section at specific station. Contains all object and connection section shapes
 and the resulting envelopes. Only two exist in memory at any time. */
 struct _Section {
-    _SectionShapes shapes;
+    _Shapes shapes;
     MeshEnv envs[2]; /* actual storage */
     MeshEnv *t_env, *n_env; /* aliases of the above */
     int neighbors_map[MAX_ENVELOPE_POINTS]; /* maps tailwise envelope point indices to tailwise triangles */
@@ -202,6 +187,11 @@ struct _Section {
 /* Main fuselage lofting function. Generates fuselage skin panels. */
 void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fuselage) {
     int shape_subdivs = SHAPE_CURVE_SAMPLES * SHAPE_CURVES;
+
+    /* storage for trace envelopes */
+
+    TraceEnv *t_trace_env = arena->alloc<TraceEnv>();
+    TraceEnv *n_trace_env = arena->alloc<TraceEnv>();
 
     /* assign fuselage elements' ids */
 
@@ -235,12 +225,12 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
                             o->max_x, flags_zero(), flags_make(oref->id));
     }
 
-    _Station *beg_station1 = stations1;
-    _Station *end_station1 = stations1 + stations1_count - 1;
+    stations1[0].type = ST_TAIL;
+    stations1[stations1_count - 1].type = ST_NOSE;
 
     /* get wing required stations (leading and trailing edge root points, spars) */
 
-    _SectionShapes *w_shapes = arena->alloc<_SectionShapes>();
+    _Shapes *w_shapes = arena->alloc<_Shapes>();
 
     for (int i = 0; i < fuselage->wrefs_count; ++i) {
         Wref *wref = fuselage->wrefs + i;
@@ -253,26 +243,15 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
         _Station *t_station = _insert_station(stations1, &stations1_count, w_stations[0],
                                               flags_make(wref->id), flags_zero());
 
-        /* Now would probably be the time to figure out the root point.
-        Probably start with
-
-        _get_fuselage_section_shapes(fuselage, t_station, w_shapes,
-                                     t_station == beg_station1,
-                                     t_station == end_station1);
-
-        Flags dummy_flags;
-        int count = mesh_trace_envelope(env_points,
-                                        shapes->n_shapes, shapes->n_shapes_count,
-                                        SHAPE_CURVE_SAMPLES, &dummy_flags);
-
-        Now intersect line from proto with the gotten envelope.
-         */
-
+        //
         // TODO: add spar stations
+        //
 
         /* leading edge */
-        _Station *l_station = _insert_station(stations1, &stations1_count, w_stations[count - 1],
+        _Station *n_station = _insert_station(stations1, &stations1_count, w_stations[count - 1],
                                               flags_zero(), flags_make(wref->id));
+
+        fuselage_init_wing_cutter(fuselage, arena, wref, t_station, n_station);
     }
 
     // TODO: merge stations that are too close along x, use mesh size to estimate
@@ -300,9 +279,9 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
 
     /* once we have required stations we can calculate all the in-between ones */
 
-    const static int MAX_STATIONS = 1000;
+    const static int MAX_FUSELAGE_STATIONS = 1000;
 
-    _Station *stations2 = arena->alloc<_Station>(MAX_STATIONS);
+    _Station *stations2 = arena->alloc<_Station>(MAX_FUSELAGE_STATIONS);
     int stations2_count = 1;
 
     stations2[0] = stations1[0];
@@ -314,14 +293,18 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
         float dx = s2->x - s1->x;
         int count = (int)floorf(dx / mesh_size); // TODO: round
         float ddx = dx / (count + 1);
+
         for (int j = 0; j < count; ++j) {
-            break_assert(stations2_count < MAX_STATIONS);
+            break_assert(stations2_count < MAX_FUSELAGE_STATIONS);
             _Station *s = stations2 + stations2_count++;
             _init_station(s, s1->x + (j + 1) * ddx, flags_zero(), flags_zero());
         }
 
         stations2[stations2_count++] = stations1[i];
     }
+
+    stations2[0].type = ST_TAIL;
+    stations2[stations2_count - 1].type = ST_NOSE;
 
     /* trace fuselage envelope at each station and if we have the previous
     station already traced, mesh the skin between them */
@@ -330,16 +313,12 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
     sections[0] = arena->alloc<_Section>();
     sections[1] = arena->alloc<_Section>();
 
-    TraceEnv *t_trace_env = arena->alloc<TraceEnv>();
-    TraceEnv *n_trace_env = arena->alloc<TraceEnv>();
-
     for (int i = 0; i < stations2_count; ++i) {
         _Section *section = sections[i % 2];
         _Station *station = stations2 + i;
-        _SectionShapes *shapes = &section->shapes;
+        _Shapes *shapes = &section->shapes;
 
-        _get_fuselage_section_shapes(fuselage, station, shapes,
-                                     i == 0, i == stations2_count - 1);
+        fuselage_get_shapes_at_station(fuselage, station, shapes);
 
         if (shapes->t_shapes_count == 0 || shapes->n_shapes_count == 0) /* skip if there are no shapes on either side */
             continue;

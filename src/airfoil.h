@@ -24,6 +24,7 @@ dvec airfoil_get_point(Airfoil *airfoil, int i);
 void airfoil_init(Airfoil *airfoil,
                   float u_base, float u_delta, unsigned char *u_y,
                   float l_base, float l_delta, unsigned char *l_y);
+float airfoil_get_trailing_y_offset(Airfoil *a);
 
 void airfoil_generate_base(); /* this generates hardcoded airfoils */
 void airfoil_init_base(); /* this initializes hardcoded airfoils */
