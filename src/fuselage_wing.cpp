@@ -90,7 +90,7 @@ static FuselageIsec _get_wing_root_point(Fuselage *fuselage, Arena *arena,
                                          Wref *wref, _Station *station,
                                          bool trailing) {
 
-    _Shapes *shapes = arena->lock<_Shapes>();
+    TraceShapes *shapes = arena->lock<TraceShapes>();
     TraceEnv *env = arena->lock<TraceEnv>();
 
     /* fuselage envelope at station */

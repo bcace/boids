@@ -118,7 +118,7 @@ static void _get_section_shape(float x, Shape *shape,
     shape_update_curve_control_points(shape->curves);
 }
 
-void fuselage_get_shapes_at_station(Fuselage *fuselage, _Station *station, _Shapes *shapes) {
+void fuselage_get_shapes_at_station(Fuselage *fuselage, _Station *station, TraceShapes *shapes) {
     shapes->shapes_count = 0;
     shapes->t_shapes_count = 0;
     shapes->n_shapes_count = 0;
@@ -175,23 +175,22 @@ void fuselage_get_shapes_at_station(Fuselage *fuselage, _Station *station, _Shap
     }
 }
 
-/* Fuselage section at specific station. Contains all object and connection section shapes
-and the resulting envelopes. Only two exist in memory at any time. */
-struct _Section {
-    _Shapes shapes;
+/* Fuselage section containing trace envelopes. */
+struct TraceSection {
+    TraceShapes shapes;
+    TraceEnv *t_env, *n_env;
+};
+
+/* Fuselage section containing mesh envelopes. */
+struct MeshSection {
     MeshEnv envs[2]; /* actual storage */
-    MeshEnv *t_env, *n_env; /* aliases of the above */
+    MeshEnv *t_env, *n_env; /* aliases of the above, both point envs[0] most of the time */
     int neighbors_map[MAX_ENVELOPE_POINTS]; /* maps tailwise envelope point indices to tailwise triangles */
 };
 
 /* Main fuselage lofting function. Generates fuselage skin panels. */
 void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fuselage) {
     int shape_subdivs = SHAPE_CURVE_SAMPLES * SHAPE_CURVES;
-
-    /* storage for trace envelopes */
-
-    TraceEnv *t_trace_env = arena->alloc<TraceEnv>();
-    TraceEnv *n_trace_env = arena->alloc<TraceEnv>();
 
     /* assign fuselage elements' ids */
 
@@ -230,7 +229,7 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
 
     /* get wing required stations (leading and trailing edge root points, spars) */
 
-    _Shapes *w_shapes = arena->alloc<_Shapes>();
+    TraceShapes *w_shapes = arena->alloc<TraceShapes>();
 
     for (int i = 0; i < fuselage->wrefs_count; ++i) {
         Wref *wref = fuselage->wrefs + i;
@@ -306,24 +305,47 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
     stations2[0].type = ST_TAIL;
     stations2[stations2_count - 1].type = ST_NOSE;
 
-    /* trace fuselage envelope at each station and if we have the previous
-    station already traced, mesh the skin between them */
+    /* trace fuselage section envelopes */
 
-    _Section *sections[2];
-    sections[0] = arena->alloc<_Section>();
-    sections[1] = arena->alloc<_Section>();
+    TraceSection *trace_sections = arena->alloc<TraceSection>(stations2_count);
 
     for (int i = 0; i < stations2_count; ++i) {
-        _Section *section = sections[i % 2];
-        _Station *station = stations2 + i;
-        _Shapes *shapes = &section->shapes;
+        TraceSection *trace_section = trace_sections + i;
+        trace_section->t_env = trace_section->n_env = 0;
 
-        fuselage_get_shapes_at_station(fuselage, station, shapes);
+        TraceShapes *shapes = &trace_section->shapes;
+        fuselage_get_shapes_at_station(fuselage, stations2 + i, shapes);
 
         if (shapes->t_shapes_count == 0 || shapes->n_shapes_count == 0) /* skip if there are no shapes on either side */
             continue;
 
         /* trace envelopes */
+
+        trace_section->t_env = trace_section->n_env = arena->alloc<TraceEnv>();
+        bool success = mesh_trace_envelope(trace_section->t_env, shapes->t_shapes, shapes->t_shapes_count, SHAPE_CURVE_SAMPLES);
+        model_assert(model, success, "envelope_trace_failed");
+
+        if (shapes->two_envelopes) {
+            trace_section->n_env = arena->alloc<TraceEnv>();
+            bool n_success = mesh_trace_envelope(trace_section->n_env, shapes->n_shapes, shapes->n_shapes_count, SHAPE_CURVE_SAMPLES);
+            model_assert(model, n_success, "envelope_trace_failed");
+        }
+    }
+
+    /* mesh between each two neighboring sections */
+
+    MeshSection *sections[2];
+    sections[0] = arena->alloc<MeshSection>();
+    sections[1] = arena->alloc<MeshSection>();
+
+    for (int i = 0; i < stations2_count; ++i) {
+        _Station *station = stations2 + i;
+        MeshSection *section = sections[i % 2];
+        TraceSection *trace_section = trace_sections + i;
+        TraceShapes *shapes = &trace_section->shapes;
+
+        if (trace_section->t_env == 0 && trace_section->n_env == 0)
+            continue;
 
         if (shapes->two_envelopes) {
             section->t_env = section->envs;
@@ -332,9 +354,11 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
         else
             section->t_env = section->n_env = section->envs;
 
+        /* make mesh envelopes from trace envelopes */
+
         mesh_make_envelopes(model, verts_arena, station->x,
-                            section->t_env, shapes->t_shapes, shapes->t_shapes_count, t_trace_env,
-                            section->n_env, shapes->n_shapes, shapes->n_shapes_count, n_trace_env);
+                            section->t_env, trace_section->t_env,
+                            section->n_env, trace_section->n_env);
 
         /* mesh */
 
@@ -342,12 +366,14 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
             for (int j = 0; j < section->n_env->count; ++j)
                 section->neighbors_map[j] = -1; /* there are no triangles tailwise of the tailmost section */
         else {
-            _Section *t_s = sections[(section == sections[0]) ? 1 : 0];
-            _Section *n_s = section;
+            MeshSection *t_s = sections[(section == sections[0]) ? 1 : 0];
+            MeshSection *n_s = section;
+            TraceShapes *t_shapes = &trace_sections[i - 1].shapes;
+            TraceShapes *n_shapes = &trace_sections[i].shapes;
 
             mesh_apply_merge_filter(arena, shape_subdivs,
-                                    t_s->shapes.n_shapes, t_s->shapes.n_shapes_count, t_s->n_env,
-                                    n_s->shapes.t_shapes, n_s->shapes.t_shapes_count, n_s->t_env);
+                                    t_shapes->n_shapes, t_shapes->n_shapes_count, t_s->n_env,
+                                    n_shapes->t_shapes, n_shapes->t_shapes_count, n_s->t_env);
 
             mesh_between_two_sections(model, shape_subdivs,
                                       t_s->n_env, t_s->neighbors_map,

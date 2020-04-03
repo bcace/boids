@@ -35,7 +35,7 @@ PickResult pick_result;
 
 vec3 crosshair_verts[4];
 
-Arena arena(1000000);
+Arena arena(20000000);
 
 
 void _recalculate_model() {

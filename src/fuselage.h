@@ -65,7 +65,7 @@ struct Conn {
     Oref *nose_o;
 };
 
-struct _Shapes {
+struct TraceShapes {
     Shape shapes[MAX_ENVELOPE_SHAPES]; /* actual storage */
     Shape *t_shapes[MAX_ENVELOPE_SHAPES]; /* aliases, shapes looking tailwise */
     Shape *n_shapes[MAX_ENVELOPE_SHAPES]; /* aliases, shapes looking nosewise */
@@ -100,7 +100,7 @@ void fuselage_update_longitudinal_tangents(Fuselage *fuselage);
 void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fuselage);
 bool fuselage_objects_overlap(Oref *a, Oref *b);
 bool fuselage_object_and_wing_overlap(Oref *o, Wref *w);
-void fuselage_get_shapes_at_station(Fuselage *fuselage, _Station *station, _Shapes *shapes);
+void fuselage_get_shapes_at_station(Fuselage *fuselage, _Station *station, TraceShapes *shapes);
 
 /* wing */
 void fuselage_init_wing_cutter(Fuselage *fuselage, Arena *arena, Wref *wref,

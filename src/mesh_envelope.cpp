@@ -323,20 +323,12 @@ static bool _can_correlate_env_points(EnvPoint *a, EnvPoint *b) {
 
 /* Creates mesh points from two envelopes. */
 static void _mesh_envs_pass_1(Model *model, Arena *verts_arena, float section_x,
-                              MeshEnv *t_env, Shape **t_shapes, int t_shapes_count, TraceEnv *t_trace_env,
-                              MeshEnv *n_env, Shape **n_shapes, int n_shapes_count, TraceEnv *n_trace_env) {
+                              MeshEnv *t_env, TraceEnv *t_trace_env,
+                              MeshEnv *n_env, TraceEnv *n_trace_env) {
 
     if (corrs == 0)
         corrs = (_Corr *)malloc(sizeof(_Corr) * MAX_ENVELOPE_POINTS);
     int corrs_count = 0;
-
-    /* trace envelopes */
-
-    bool t_success = mesh_trace_envelope(t_trace_env, t_shapes, t_shapes_count, SHAPE_CURVE_SAMPLES);
-    model_assert(model, t_success, "envelope_trace_failed");
-
-    bool n_success = mesh_trace_envelope(n_trace_env, n_shapes, n_shapes_count, SHAPE_CURVE_SAMPLES);
-    model_assert(model, n_success, "envelope_trace_failed");
 
     t_env->count = 0;
     n_env->count = 0;
@@ -447,12 +439,7 @@ static void _mesh_envs_pass_1(Model *model, Arena *verts_arena, float section_x,
 
 /* Handles simple case when there's only one shape in envelope. */
 void _mesh_envs_pass_0(Model *model, Arena *verts_arena, float section_x,
-                       MeshEnv *env, Shape **shapes, int shapes_count, TraceEnv *trace_env) {
-
-    /* trace envelope */
-
-    bool success = mesh_trace_envelope(trace_env, shapes, shapes_count, SHAPE_CURVE_SAMPLES);
-    model_assert(model, success, "envelope_trace_failed");
+                       MeshEnv *env, TraceEnv *trace_env) {
 
     /* make mesh envelope from trace envelope */
 
@@ -503,18 +490,18 @@ void _mesh_envs_pass_0(Model *model, Arena *verts_arena, float section_x,
 
 /* Main mesh envelope making procedure. */
 void mesh_make_envelopes(Model *model, Arena *verts_arena, float section_x,
-                         MeshEnv *t_env, Shape **t_shapes, int t_shapes_count, TraceEnv *t_trace_env,
-                         MeshEnv *n_env, Shape **n_shapes, int n_shapes_count, TraceEnv *n_trace_env) {
+                         MeshEnv *t_env, TraceEnv *t_trace_env,
+                         MeshEnv *n_env, TraceEnv *n_trace_env) {
 
     t_env->x = n_env->x = section_x;
 
     if (t_env == n_env) /* single envelope */
         _mesh_envs_pass_0(model, verts_arena, section_x,
-                          t_env, t_shapes, t_shapes_count, t_trace_env);
+                          t_env, t_trace_env);
     else                /* double envelope */
         _mesh_envs_pass_1(model, verts_arena, section_x,
-                          t_env, t_shapes, t_shapes_count, t_trace_env,
-                          n_env, n_shapes, n_shapes_count, n_trace_env);
+                          t_env, t_trace_env,
+                          n_env, n_trace_env);
 }
 
 void mesh_verts_merge_margin(bool increase) {

@@ -64,8 +64,8 @@ bool mesh_trace_envelope(TraceEnv *env, Shape **shapes, int shapes_count, int cu
 
 /* envelope */
 void mesh_make_envelopes(Model *model, Arena *verts_arena, float section_x,
-                         MeshEnv *t_env, Shape **t_shapes, int t_shapes_count, TraceEnv *t_trace_env,
-                         MeshEnv *n_env, Shape **n_shapes, int n_shapes_count, TraceEnv *n_trace_env);
+                         MeshEnv *t_env, TraceEnv *t_trace_env,
+                         MeshEnv *n_env, TraceEnv *n_trace_env);
 
 /* mesh */
 void mesh_init(Model *model);
