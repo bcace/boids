@@ -203,15 +203,6 @@ static int _intersect_envelope_with_wing(Wref *wref, _Station *station, TraceEnv
 
     /* check if station is on one of wing edges */
 
-    if (flags_contains(&station->t_objs, wref->id)) { /* wing trailing edge station */
-        isecs[0] = wref->t_isec;
-        return 1;
-    }
-    else if (flags_contains(&station->n_objs, wref->id)) { /* wing leading edge station */
-        isecs[0] = wref->n_isec;
-        return 1;
-    }
-
     if (station->x < wref->t_isec.p.x || station->x > wref->n_isec.p.x) /* station outside wing extents */
         return 0;
 

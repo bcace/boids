@@ -16,6 +16,17 @@ struct Model;
 struct Object;
 struct TraceEnv;
 
+struct FuselageIsec {
+    int i; /* starting envelope point index of the segment where the intersection is */
+    double t;
+    tvec p;
+};
+
+struct StationId {
+    short int id;
+    short int index;
+};
+
 struct Oref {
     Object *object;
     bool is_clone;
@@ -42,12 +53,8 @@ struct Oref {
             Id id; /* object lofting id */
         };
     };
-};
 
-struct FuselageIsec {
-    int i; /* starting envelope point index of the segment where the intersection is */
-    double t;
-    tvec p;
+    StationId t_station, n_station;
 };
 
 struct Wref {
@@ -58,6 +65,8 @@ struct Wref {
     /* derived */
     FuselageIsec t_isec, n_isec;
     tvec *r_cut, *t_cut; /* wing prism used to cut fuselage, root/tip points */
+
+    StationId t_station, n_station;
 };
 
 struct Conn {
@@ -80,8 +89,7 @@ enum _StationType { ST_NONE, ST_TAIL, ST_NOSE };
 /* Marks position of fuselage sections. */
 struct _Station {
     float x;
-    Flags t_objs; /* elements for which this station is tailmost */
-    Flags n_objs; /* elements for which this station is nosemost */
+    short int id;
     _StationType type;
 };
 
@@ -103,7 +111,6 @@ bool fuselage_object_and_wing_overlap(Oref *o, Wref *w);
 void fuselage_get_shapes_at_station(Fuselage *fuselage, _Station *station, TraceShapes *shapes);
 
 /* wing */
-void fuselage_init_wing_cutter(Fuselage *fuselage, Arena *arena, Wref *wref,
-                               _Station *t_station, _Station *n_station);
+// ...
 
 #endif
