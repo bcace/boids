@@ -129,15 +129,22 @@ void mantle_generate_from_airfoil(Mantle *m, Arena *arena, Airfoil *airfoil,
 
     _update_storage(m, arena, 2, AIRFOIL_POINTS, true);
 
-    vec3 *section_verts = m->verts;
+    static tvec r_verts[AIRFOIL_POINTS];
+    static tvec t_verts[AIRFOIL_POINTS];
+    airfoil_get_points(airfoil, r_verts, 1.0, -WING_SNAP_WIDTH, 0.0, 0.0, x, y, z);
+    airfoil_get_points(airfoil, t_verts, 1.0,  WING_SNAP_WIDTH, 0.0, 0.0, x, y, z);
+
+    vec3 *v1 = m->verts;
+    vec3 *v2 = v1 + AIRFOIL_POINTS;
     for (int i = 0; i < AIRFOIL_POINTS; ++i) {
-        dvec p = airfoil_get_point(airfoil, i);
-        vec3 *v1 = section_verts + i;
-        vec3 *v2 = v1 + AIRFOIL_POINTS;
-        v1->x = v2->x = x - (float)p.x;
-        v1->z = v2->z = z + (float)p.y;
-        v1->y = y - (float)WING_SNAP_WIDTH * 0.5f;
-        v2->y = y + (float)WING_SNAP_WIDTH * 0.5f;
+        v1->x = r_verts[i].x;
+        v1->y = r_verts[i].y;
+        v1->z = r_verts[i].z;
+        v2->x = t_verts[i].x;
+        v2->y = t_verts[i].y;
+        v2->z = t_verts[i].z;
+        ++v1;
+        ++v2;
     }
 
     _update_data(m);

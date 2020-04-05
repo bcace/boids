@@ -1,5 +1,6 @@
 #include "airfoil.h"
 #include "dvec.h"
+#include <math.h>
 #include <string.h>
 
 
@@ -53,4 +54,46 @@ float _get_side_trailing_offset(AirfoilSide *s) {
 float airfoil_get_trailing_y_offset(Airfoil *a) {
     return (_get_side_trailing_offset(&a->upper) +
             _get_side_trailing_offset(&a->lower)) * 0.5f;
+}
+
+void airfoil_get_points(Airfoil *airfoil, tvec *verts,
+                        double chord, double depth,
+                        double aoa, double dihedral,
+                        double t, double y, double z) {
+    double cos_b = cos(-aoa);
+    double sin_b = sin(-aoa);
+    double cos_g = cos(dihedral);
+    double sin_g = sin(dihedral);
+
+    tvec *v = verts;
+    AirfoilSide *u_side = &airfoil->upper;
+    AirfoilSide *l_side = &airfoil->lower;
+
+    for (int i = AIRFOIL_X_SUBDIVS - 1; i >= 0; --i) {
+        v->x = 1.0 - airfoil_get_subdiv_x(i);
+        v->y = depth;
+        v->z = u_side->base + u_side->y[i] * u_side->delta;
+        ++v;
+    }
+    {
+        v->x = 1.0;
+        v->y = depth;
+        v->z = 0.0;
+        ++v;
+    }
+    for (int i = 0; i < AIRFOIL_X_SUBDIVS; ++i) {
+        v->x = 1.0 - airfoil_get_subdiv_x(i);
+        v->y = depth;
+        v->z = l_side->base + l_side->y[i] * l_side->delta;
+        ++v;
+    }
+
+    for (int i = 0; i < AIRFOIL_POINTS; ++i) {
+        double X = verts[i].x;
+        double Y = verts[i].y;
+        double Z = verts[i].z;
+        verts[i].x = t + (X * cos_b + Y * sin_b * sin_g + Z * sin_b * cos_g) * chord;
+        verts[i].y = y + (Y * cos_g - Z * sin_g) * chord;
+        verts[i].z = z + (-X * sin_b + Y * cos_b * sin_g + Z * cos_b * cos_g) * chord;
+    }
 }

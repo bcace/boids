@@ -8,6 +8,7 @@
 
 
 struct dvec;
+struct tvec;
 
 struct AirfoilSide {
     float base, delta; /* y extents */
@@ -25,6 +26,10 @@ void airfoil_init(Airfoil *airfoil,
                   float u_base, float u_delta, unsigned char *u_y,
                   float l_base, float l_delta, unsigned char *l_y);
 float airfoil_get_trailing_y_offset(Airfoil *a);
+void airfoil_get_points(Airfoil *airfoil, tvec *points,
+                        double chord, double depth,
+                        double aoa, double dihedral,
+                        double x, double y, double z);
 
 void airfoil_generate_base(); /* this generates hardcoded airfoils */
 void airfoil_init_base(); /* this initializes hardcoded airfoils */
