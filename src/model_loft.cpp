@@ -14,7 +14,7 @@ static Arena trias_arena(10000000);
 static Arena quads_arena(10000000);
 
 /* Initializes an Objref instance. */
-static void _init_objref(Oref *r, Object *o, int index, bool is_clone) {
+static void _init_oref(Oref *r, Object *o, int index, bool is_clone) {
     memset(r, 0, sizeof(Oref));
     r->object = o;
     r->is_clone = is_clone;
@@ -56,10 +56,10 @@ void model_loft(Arena *arena, Model *model) {
     for (int i = 0; i < model->objects_count; ++i) {
         Object *o = model->objects[i];
         Oref *oref = orefs + orefs_count++;
-        _init_objref(oref, o, available_ref_index, false);
+        _init_oref(oref, o, available_ref_index, false);
         if (object_should_be_mirrored(o)) {
             Oref *c_ref = orefs + orefs_count++;
-            _init_objref(c_ref, o, available_ref_index, true);
+            _init_oref(c_ref, o, available_ref_index, true);
         }
         ++available_ref_index;
     }

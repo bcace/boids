@@ -172,12 +172,6 @@ void fuselage_get_shapes_at_station(Fuselage *fuselage, _Station *station, Trace
     }
 }
 
-/* Fuselage section containing trace envelopes. */
-struct TraceSection {
-    TraceShapes shapes;
-    TraceEnv *t_env, *n_env;
-};
-
 /* Fuselage section containing mesh envelopes. */
 struct MeshSection {
     MeshEnv envs[2]; /* actual storage */
@@ -319,38 +313,36 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
     TraceSection *trace_sections = arena->alloc<TraceSection>(stations_count);
 
     for (int i = 0; i < stations_count; ++i) {
-        TraceSection *trace_section = trace_sections + i;
-        trace_section->t_env = trace_section->n_env = 0;
+        _Station *station = stations + i;
 
-        TraceShapes *shapes = &trace_section->shapes;
-        fuselage_get_shapes_at_station(fuselage, stations + i, shapes);
+        TraceSection *sect = trace_sections + i;
+        sect->wisecs_count = 0;
+        sect->t_env = sect->n_env = 0;
+        sect->x = station->x;
 
-        if (shapes->t_shapes_count == 0 || shapes->n_shapes_count == 0) /* skip if there are no shapes on either side */
+        fuselage_get_shapes_at_station(fuselage, station, &sect->shapes);
+
+        if (sect->shapes.t_shapes_count == 0 || sect->shapes.n_shapes_count == 0) /* skip if there are no shapes on either side */
             continue;
 
         /* trace envelopes */
 
-        trace_section->t_env = trace_section->n_env = arena->alloc<TraceEnv>();
-        bool success = mesh_trace_envelope(trace_section->t_env, shapes->t_shapes, shapes->t_shapes_count, SHAPE_CURVE_SAMPLES);
+        sect->t_env = sect->n_env = arena->alloc<TraceEnv>();
+        bool success = mesh_trace_envelope(sect->t_env, sect->shapes.t_shapes, sect->shapes.t_shapes_count, SHAPE_CURVE_SAMPLES);
         model_assert(model, success, "envelope_trace_failed");
 
-        if (shapes->two_envelopes) {
-            trace_section->n_env = arena->alloc<TraceEnv>();
-            bool n_success = mesh_trace_envelope(trace_section->n_env, shapes->n_shapes, shapes->n_shapes_count, SHAPE_CURVE_SAMPLES);
+        if (sect->shapes.two_envelopes) {
+            sect->n_env = arena->alloc<TraceEnv>();
+            bool n_success = mesh_trace_envelope(sect->n_env, sect->shapes.n_shapes, sect->shapes.n_shapes_count, SHAPE_CURVE_SAMPLES);
             model_assert(model, n_success, "envelope_trace_failed");
         }
     }
 
     /* wing intersections */
 
-    {
-        /* TODO:
-        1. Find all intersections for each wing
-            a) find indices of trailing and leading stations
-        2. Check if intersection areas overlap
-        3. Insert intersections of valid wings into trace envelopes
-        */
-    }
+    fuselage_wing_intersections(arena,
+                                fuselage->wrefs, fuselage->wrefs_count,
+                                trace_sections, stations_count);
 
     /* mesh between each two neighboring sections */
 

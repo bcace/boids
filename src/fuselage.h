@@ -8,6 +8,7 @@
 #include "constants.h"
 
 #define MAX_FUSELAGE_CONNS  32
+#define MAX_WING_ISECS      (MAX_ELEM_REFS * 2)
 
 
 struct Wing;
@@ -15,16 +16,17 @@ struct Arena;
 struct Model;
 struct Object;
 struct TraceEnv;
+struct TraceSection;
 
-struct FuselageIsec {
+struct Wisec {
     int i; /* starting envelope point index of the segment where the intersection is */
     double t;
     tvec p;
 };
 
 struct StationId {
-    short int id;
-    short int index;
+    short int id; /* required station id */
+    short int index; /* station index when all stations are created */
 };
 
 struct Oref {
@@ -63,10 +65,8 @@ struct Wref {
     Id id;
 
     /* derived */
-    FuselageIsec t_isec, n_isec;
-    tvec *r_cut, *t_cut; /* wing prism used to cut fuselage, root/tip points */
-
     StationId t_station, n_station;
+    bool valid;
 };
 
 struct Conn {
@@ -74,6 +74,7 @@ struct Conn {
     Oref *nose_o;
 };
 
+// TODO: maybe we don't need this, maybe we can just move it down to TraceSection
 struct TraceShapes {
     Shape shapes[MAX_ENVELOPE_SHAPES]; /* actual storage */
     Shape *t_shapes[MAX_ENVELOPE_SHAPES]; /* aliases, shapes looking tailwise */
@@ -82,6 +83,14 @@ struct TraceShapes {
     int t_shapes_count;
     int n_shapes_count;
     bool two_envelopes;
+};
+
+struct TraceSection {
+    TraceShapes shapes;
+    TraceEnv *t_env, *n_env; /* pointers because they migh point at the same thing in arena */
+    double x;
+    Wisec wisecs[MAX_WING_ISECS];
+    int wisecs_count;
 };
 
 enum _StationType { ST_NONE, ST_TAIL, ST_NOSE };
@@ -111,6 +120,8 @@ bool fuselage_object_and_wing_overlap(Oref *o, Wref *w);
 void fuselage_get_shapes_at_station(Fuselage *fuselage, _Station *station, TraceShapes *shapes);
 
 /* wing */
-// ...
+void fuselage_wing_intersections(Arena *arena, Wref *wrefs, int wrefs_count, TraceSection *sections, int sections_count);
+// void fuselage_wing_find_intersections(Arena *arena, Wref *wref, TraceSection *sections);
+// void fuselage_wing_insert_intersections(Arena *arena, Wref *wrefs, int wrefs_count, int stat_i, TraceSection *section);
 
 #endif

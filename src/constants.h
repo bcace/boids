@@ -8,7 +8,7 @@ used throughout the entire project and should be true compile-time constants. */
 #define MIN_CURVE_SUBDIVS         2
 #define MAX_CURVE_SUBDIVS         8
 #define MAX_ENVELOPE_SHAPES       32
-#define MAX_SHAPE_SUBDIVS         (MAX_CURVE_SUBDIVS * SHAPE_CURVES)
-#define MAX_ENVELOPE_POINTS       (MAX_ENVELOPE_SHAPES * MAX_SHAPE_SUBDIVS)
+#define MAX_SHAPE_SUBDIVS         (MAX_CURVE_SUBDIVS * SHAPE_CURVES) /* 32 */
+#define MAX_ENVELOPE_POINTS       (MAX_ENVELOPE_SHAPES * MAX_SHAPE_SUBDIVS) /* 1024 */
 
 #endif
