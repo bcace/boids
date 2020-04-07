@@ -12,32 +12,6 @@ struct vec2 {
         };
         float v[2];
     };
-
-    vec2();
-    vec2(float _x, float _y);
-
-    void set(float _x, float _y);
-    vec2 &normalize();
-    void normalize_to(float v);
-    float length();
-    float angle_to(vec2 v); /* [0, pi], assumes both vectors are normalized */
-    float dot(vec2 v);
-    float cross(vec2 v);
-    vec2 operator-();
-    vec2 operator+(vec2 v);
-    vec2 operator-(vec2 v);
-    vec2 operator*(float v);
-    vec2 operator/(float v);
-    vec2 operator*(vec2 v);
-    vec2 &operator+=(vec2 v);
-    vec2 &operator-=(vec2 v);
-    vec2 &operator/=(float v);
-    vec2 &operator*=(float v);
-    bool operator!=(vec2 v);
-    vec2 rot(float a);
-    vec2 perp_positive();
-    vec2 perp_negative();
-    void print(const char *tag="");
 };
 
 struct vec3 {
@@ -60,7 +34,6 @@ struct vec3 {
     void set(float _x, float _y, float _z);
     vec3 &normalize();
     float length();
-    float angle_to(vec3 v); /* [0, pi], assumes both vectors are normalized */
     float dot(vec3 v);
     vec3 cross(vec3 v);
     vec3 operator-();
@@ -74,8 +47,6 @@ struct vec3 {
     vec3 &operator*=(vec3 v);
     bool operator==(vec3 v);
     bool operator!=(vec3 v);
-    void print(const char *tag="");
-    vec2 yz();
 };
 
 struct vec4 {
@@ -92,19 +63,6 @@ struct vec4 {
     vec4();
     vec4(float _x, float _y, float _z, float _w);
     vec4(vec3 v, float _w);
-    void print(const char *tag="");
-};
-
-struct box2 {
-    vec2 min, max;
-
-    box2();
-    box2(float minx, float miny, float maxx, float maxy);
-
-    void reset();
-    void include(vec2 v);
-    void include(double x, double y);
-    bool intersects(box2 o);
 };
 
 struct box3 {
@@ -147,124 +105,6 @@ struct ivec2 {
 
 #include <math.h>
 #include <float.h>
-#include <stdio.h>
-
-/* :vec2 */
-
-vec2::vec2() {}
-
-vec2::vec2(float _x, float _y) : x(_x), y(_y) {}
-
-void vec2::set(float _x, float _y) {
-    x = _x;
-    y = _y;
-}
-
-vec2 vec2::rot(float a) {
-    if (a == 0.0)
-        return *this;
-    double c = cos(a);
-    double s = sin(a);
-    return vec2(x * c - y * s, x * s + y * c);
-}
-
-vec2 &vec2::normalize() {
-    float l = sqrt(x * x + y * y);
-    x /= l;
-    y /= l;
-    return *this;
-}
-
-void vec2::normalize_to(float v) {
-    float l = v / sqrt(x * x + y * y);
-    x *= l;
-    y *= l;
-}
-
-float vec2::length() {
-    return sqrt(x * x + y * y);
-}
-
-float vec2::angle_to(vec2 v) {
-    float d = dot(v);
-    if (d < -1.0)
-        d = -1.0;
-    else if (d > 1.0)
-        d = 1.0;
-    return acos(d);
-}
-
-float vec2::dot(vec2 v) {
-    return x * v.x + y * v.y;
-}
-
-float vec2::cross(vec2 v) {
-    return x * v.y - y * v.x;
-}
-
-vec2 vec2::operator-() {
-    return vec2(-x, -y);
-}
-
-vec2 vec2::operator+(vec2 v) {
-    return vec2(x + v.x, y + v.y);
-}
-
-vec2 vec2::operator-(vec2 v) {
-    return vec2(x - v.x, y - v.y);
-}
-
-vec2 vec2::operator*(float v) {
-    return vec2(x * v, y * v);
-}
-
-vec2 vec2::operator/(float v) {
-    return vec2(x / v, y / v);
-}
-
-vec2 vec2::operator*(vec2 v) {
-    return vec2(x * v.x, y * v.y);
-}
-
-vec2 &vec2::operator+=(vec2 v) {
-    x += v.x;
-    y += v.y;
-    return *this;
-}
-
-vec2 &vec2::operator-=(vec2 v) {
-    x -= v.x;
-    y -= v.y;
-    return *this;
-}
-
-vec2 &vec2::operator*=(float v) {
-    x *= v;
-    y *= v;
-    return *this;
-}
-
-vec2 &vec2::operator/=(float v) {
-    x /= v;
-    y /= v;
-    return *this;
-}
-
-bool vec2::operator!=(vec2 v) {
-    return x != v.x || y != v.y;
-}
-
-vec2 vec2::perp_positive() {
-    return vec2(-y, x);
-}
-
-vec2 vec2::perp_negative() {
-    return vec2(y, -x);
-}
-
-void vec2::print(const char *tag) {
-    fprintf(stderr, "%s %g, %g\n", tag, x, y);
-}
 
 /* :vec3 */
 
@@ -296,15 +136,6 @@ vec3 &vec3::normalize() {
 
 float vec3::length() {
     return sqrt(x * x + y * y + z * z);
-}
-
-float vec3::angle_to(vec3 v) {
-    float d = dot(v);
-    if (d < -1.0)
-        d = -1.0;
-    else if (d > 1.0)
-        d = 1.0;
-    return acos(d);
 }
 
 float vec3::dot(vec3 v) {
@@ -371,14 +202,6 @@ bool vec3::operator!=(vec3 v) {
     return x != v.x || y != v.y || z != v.z;
 }
 
-void vec3::print(const char *tag) {
-    fprintf(stderr, "%s %g, %g, %g\n", tag, x, y, z);
-}
-
-vec2 vec3::yz() {
-    return vec2(y, z);
-}
-
 /* :vec4 */
 
 vec4::vec4() {}
@@ -390,48 +213,6 @@ vec4::vec4(vec3 v, float _w) {
     y = v.y;
     z = v.z;
     w = _w;
-}
-
-void vec4::print(const char *tag) {
-    fprintf(stderr, "%s %g, %g, %g, %g\n", tag, x, y, z, w);
-}
-
-/* :box2 */
-
-box2::box2() {}
-
-box2::box2(float minx, float miny, float maxx, float maxy) : min(minx, miny), max(maxx, maxy) {}
-
-void box2::reset() {
-    min.x = min.y = FLT_MAX;
-    max.x = max.y = -FLT_MAX;
-}
-
-void box2::include(vec2 v) {
-    if (v.x < min.x)
-        min.x = v.x;
-    if (v.x > max.x)
-        max.x = v.x;
-    if (v.y < min.y)
-        min.y = v.y;
-    if (v.y > max.y)
-        max.y = v.y;
-}
-
-void box2::include(double x, double y) {
-    if (x < min.x)
-        min.x = x;
-    if (x > max.x)
-        max.x = x;
-    if (y < min.y)
-        min.y = y;
-    if (y > max.y)
-        max.y = y;
-}
-
-bool box2::intersects(box2 o) {
-    return min.x <= o.max.x && max.x >= o.min.x &&
-           min.y <= o.max.y && max.y >= o.min.y;
 }
 
 /* :box3 */

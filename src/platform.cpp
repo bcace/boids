@@ -236,7 +236,10 @@ void plat_run_window(MAIN_LOOP_FUNC main_loop_func) {
 }
 
 vec2 plat_get_screen() {
-    return vec2(w, h);
+    vec2 v;
+    v.x = w;
+    v.y = h;
+    return v;
 }
 
 Mouse &plat_get_mouse() {

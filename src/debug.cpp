@@ -1,9 +1,11 @@
 #include "debug.h"
-#include "model.h"
-#include <assert.h>
-
 
 #ifndef NDEBUG
+
+#include "model.h"
+#include <assert.h>
+#include <string.h>
+
 
 /* Gives you opportunity to place a breakpoint on assert. */
 void _break_assert_func(bool expr) {
@@ -15,7 +17,10 @@ void _break_assert_func(bool expr) {
 /* Serializes model before asserting. Label is used as dump file name. */
 void _model_assert_func(Model *model, bool expr, const char *label) {
     if (!expr) {
-        model_serialize(model, label);
+        char path[512];
+        strcpy_s(path, label);
+        strcat_s(path, ".dump");
+        model_serialize(model, path);
         assert(false);
     }
 }

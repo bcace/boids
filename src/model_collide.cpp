@@ -19,7 +19,6 @@ static void _object_preparation(void *agent, void *exec_context) {
     Object *o = (Object *)agent;
     o->prisms = arena->rest<CollPrism>();
     o->prisms_count = 0;
-    o->bounds.reset();
 
     float x = o->p.x;
     float y = o->p.y;
@@ -43,15 +42,10 @@ static void _object_preparation(void *agent, void *exec_context) {
             prism->max_x = f->x + x;
         else
             prism->max_x = (f->x + o->formers[i + 1].x) * 0.5f + x;
-
-        for (int j = 0; j < COLL_VERTS_PER_PRISM; ++j) /* update bounds */
-            o->bounds.include(prism->verts[j].x, prism->verts[j].y);
     }
 
     o->coll_min_x = (float)o->prisms[0].x;
     o->coll_max_x = (float)o->prisms[o->prisms_count - 1].x;
-    o->min_x = x + o->tail_skin_former.x;
-    o->max_x = x + o->nose_skin_former.x;
 }
 
 /* Interaction callback that describes interaction between objects. */
@@ -61,10 +55,13 @@ static void _object_interaction(void *agent1, void *agent2, void *exec_context) 
 
     /* broad phase */
 
-    if (!o1->bounds.intersects(o2->bounds)) /* no overlap in y-z plane */
+    /* no overlap in y-z plane */
+    if (o1->min_x > o2->max_x || o1->max_x < o2->min_x ||
+        o1->min_y > o2->max_y || o1->max_y < o2->min_y)
         return;
 
-    if (o1->coll_min_x > o2->coll_max_x || o1->coll_max_x < o2->coll_min_x) /* no overlap along x */
+    /* no overlap along x */
+    if (o1->coll_min_x > o2->coll_max_x || o1->coll_max_x < o2->coll_min_x)
         return;
 
     /* narrow phase */

@@ -50,7 +50,6 @@ struct Object {
     vec3 f;
     CollPrism *prisms; /* allocated in arena */
     int prisms_count;
-    box2 bounds; /* y-z bounds */
     float min_x, max_x; /* model CS */
     float min_y, max_y; /* model CS, collision formers */
     float min_z, max_z; /* model CS, collision formers */

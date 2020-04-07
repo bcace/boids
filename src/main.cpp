@@ -94,13 +94,13 @@ void _key_callback(int key, int mods, int action) {
     if (mods & PLATFORM_MOD_CTRL) {
         if (action == PLATFORM_RELEASE) {
             if (key == PLATFORM_KEY_S)
-                model_serialize(&model, "model_dump");
+                model_serialize(&model, "model.dump");
             else if (key == PLATFORM_KEY_L) {
-                model_deserialize(&model, "model_dump");
+                model_deserialize(&model, "model.dump");
                 _recalculate_model();
             }
             else if (key == PLATFORM_KEY_D)
-                model_dump_mesh(&model, "model_mesh_dump");
+                model_dump_mesh(&model, "model.mesh_dump");
         }
     }
     else {
