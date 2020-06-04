@@ -1,6 +1,6 @@
 #include "part.h"
 #include "object.h"
-#include "platform.h"
+#include "../platform.h"
 #include <string.h>
 #include <assert.h>
 

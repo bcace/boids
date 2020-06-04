@@ -1,5 +1,5 @@
 #include "apame.h"
-#include "model.h"
+#include "modeling/model.h"
 #include "arena.h"
 #include "vec.h"
 

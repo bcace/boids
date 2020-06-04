@@ -1,5 +1,6 @@
 #include "airfoil.h"
 #include "dvec.h"
+#include "../dvec.h"
 #include <math.h>
 #include <string.h>
 

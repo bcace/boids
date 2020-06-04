@@ -1,6 +1,6 @@
 #include "shape.h"
-#include "arena.h"
-#include "dvec.h"
+#include "../arena.h"
+#include "../dvec.h"
 #include <assert.h>
 
 

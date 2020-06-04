@@ -1,6 +1,6 @@
 #include "airfoil.h"
-#include "dvec.h"
-#include "platform.h"
+#include "../dvec.h"
+#include "../platform.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <float.h>

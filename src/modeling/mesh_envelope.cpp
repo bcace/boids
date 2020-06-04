@@ -1,11 +1,11 @@
 #include "mesh.h"
-#include "periodic.h"
+#include "../periodic.h"
 #include "shape.h"
 #include "model.h"
-#include "config.h"
-#include "arena.h"
-#include "vec.h"
-#include "debug.h"
+#include "../config.h"
+#include "../arena.h"
+#include "../vec.h"
+#include "../debug.h"
 #include <stdlib.h>
 
 

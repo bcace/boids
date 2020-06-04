@@ -1,6 +1,6 @@
 #include "fuselage.h"
 #include "object.h"
-#include "arena.h"
+#include "../arena.h"
 #include <string.h>
 #include <math.h>
 

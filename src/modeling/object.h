@@ -1,10 +1,10 @@
 #ifndef object_h
 #define object_h
 
-#include "ref.h"
-#include "vec.h"
+//#include "ref.h"
+#include "../vec.h"
 #include "shape.h"
-#include "mantle.h"
+#include "../mantle.h"
 #include "constants.h"
 
 #define MAX_OBJECT_FORMERS      8

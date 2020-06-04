@@ -1,10 +1,10 @@
 #include "model.h"
 #include "object.h"
 #include "wing.h"
-#include "ochre.h"
+#include "../ochre.h"
 #include "collision.h"
-#include "arena.h"
-#include "config.h"
+#include "../arena.h"
+#include "../config.h"
 
 
 static OcState *state;

@@ -1,11 +1,11 @@
 #include "fuselage.h"
 #include "object.h"
 #include "wing.h"
-#include "interp.h"
-#include "periodic.h"
+#include "../interp.h"
+#include "../periodic.h"
 #include "mesh.h"
-#include "arena.h"
-#include "debug.h"
+#include "../arena.h"
+#include "../debug.h"
 #include <math.h>
 #include <float.h>
 

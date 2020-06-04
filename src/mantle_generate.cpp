@@ -1,6 +1,6 @@
 #include "mantle.h"
-#include "object.h"
-#include "wing.h"
+#include "modeling/object.h"
+#include "modeling/wing.h"
 #include "arena.h"
 #include "config.h"
 #include "dvec.h"

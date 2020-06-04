@@ -3,8 +3,8 @@
 #include "fuselage.h"
 #include "object.h"
 #include "wing.h"
-#include "group.h"
-#include "arena.h"
+#include "../group.h"
+#include "../arena.h"
 #include <math.h>
 #include <string.h>
 

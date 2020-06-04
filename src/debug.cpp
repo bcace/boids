@@ -2,7 +2,7 @@
 
 #ifndef NDEBUG
 
-#include "model.h"
+#include "modeling/model.h"
 #include <assert.h>
 #include <string.h>
 

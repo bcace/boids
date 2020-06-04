@@ -1,7 +1,7 @@
 #ifndef part_f
 #define part_f
 
-#include "vec.h"
+#include "../vec.h"
 #include "shape.h"
 
 #define MAX_PROTO_NAME          128

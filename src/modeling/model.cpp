@@ -2,7 +2,7 @@
 #include "object.h"
 #include "wing.h"
 #include "part.h"
-#include "debug.h"
+#include "../debug.h"
 #include <math.h>
 #include <assert.h>
 

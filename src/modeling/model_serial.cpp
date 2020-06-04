@@ -1,7 +1,7 @@
 #include "model.h"
 #include "object.h"
-#include "serial.h"
-#include "platform.h"
+#include "../serial.h"
+#include "../platform.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>

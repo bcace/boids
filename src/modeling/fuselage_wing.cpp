@@ -2,11 +2,11 @@
 #include "wing.h"
 #include "mesh.h"
 #include "airfoil.h"
-#include "periodic.h"
-#include "dvec.h"
-#include "arena.h"
-#include "debug.h"
-#include "math.h"
+#include "../periodic.h"
+#include "../dvec.h"
+#include "../arena.h"
+#include "../debug.h"
+#include "../math.h"
 #include <float.h>
 #include <math.h>
 

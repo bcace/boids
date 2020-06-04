@@ -1,7 +1,7 @@
 #include "fuselage.h"
 #include "object.h"
 #include "wing.h"
-#include "math.h"
+#include "../math.h"
 #include <math.h>
 
 

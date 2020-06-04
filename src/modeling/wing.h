@@ -1,7 +1,7 @@
 #ifndef wing_h
 #define wing_h
 
-#include "mantle.h"
+#include "../mantle.h"
 #include "element.h"
 #include "airfoil.h"
 

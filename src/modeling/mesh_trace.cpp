@@ -1,9 +1,9 @@
 #include "mesh.h"
 #include "shape.h"
-#include "arena.h"
-#include "dvec.h"
-#include "math.h"
-#include "debug.h"
+#include "../arena.h"
+#include "../dvec.h"
+#include "../math.h"
+#include "../debug.h"
 #include <math.h>
 #include <float.h>
 #include <stdio.h>

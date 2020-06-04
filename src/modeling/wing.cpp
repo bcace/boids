@@ -1,5 +1,5 @@
 #include "wing.h"
-#include "debug.h"
+#include "../debug.h"
 #include <math.h>
 #include <stdlib.h>
 
