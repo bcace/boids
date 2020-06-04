@@ -8,7 +8,6 @@
 #include "pick.h"
 #include "drag.h"
 #include "serial.h"
-#include "vector.h"
 #include "shape.h"
 #define VEC_IMPL
 #include "vec.h"
