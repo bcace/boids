@@ -39,6 +39,7 @@ Wing *wing_make_from_selected_base_airfoil(int index, float x, float y, float z)
     w->chord = 1.0f;
     w->taper = 0.5f;
     w->span = 10.0f;
+    w->aoa = 0.0f;
     w->sweep = 20.0f;
     w->dihedral = 0.0f;
     w->spars_count = 0;

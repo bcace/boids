@@ -93,15 +93,6 @@ struct TraceSection {
     int wisecs_count;
 };
 
-enum _StationType { ST_NONE, ST_TAIL, ST_NOSE };
-
-/* Marks position of fuselage sections. */
-struct _Station {
-    float x;
-    short int id;
-    _StationType type;
-};
-
 struct Fuselage {
     Oref orefs[MAX_ELEM_REFS];
     int orefs_count;
@@ -117,11 +108,8 @@ void fuselage_update_longitudinal_tangents(Fuselage *fuselage);
 void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fuselage);
 bool fuselage_objects_overlap(Oref *a, Oref *b);
 bool fuselage_object_and_wing_overlap(Oref *o, Wref *w);
-void fuselage_get_shapes_at_station(Fuselage *fuselage, _Station *station, TraceShapes *shapes);
 
 /* wing */
 void fuselage_wing_intersections(Arena *arena, Wref *wrefs, int wrefs_count, TraceSection *sections, int sections_count);
-// void fuselage_wing_find_intersections(Arena *arena, Wref *wref, TraceSection *sections);
-// void fuselage_wing_insert_intersections(Arena *arena, Wref *wrefs, int wrefs_count, int stat_i, TraceSection *section);
 
 #endif

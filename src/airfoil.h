@@ -26,7 +26,7 @@ void airfoil_init(Airfoil *airfoil,
                   float u_base, float u_delta, unsigned char *u_y,
                   float l_base, float l_delta, unsigned char *l_y);
 float airfoil_get_trailing_y_offset(Airfoil *a);
-void airfoil_get_points(Airfoil *airfoil, tvec *points,
+void airfoil_get_points(Airfoil *airfoil, tvec *verts,
                         double chord, double depth,
                         double aoa, double dihedral,
                         double x, double y, double z);

@@ -12,15 +12,19 @@
 #define _MAX_FUSELAGE_STATIONS 1000
 
 
-/* Initialize station. */
+/* Marks position of fuselage sections. */
+struct _Station {
+    float x;
+    short int id;
+};
+
 static void _init_station(_Station *s, float x, int id) {
     s->x = x;
-    s->type = ST_NONE;
     s->id = id;
 }
 
 /* Insert new station sorted by x and return its id. If station with same x is
-found don't insert a new station, just return the old one. */
+found don't insert a new station, just return id of the old one. */
 static int _insert_station(_Station *stations, int *count, float x) {
     int i = 0;
     _Station *s = 0;
@@ -116,7 +120,13 @@ static void _get_section_shape(float x, Shape *shape,
     shape_update_curve_control_points(shape->curves);
 }
 
-void fuselage_get_shapes_at_station(Fuselage *fuselage, _Station *station, TraceShapes *shapes) {
+// TODO: does this have to be a separate function?
+void _get_shapes_at_station(Fuselage *fuselage,
+                            _Station *station,
+                            TraceShapes *shapes,
+                            short int tailmost_station_id,
+                            short int nosemost_station_id) {
+
     shapes->shapes_count = 0;
     shapes->t_shapes_count = 0;
     shapes->n_shapes_count = 0;
@@ -131,8 +141,8 @@ void fuselage_get_shapes_at_station(Fuselage *fuselage, _Station *station, Trace
             break_assert(shapes->shapes_count < MAX_ENVELOPE_SHAPES);
             Shape *s = shapes->shapes + shapes->shapes_count++;
 
-            bool is_tailmost = station->type != ST_TAIL && station->id == oref->t_station.id;
-            bool is_nosemost = station->type != ST_NOSE && station->id == oref->n_station.id;
+            bool is_t_opening = station->id != tailmost_station_id && station->id == oref->t_station.id;
+            bool is_n_opening = station->id != nosemost_station_id && station->id == oref->n_station.id;
 
             _get_section_shape(station->x, s,
                                &oref->t_skin_former, oref->t_tangents, false,
@@ -140,11 +150,11 @@ void fuselage_get_shapes_at_station(Fuselage *fuselage, _Station *station, Trace
 
             s->ids.tail = oref->id;
             s->ids.nose = oref->id;
-            if (!is_tailmost)
+            if (!is_t_opening)
                 shapes->t_shapes[shapes->t_shapes_count++] = s;
-            if (!is_nosemost)
+            if (!is_n_opening)
                 shapes->n_shapes[shapes->n_shapes_count++] = s;
-            if (is_tailmost || is_nosemost)
+            if (is_t_opening || is_n_opening)
                 shapes->two_envelopes = true;
         }
     }
@@ -173,32 +183,36 @@ void fuselage_get_shapes_at_station(Fuselage *fuselage, _Station *station, Trace
 }
 
 /* Fuselage section containing mesh envelopes. */
-struct MeshSection {
+struct _MeshSection {
     MeshEnv envs[2]; /* actual storage */
     MeshEnv *t_env, *n_env; /* aliases of the above, both point envs[0] most of the time */
     int neighbors_map[MAX_ENVELOPE_POINTS]; /* maps tailwise envelope point indices to tailwise triangles */
 };
 
 /* Main fuselage lofting function. Generates fuselage skin panels. */
-void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fuselage) {
+void fuselage_loft(Arena *arena, Arena *verts_arena,
+                   Model *model, Fuselage *fuselage) {
+
     int shape_subdivs = SHAPE_CURVE_SAMPLES * SHAPE_CURVES;
 
     /* assign fuselage elements' ids */
 
-    int next_elem_id = 0;
+    {
+        int next_elem_id = 0;
 
-    for (int i = 0; i < fuselage->orefs_count; ++i) {
-        Oref *oref = fuselage->orefs + i;
-        oref->id = next_elem_id++;
-        oref->t_station.id = -1;
-        oref->n_station.id = -1;
-    }
+        for (int i = 0; i < fuselage->orefs_count; ++i) {
+            Oref *oref = fuselage->orefs + i;
+            oref->id = next_elem_id++;
+            oref->t_station.id = -1;
+            oref->n_station.id = -1;
+        }
 
-    for (int i = 0; i < fuselage->wrefs_count; ++i) {
-        Wref *wref = fuselage->wrefs + i;
-        wref->id = next_elem_id++;
-        wref->t_station.id = -1;
-        wref->n_station.id = -1;
+        for (int i = 0; i < fuselage->wrefs_count; ++i) {
+            Wref *wref = fuselage->wrefs + i;
+            wref->id = next_elem_id++;
+            wref->t_station.id = -1;
+            wref->n_station.id = -1;
+        }
     }
 
     /* get required stations */
@@ -206,106 +220,130 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
     _Station *req_stations = arena->alloc<_Station>(MAX_ELEM_REFS * 2);
     int req_stations_count = 0;
 
-    /* object required stations (openings) */
+    {
+        /* object required stations (openings) */
 
-    for (int i = 0; i < fuselage->orefs_count; ++i) {
-        Oref *oref = fuselage->orefs + i;
-        Object *o = oref->object;
+        for (int i = 0; i < fuselage->orefs_count; ++i) {
+            Oref *oref = fuselage->orefs + i;
+            Object *o = oref->object;
 
-        if (oref->t_conns_count == 0) /* tailwise opening */
-            oref->t_station.id = _insert_station(req_stations, &req_stations_count, o->min_x);
+            if (oref->t_conns_count == 0) /* tailwise opening */
+                oref->t_station.id = _insert_station(req_stations,
+                                                     &req_stations_count,
+                                                     o->min_x);
 
-        if (oref->n_conns_count == 0) /* nosewise opening */
-            oref->n_station.id = _insert_station(req_stations, &req_stations_count, o->max_x);
+            if (oref->n_conns_count == 0) /* nosewise opening */
+                oref->n_station.id = _insert_station(req_stations,
+                                                     &req_stations_count,
+                                                     o->max_x);
+        }
+
+        /* get wing required stations (leading and trailing edge root points, spars) */
+
+        for (int i = 0; i < fuselage->wrefs_count; ++i) {
+            Wref *wref = fuselage->wrefs + i;
+
+            static float x_positions[MAX_ELEM_REFS];
+            int count = wing_get_required_stations(wref->wing, x_positions);
+
+            /* trailing edge */
+            wref->t_station.id = _insert_station(req_stations,
+                                                 &req_stations_count,
+                                                 x_positions[0]);
+
+            //
+            // TODO: add spar stations
+            //
+
+            /* leading edge */
+            wref->n_station.id = _insert_station(req_stations,
+                                                 &req_stations_count,
+                                                 x_positions[count - 1]);
+        }
+
+        // TODO: merge stations that are too close along x, use mesh size to estimate
     }
-
-    req_stations[0].type = ST_TAIL;
-    req_stations[req_stations_count - 1].type = ST_NOSE;
-
-    /* get wing required stations (leading and trailing edge root points, spars) */
-
-    for (int i = 0; i < fuselage->wrefs_count; ++i) {
-        Wref *wref = fuselage->wrefs + i;
-
-        static float x_positions[MAX_ELEM_REFS];
-        int count = wing_get_required_stations(wref->wing, x_positions);
-
-        /* trailing edge */
-        wref->t_station.id = _insert_station(req_stations, &req_stations_count,
-                                             x_positions[0]);
-
-        //
-        // TODO: add spar stations
-        //
-
-        /* leading edge */
-        wref->n_station.id = _insert_station(req_stations, &req_stations_count,
-                                             x_positions[count - 1]);
-    }
-
-    // TODO: merge stations that are too close along x, use mesh size to estimate
 
     /* approximate mesh size */
 
-    float min_y = FLT_MAX, max_y = -FLT_MAX;
-    float min_z = FLT_MAX, max_z = -FLT_MAX;
+    float mesh_size = 0.0f;
 
-    for (int i = 0; i < fuselage->orefs_count; ++i) {
-        Oref *oref = fuselage->orefs + i;
-        Object *o = oref->object;
+    {
+        float min_y = FLT_MAX, max_y = -FLT_MAX;
+        float min_z = FLT_MAX, max_z = -FLT_MAX;
 
-        if (o->min_y < min_y)
-            min_y = o->min_y;
-        if (o->min_z < min_z)
-            min_z = o->min_z;
-        if (o->max_y > max_y)
-            max_y = o->max_y;
-        if (o->max_z > max_z)
-            max_z = o->max_z;
-    }
-
-    float mesh_size = ((max_y - min_y) + (max_z - min_z)) * 2.0f / shape_subdivs;
-
-    /* once we have required stations we can calculate all the in-between ones */
-
-    _Station *stations = arena->alloc<_Station>(_MAX_FUSELAGE_STATIONS);
-    int stations_count = 1;
-
-    short int *stations_id_to_index_map = arena->alloc<short int>(MAX_ELEM_REFS * 2);
-
-    stations[0] = req_stations[0];
-    stations_id_to_index_map[req_stations[0].id] = 0;
-
-    for (int i = 1; i < req_stations_count; ++i) {
-        _Station *s1 = req_stations + i - 1;
-        _Station *s2 = req_stations + i;
-
-        float dx = s2->x - s1->x;
-        int count = (int)floorf(dx / mesh_size);
-        float ddx = dx / (count + 1);
-
-        for (int j = 0; j < count; ++j) {
-            break_assert(stations_count < _MAX_FUSELAGE_STATIONS);
-            _init_station(stations + stations_count++, s1->x + (j + 1) * ddx, -2);
+        for (int i = 0; i < fuselage->orefs_count; ++i) {
+            Oref *oref = fuselage->orefs + i;
+            Object *o = oref->object;
+            if (o->min_y < min_y)
+                min_y = o->min_y;
+            if (o->min_z < min_z)
+                min_z = o->min_z;
+            if (o->max_y > max_y)
+                max_y = o->max_y;
+            if (o->max_z > max_z)
+                max_z = o->max_z;
         }
 
-        stations_id_to_index_map[req_stations[i].id] = stations_count;
-        stations[stations_count++] = req_stations[i];
+        mesh_size = ((max_y - min_y) + (max_z - min_z)) * 2.0f / shape_subdivs;
     }
 
-    stations[0].type = ST_TAIL;
-    stations[stations_count - 1].type = ST_NOSE;
+    /* once we have required stations we can create actual stations
+    by copying required ones and inserting additional stations wrt
+    calculated mesh size */
 
-    /* map oref and wref station ids to indices */
-    for (int i = 0; i < fuselage->orefs_count; ++i) {
-        Oref *oref = fuselage->orefs + i;
-        oref->t_station.index = stations_id_to_index_map[oref->t_station.id];
-        oref->n_station.index = stations_id_to_index_map[oref->n_station.id];
-    }
-    for (int i = 0; i < fuselage->wrefs_count; ++i) {
-        Wref *wref = fuselage->wrefs + i;
-        wref->t_station.index = stations_id_to_index_map[wref->t_station.id];
-        wref->n_station.index = stations_id_to_index_map[wref->n_station.id];
+    _Station *stations = arena->alloc<_Station>(_MAX_FUSELAGE_STATIONS);
+    int stations_count = 0;
+    short int tailmost_station_id;
+    short int nosemost_station_id;
+
+    {
+        short int *id_to_index = arena->alloc<short int>(MAX_ELEM_REFS * 2); /* maps stations id to index */
+
+        /* copy first required station */
+
+        stations[stations_count++] = req_stations[0];
+        id_to_index[req_stations[0].id] = 0;
+        short int available_station_id = req_stations_count;
+
+        for (int i = 1; i < req_stations_count; ++i) {
+            _Station *s1 = req_stations + i - 1;
+            _Station *s2 = req_stations + i;
+
+            /* insert additional stations */
+
+            float d = s2->x - s1->x;
+            int count = (int)floorf(d / mesh_size);
+            float dx = d / (count + 1);
+
+            for (int j = 0; j < count; ++j) {
+                break_assert(stations_count < _MAX_FUSELAGE_STATIONS);
+                _init_station(stations + stations_count++,
+                              s1->x + (j + 1) * dx,
+                              available_station_id++);
+            }
+
+            /* copy required station */
+
+            id_to_index[req_stations[i].id] = stations_count;
+            stations[stations_count++] = req_stations[i];
+        }
+
+        tailmost_station_id = stations[0].id;
+        nosemost_station_id = stations[stations_count - 1].id;
+
+        /* map oref and wref station ids to indices */
+
+        for (int i = 0; i < fuselage->orefs_count; ++i) {
+            Oref *oref = fuselage->orefs + i;
+            oref->t_station.index = id_to_index[oref->t_station.id];
+            oref->n_station.index = id_to_index[oref->n_station.id];
+        }
+        for (int i = 0; i < fuselage->wrefs_count; ++i) {
+            Wref *wref = fuselage->wrefs + i;
+            wref->t_station.index = id_to_index[wref->t_station.id];
+            wref->n_station.index = id_to_index[wref->n_station.id];
+        }
     }
 
     /* trace fuselage section envelopes */
@@ -320,7 +358,9 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
         sect->t_env = sect->n_env = 0;
         sect->x = station->x;
 
-        fuselage_get_shapes_at_station(fuselage, station, &sect->shapes);
+        _get_shapes_at_station(fuselage, station, &sect->shapes,
+                               tailmost_station_id,
+                               nosemost_station_id);
 
         if (sect->shapes.t_shapes_count == 0 || sect->shapes.n_shapes_count == 0) /* skip if there are no shapes on either side */
             continue;
@@ -346,13 +386,13 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
 
     /* mesh between each two neighboring sections */
 
-    MeshSection *sections[2];
-    sections[0] = arena->alloc<MeshSection>();
-    sections[1] = arena->alloc<MeshSection>();
+    _MeshSection *sections[2];
+    sections[0] = arena->alloc<_MeshSection>();
+    sections[1] = arena->alloc<_MeshSection>();
 
     for (int i = 0; i < stations_count; ++i) {
         _Station *station = stations + i;
-        MeshSection *section = sections[i % 2];
+        _MeshSection *section = sections[i % 2];
         TraceSection *trace_section = trace_sections + i;
         TraceShapes *shapes = &trace_section->shapes;
 
@@ -378,8 +418,8 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
             for (int j = 0; j < section->n_env->count; ++j)
                 section->neighbors_map[j] = -1; /* there are no triangles tailwise of the tailmost section */
         else {
-            MeshSection *t_s = sections[(section == sections[0]) ? 1 : 0];
-            MeshSection *n_s = section;
+            _MeshSection *t_s = sections[(section == sections[0]) ? 1 : 0];
+            _MeshSection *n_s = section;
             TraceShapes *t_shapes = &trace_sections[i - 1].shapes;
             TraceShapes *n_shapes = &trace_sections[i].shapes;
 

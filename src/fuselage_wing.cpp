@@ -7,10 +7,21 @@
 #include "arena.h"
 #include "debug.h"
 #include "math.h"
+#include <float.h>
 #include <math.h>
 
 #define MAX_WING_SURFACE_STATIONS 500
 
+
+static dvec _line_intersection(double x1, double y1, double x2, double y2,
+                               double x3, double y3, double x4, double y4) {
+    double d =  (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+    double t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / d;
+    dvec i;
+    i.x = x1 + (x2 - x1) * t;
+    i.y = y1 + (y2 - y1) * t;
+    return i;
+}
 
 static Wisec _envelope_and_line_intersection(TraceEnv *env, dvec p1, dvec p2, double x) {
     Wisec p;
@@ -163,16 +174,65 @@ static void _insert_wisecs_into_envelope(TraceEnv *env, Wisec *wisecs, int wisec
     }
 }
 
-void fuselage_wing_intersections(Arena *arena, Wref *wrefs, int wrefs_count, TraceSection *sects, int sects_count) {
+static tvec _get_direction(tvec v1, tvec v2) {
+    tvec d;
+    d.x = v2.x - v1.x;
+    d.y = v2.y - v1.y;
+    d.z = v2.z - v1.z;
+    double l = sqrt(d.x * d.x + d.y * d.y + d.z * d.z);
+    d.x /= l;
+    d.y /= l;
+    d.z /= l;
+    return d;
+}
 
+struct Edges {
+    struct {
+        tvec root, tip, dir;
+    } tr, le;
+};
+
+static void _get_wing_section(tvec l1, tvec l2, tvec ld, tvec t1, tvec t2, tvec td,
+                              double l_dist, double airfoil_dy,
+                              tvec *verts) {
+
+    tvec lp; /* leading edge position */
+    lp.x = l1.x + ld.x * l_dist;
+    lp.y = l1.y + ld.y * l_dist;
+    lp.z = l1.z + ld.z * l_dist;
+
+    dvec p = _line_intersection(t1.y, t1.z, t2.y, t2.z,
+                                lp.y, lp.z, lp.y - ld.z, lp.z + ld.y);
+
+    double t;
+    if (fabs(td.z) > fabs(td.y))
+        t = (p.y - t1.z) / (t2.z - t1.z);
+    else
+        t = (p.x - t1.y) / (t2.y - t1.y);
+
+    tvec tp; /* trailing edge position */
+    tp.x = t1.x + td.x * t;
+    tp.y = t1.y + td.y * t;
+    tp.z = t1.z + td.z * t;
+
+    /* connecting line between trailing and leading edge positions */
+    double cx = lp.x - tp.x;
+    double cy = lp.y - tp.y;
+    double cz = lp.z - tp.z;
+
+    double aoa = asin(cx / sqrt(cy * cy + cz * cz)) - asin(1.0 / airfoil_dy);
+    double chord = sqrt(cx * cx + cy * cy + cz * cz) / sqrt(1.0 + airfoil_dy * airfoil_dy);
+
+    // TODO: make vertices
+}
+
+void fuselage_wing_intersections(Arena *arena, Wref *wrefs, int wrefs_count, TraceSection *sects, int sects_count) {
+#if 0
     Wisec *u_wisecs = arena->lock<Wisec>(MAX_WING_SURFACE_STATIONS * 2);
     Wisec *l_wisecs = u_wisecs + MAX_WING_SURFACE_STATIONS;
 
-    const int surf_points_count = AIRFOIL_X_SUBDIVS + 1;
-    tvec *ru_surfs = arena->lock<tvec>(surf_points_count * 4);
-    tvec *rl_surfs = ru_surfs + surf_points_count;
-    tvec *tu_surfs = rl_surfs + surf_points_count;
-    tvec *tl_surfs = tu_surfs + surf_points_count;
+    tvec *r_prof = arena->lock<tvec>(AIRFOIL_POINTS * 2);
+    tvec *t_prof = r_prof + AIRFOIL_POINTS;
 
     /* find all intersections for each wing */
 
@@ -206,10 +266,12 @@ void fuselage_wing_intersections(Arena *arena, Wref *wrefs, int wrefs_count, Tra
             continue;
         }
 
-        /* tip points */
+        /* find tip points, leading edge a-b, trailing edge d-c
+        ...
+        */
 
-        tvec l1 = t_wisec.p;
-        tvec t1 = n_wisec.p;
+        tvec t1 = t_wisec.p;
+        tvec l1 = n_wisec.p;
 
         double s = sin(w->dihedral * DEG_TO_RAD);
         double c = cos(w->dihedral * DEG_TO_RAD);
@@ -227,38 +289,41 @@ void fuselage_wing_intersections(Arena *arena, Wref *wrefs, int wrefs_count, Tra
         t2.y -= t2_y_off * s;
         t2.z += t2_y_off * c;
 
-        /* make wing cutter prism */
-        // for (int j = 0; j < AIRFOIL_X_SUBDIVS; ++j) {
-        //     double x = airfoil_get_subdiv_x(AIRFOIL_X_SUBDIVS - j);
-        // }
+        /* go through all wing sections and find min/max for leading edge y-z direction */
+        double r_margin =  DBL_MAX;
+        double t_margin = -DBL_MAX;
+        {
+            double nx = l2.y - l1.y;
+            double ny = l2.z - l1.z;
+            for (int j = wref->t_station.index + 1; j < wref->n_station.index; ++j) {
+                TraceEnv *env = sects[j].t_env;
+                for (int k = 0; k < env->count; ++k) {
+                    double d = nx * (env->points[k].x - l1.y) + ny * (env->points[k].y - l1.z);
+                    if (d < r_margin)
+                        r_margin = d;
+                    if (d > t_margin)
+                        t_margin = d;
+                }
+            }
+            r_margin -= 0.01;
+            t_margin += 0.01;
+        }
 
-        // for (int j = 0; j < AIRFOIL_POINTS; ++j) {
-        //     dvec p = airfoil_get_point(&w->airfoil, j);
-        //     p.x *= w->chord;
-        //     p.y *= w->chord;
+        double airfoil_dy = airfoil_get_trailing_y_offset(&w->airfoil);
+        tvec ld = _get_direction(l1, l2);
+        tvec td = _get_direction(t1, t2);
 
-        //     tvec *r = r_cut + j;
-        //     r->x = l1.x - p.x;
-        //     r->y = l1.y - p.y * s;
-        //     r->z = l1.z + p.y * c;
-
-        //     tvec *t = t_cut + j;
-        //     t->x = l2.x - p.x;
-        //     t->y = l2.y - p.y * s;
-        //     t->z = l2.z + p.y * c;
-        // }
+        _get_wing_section(l1, l2, ld, t1, t2, td, r_margin, airfoil_dy, r_prof);
+        _get_wing_section(l1, l2, ld, t1, t2, td, t_margin, airfoil_dy, t_prof);
 
         /* wing surface intersections */
 
-        int surface_stations_count = wref->n_station.index - wref->t_station.index - 1;
-        break_assert(surface_stations_count <= MAX_WING_SURFACE_STATIONS);
+        // int surface_stations_count = wref->n_station.index - wref->t_station.index - 1;
+        // break_assert(surface_stations_count <= MAX_WING_SURFACE_STATIONS);
 
-        for (int j = wref->t_station.index + 1; j < wref->n_station.index; ++j) {
-            TraceSection *sect = sects + j;
-
-            /* TODO: find cutting prism intersection at sect->x
-            intersect this intersection with section envelope */
-        }
+        // for (int j = wref->t_station.index + 1; j < wref->n_station.index; ++j) {
+        //     TraceSection *sect = sects + j;
+        // }
 
         /* insert found wisecs here */
         t_sect->wisecs_count = _insert_wisec(t_sect->wisecs, t_sect->wisecs_count, t_wisec);
@@ -288,4 +353,5 @@ void fuselage_wing_intersections(Arena *arena, Wref *wrefs, int wrefs_count, Tra
         TraceSection *sect = sects + i;
         _insert_wisecs_into_envelope(sect->t_env, sect->wisecs, sect->wisecs_count);
     }
+#endif
 }

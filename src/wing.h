@@ -19,6 +19,7 @@ struct Wing {
     float chord; /* ideal root chord length */
     float taper; /* tip chord / root chord */
     float span;
+    float aoa;
     float sweep; /* leading edge angle, degrees */
     float dihedral; /* degrees */
     Spar spars[WING_MAX_SPARS]; /* defined from leading to trailing edge */
