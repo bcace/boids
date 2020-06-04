@@ -295,27 +295,27 @@ int main() {
 
     plat_create_window("Boids", 1800, 1000, false);
 
-    program.init("src/glsl/default.vert", "src/glsl/default.frag");
+    program.init("src/shaders/default.vert", "src/shaders/default.frag");
     program.define_in_float(3); /* position */
     program.define_uniform("projection");
     program.define_uniform("modelview");
     program.define_uniform("color");
 
 #if DRAW_CORRS
-    colored_program.init("src/glsl/colored.vert", "src/glsl/colored.frag");
+    colored_program.init("src/shaders/colored.vert", "src/shaders/colored.frag");
     colored_program.define_in_float(3); /* position */
     colored_program.define_in_float(3); /* color */
     colored_program.define_uniform("projection");
     colored_program.define_uniform("modelview");
 #endif
 
-    shaded_program.init("src/glsl/shaded.vert", "src/glsl/shaded.frag");
+    shaded_program.init("src/shaders/shaded.vert", "src/shaders/shaded.frag");
     shaded_program.define_in_float(3); /* position */
     shaded_program.define_uniform("projection");
     shaded_program.define_uniform("modelview");
     shaded_program.define_uniform("color");
 
-    valued_program.init("src/glsl/valued.vert", "src/glsl/valued.frag");
+    valued_program.init("src/shaders/valued.vert", "src/shaders/valued.frag");
     valued_program.define_in_float(3); /* position */
     valued_program.define_in_float(1); /* value */
     valued_program.define_uniform("projection");
