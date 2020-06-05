@@ -3,11 +3,11 @@
 #include "../arena.h"
 #include "../dvec.h"
 #include "../math.h"
-#include "../debug.h"
 #include <math.h>
 #include <float.h>
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 
 #define MAX_TRIES               100
 #define RETRY_STEP              1.0e-10
@@ -92,9 +92,9 @@ static inline bool _should_bundle_shapes(Shape *a, Shape *b, double mx, double m
 
 /* Main envelope tracing function. TODO: describe arguments. */
 bool mesh_trace_envelope(TraceEnv *env, Shape **shapes, int shapes_count, int curve_subdivs) {
-    break_assert(shapes_count < MAX_ENVELOPE_SHAPES);
-    break_assert(curve_subdivs >= MIN_CURVE_SUBDIVS);
-    break_assert(curve_subdivs <= MAX_CURVE_SUBDIVS);
+    assert(shapes_count < MAX_ENVELOPE_SHAPES);
+    assert(curve_subdivs >= MIN_CURVE_SUBDIVS);
+    assert(curve_subdivs <= MAX_CURVE_SUBDIVS);
 
     env->count = 0;
 
@@ -172,7 +172,7 @@ bool mesh_trace_envelope(TraceEnv *env, Shape **shapes, int shapes_count, int cu
                 _Poly *t_bundle_p = bundle_polys_map[s->ids.tail];
                 _Poly *n_bundle_p = bundle_polys_map[s->ids.nose];
 
-                break_assert(t_bundle_p == 0 || n_bundle_p == 0); /* shape should not be in two bundles at the same time */
+                assert(t_bundle_p == 0 || n_bundle_p == 0); /* shape should not be in two bundles at the same time */
 
                 if (t_bundle_p)
                     t_bundle_p->shapes[t_bundle_p->shapes_count++] = s;

@@ -1,5 +1,5 @@
 #include "config.h"
-#include "modeling/constants.h"
+#include "constants.h"
 
 
 static const float _MAX_ONE_SIDE_MERGE_DELAY = 0.5f;

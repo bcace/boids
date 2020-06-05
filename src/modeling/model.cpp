@@ -2,9 +2,9 @@
 #include "object.h"
 #include "wing.h"
 #include "part.h"
-#include "../debug.h"
 #include <math.h>
 #include <assert.h>
+#include <string.h>
 
 
 Model::Model() : objects_count(0), wings_count(0) {}
@@ -23,12 +23,12 @@ void model_clear(Model *m) {
 }
 
 void model_add_object(Model *m, Object *o) {
-    break_assert(m->objects_count + m->wings_count < MAX_ELEMS);
+    assert(m->objects_count + m->wings_count < MAX_ELEMS);
     m->objects[m->objects_count++] = o;
 }
 
 void model_add_wing(Model *m, Wing *w) {
-    break_assert(m->objects_count + m->wings_count < MAX_ELEMS);
+    assert(m->objects_count + m->wings_count < MAX_ELEMS);
     m->wings[m->wings_count++] = w;
 }
 
@@ -79,3 +79,18 @@ bool Model::delete_selected() {
 
     return requires_reloft;
 }
+
+#ifndef NDEBUG
+
+/* Serializes model before asserting. Label is used as dump file name. */
+void _model_assert_func(Model *model, bool expr, const char *label) {
+    if (!expr) {
+        char path[512];
+        strcpy_s(path, label);
+        strcat_s(path, ".dump");
+        model_serialize(model, path);
+        assert(false);
+    }
+}
+
+#endif

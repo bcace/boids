@@ -91,4 +91,12 @@ bool model_collide(Model *model, Arena *arena, bool dragging);
 
 void model_loft(Arena *arena, Model *model);
 
+#ifdef NDEBUG
+    #define model_assert(__model__, __expr__, __label__) ((void)0)
+#else
+    void _model_assert_func(struct Model *model, bool expr, const char *label);
+
+    #define model_assert(__model__, __expr__, __label__) _model_assert_func((__model__), (__expr__), (__label__))
+#endif
+
 #endif

@@ -1,7 +1,6 @@
 #include "mesh.h"
 #include "shape.h"
 #include "model.h"
-#include "../debug.h"
 #include "../periodic.h"
 #include "../arena.h"
 #include "config.h"
@@ -9,6 +8,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <assert.h>
 
 
 static Arena mesh_arena(50000000);
@@ -332,7 +332,7 @@ static void _mesh_pass_3(Model *model,
     int n_count = n_end_isec - n_beg_isec - 1;
     bool merge_found = false;
 
-    break_assert(t_count >= 0 && n_count >= 0);
+    assert(t_count >= 0 && n_count >= 0);
 
     if (t_count == 1 && n_count == 2) { /* (possible) tailwise intersection merge */
         _Isec *t_isec = t_isecs + t_beg_isec + 1;
@@ -592,7 +592,7 @@ static void _mesh_pass_0(Model *model, int shape_subdivs,
     for (; n_i1 < n_env->count; ++n_i1)
         if (t_subdiv_i == n_env->points[n_i1].subdiv_i)
             break;
-    break_assert(n_i1 < n_env->count); /* could not correlate first tail point with anything on the nose envelope */
+    assert(n_i1 < n_env->count); /* could not correlate first tail point with anything on the nose envelope */
 
     int t_i2 = period_incr(t_i1, t_env->count);
     int n_i2 = period_incr(n_i1, n_env->count);

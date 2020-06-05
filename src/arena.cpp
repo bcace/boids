@@ -1,7 +1,7 @@
 #include "arena.h"
-#include "debug.h"
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 
 Arena::Arena(int _capacity) {
@@ -26,8 +26,8 @@ void Arena::unlock() {
 }
 
 char *Arena::alloc_bytes(int bytes, bool zero) {
-    break_assert(taken + bytes < capacity);
-    break_assert(locked_stack == 0);
+    assert(taken + bytes < capacity);
+    assert(locked_stack == 0);
     char *mem = data + taken;
     taken += bytes;
     if (zero)
@@ -36,7 +36,7 @@ char *Arena::alloc_bytes(int bytes, bool zero) {
 }
 
 char *Arena::lock_bytes(int bytes) {
-    break_assert(taken + bytes < capacity);
+    assert(taken + bytes < capacity);
     char *mem = data + taken;
     taken += bytes;
     lock_stack[locked_stack++] = bytes;

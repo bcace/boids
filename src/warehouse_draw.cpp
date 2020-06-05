@@ -4,7 +4,6 @@
 #include "graphics.h"
 #include "mat.h"
 #include "modeling/config.h"
-#include "debug.h"
 
 
 Mantle mantle;

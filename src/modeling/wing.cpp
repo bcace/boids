@@ -1,13 +1,13 @@
 #include "wing.h"
-#include "../debug.h"
 #include <math.h>
 #include <stdlib.h>
+#include <assert.h>
 
 
 void wing_add_spar(Wing *w, float x) {
-    break_assert(w->spars_count < WING_MAX_SPARS);
-    break_assert(x > 0.05 && x < 0.95);
-    break_assert(w->spars_count == 0 || x > w->spars[w->spars_count - 1].x);
+    assert(w->spars_count < WING_MAX_SPARS);
+    assert(x > 0.05 && x < 0.95);
+    assert(w->spars_count == 0 || x > w->spars[w->spars_count - 1].x);
     w->spars[w->spars_count++].x = x;
 }
 

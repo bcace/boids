@@ -5,8 +5,8 @@
 #include "config.h"
 #include "../arena.h"
 #include "../vec.h"
-#include "../debug.h"
 #include <stdlib.h>
+#include <assert.h>
 
 
 double COLLAPSE_MARGIN = 0.25;
@@ -161,7 +161,7 @@ static int _mesh_envs_pass_2(float section_x, vec3 *verts, int verts_count, _Cor
     double t_beg_t, t_end_t;
     double n_beg_t, n_end_t;
 
-    break_assert(corr->type == ctOpen); /* correlation must be opening */
+    assert(corr->type == ctOpen); /* correlation must be opening */
 
     if (corr->tail_isec_opening) {
         ep1 = t_env_points + corr->t_beg_i;

@@ -4,8 +4,7 @@
 #include "graphics.h"
 #include "pick.h"
 #include "arena.h"
-#include "debug.h"
-#include "config.h"
+#include "modeling/config.h"
 #include <math.h>
 #include <float.h>
 #include <assert.h>
@@ -156,7 +155,7 @@ bool Model::maybe_drag_selection(PickResult &pick_result, bool ctrl_pressed) {
 
 void init_model_draw() {
     const int OBJECTS_SIZE = 6;
-    break_assert((1 << OBJECTS_SIZE) >= MAX_ELEMS);
+    assert((1 << OBJECTS_SIZE) >= MAX_ELEMS);
 
     object_handle_pick_category = pick_register_category();
     object_model_pick_category = pick_register_category();

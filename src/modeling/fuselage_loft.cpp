@@ -1,13 +1,14 @@
 #include "fuselage.h"
 #include "object.h"
 #include "wing.h"
+#include "model.h"
 #include "../interp.h"
 #include "../periodic.h"
 #include "mesh.h"
 #include "../arena.h"
-#include "../debug.h"
 #include <math.h>
 #include <float.h>
+#include <assert.h>
 
 #define _MAX_FUSELAGE_STATIONS 1000
 
@@ -138,7 +139,7 @@ void _get_shapes_at_station(Fuselage *fuselage,
         Oref *oref = fuselage->orefs + i;
 
         if (station->x >= oref->object->min_x && station->x <= oref->object->max_x) {
-            break_assert(shapes->shapes_count < MAX_ENVELOPE_SHAPES);
+            assert(shapes->shapes_count < MAX_ENVELOPE_SHAPES);
             Shape *s = shapes->shapes + shapes->shapes_count++;
 
             bool is_t_opening = station->id != tailmost_station_id && station->id == oref->t_station.id;
@@ -167,7 +168,7 @@ void _get_shapes_at_station(Fuselage *fuselage,
         Oref *n_oref = c->nose_o;
 
         if (station->x > t_oref->object->max_x && station->x < n_oref->object->min_x) {
-            break_assert(shapes->shapes_count < MAX_ENVELOPE_SHAPES);
+            assert(shapes->shapes_count < MAX_ENVELOPE_SHAPES);
             Shape *s = shapes->shapes + shapes->shapes_count++;
 
             _get_section_shape(station->x, s,
@@ -317,7 +318,7 @@ void fuselage_loft(Arena *arena, Arena *verts_arena,
             float dx = d / (count + 1);
 
             for (int j = 0; j < count; ++j) {
-                break_assert(stations_count < _MAX_FUSELAGE_STATIONS);
+                assert(stations_count < _MAX_FUSELAGE_STATIONS);
                 _init_station(stations + stations_count++,
                               s1->x + (j + 1) * dx,
                               available_station_id++);
