@@ -2,7 +2,7 @@
 #include "modeling/object.h"
 #include "modeling/wing.h"
 #include "arena.h"
-#include "config.h"
+#include "modeling/config.h"
 #include "dvec.h"
 #include "vec.h"
 #include <assert.h>

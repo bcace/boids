@@ -3,7 +3,7 @@
 #include "arena.h"
 #include "graphics.h"
 #include "mat.h"
-#include "config.h"
+#include "modeling/config.h"
 #include "debug.h"
 
 

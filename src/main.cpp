@@ -16,6 +16,7 @@
 #include "arena.h"
 #include "apame.h"
 #include "modeling/airfoil.h"
+#include "modeling/config.h"
 #include <assert.h>
 #include <stdio.h>
 

@@ -4,7 +4,7 @@
 #include "../debug.h"
 #include "../periodic.h"
 #include "../arena.h"
-#include "../config.h"
+#include "config.h"
 #include <float.h>
 #include <math.h>
 #include <stdlib.h>

@@ -2,7 +2,7 @@
 #include "../periodic.h"
 #include "shape.h"
 #include "model.h"
-#include "../config.h"
+#include "config.h"
 #include "../arena.h"
 #include "../vec.h"
 #include "../debug.h"

@@ -3,7 +3,7 @@
 
 #include "../dvec.h"
 #include "shape.h"
-#include "../config.h"
+#include "config.h"
 #include "element.h"
 #include "constants.h"
 
