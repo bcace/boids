@@ -11,7 +11,7 @@
 
 
 char *_read_file(const char *path) {
-    FILE *f = (FILE *)plat_fopen(path, "r");
+    FILE *f = (FILE *)platform_fopen(path, "r");
     fseek(f, 0, SEEK_END); // TODO: fseek and ftell don't always return the number of characters because of the goddamn carriage return crap...
     size_t size = ftell(f);
     char *text = (char *)malloc(size + 1);

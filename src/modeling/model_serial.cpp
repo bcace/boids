@@ -87,7 +87,7 @@ void model_deserialize(Model *model, const char *path) {
 }
 
 void model_dump_mesh(Model *model, const char *path) {
-    FILE *file = (FILE *)plat_fopen(path, "w");
+    FILE *file = (FILE *)platform_fopen(path, "w");
 
     /* vertices */
     for (int i = 0; i < model->skin_verts_count; ++i)

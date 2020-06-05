@@ -1,5 +1,5 @@
 #include "camera.h"
-#include "platform.h"
+#include "window.h"
 #include "vec.h"
 #include "mat.h"
 
@@ -15,20 +15,19 @@ Camera::Camera(float _near, float _far, float _fov) : near(_near), far(_far), fo
 }
 
 void Camera::on_keys(int key, int action) {
-    if (key == PLATFORM_KEY_W)
-        move_f = action != PLATFORM_RELEASE;
-    else if (key == PLATFORM_KEY_A)
-        move_l = action != PLATFORM_RELEASE;
-    else if (key == PLATFORM_KEY_S)
-        move_b = action != PLATFORM_RELEASE;
-    else if (key == PLATFORM_KEY_D)
-        move_r = action != PLATFORM_RELEASE;
+    if (key == WINDOW_KEY_W)
+        move_f = action != WINDOW_RELEASE;
+    else if (key == WINDOW_KEY_A)
+        move_l = action != WINDOW_RELEASE;
+    else if (key == WINDOW_KEY_S)
+        move_b = action != WINDOW_RELEASE;
+    else if (key == WINDOW_KEY_D)
+        move_r = action != WINDOW_RELEASE;
 }
 
 void Camera::on_mousepos(float x, float y) {
-    Mouse &mouse = plat_get_mouse();
-    rot_x = mouse.pos.x - x;
-    rot_y = mouse.pos.y - y;
+    rot_x = window.mouse.pos.x - x;
+    rot_y = window.mouse.pos.y - y;
 }
 
 void Camera::on_scroll(float x, float y) {

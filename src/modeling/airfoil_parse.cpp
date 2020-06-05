@@ -52,7 +52,7 @@ void _parse_selig_airfoil(Airfoil *a, const char *path, int count) {
 
     /* read airfoil file */
 
-    FILE *f = (FILE *)plat_fopen(path, "r");
+    FILE *f = (FILE *)platform_fopen(path, "r");
     fread(text, 1, _MAX_FILE_SIZE, f);
     fclose(f);
 
@@ -204,7 +204,7 @@ void airfoil_generate_base() {
 
     int infos_count = sizeof(infos) / sizeof(_FileInfo);
 
-    FILE *f = (FILE *)plat_fopen("src/airfoil_base.cpp", "w");
+    FILE *f = (FILE *)platform_fopen("src/airfoil_base.cpp", "w");
 
     fprintf(f,
 "#include \"airfoil.h\"\n"

@@ -57,13 +57,13 @@ void serial_read_f64(Serial *s, double *v, int count) {
 }
 
 void serial_write_to_file(Serial *s, const char *path) {
-    FILE *f = (FILE *)plat_fopen(path, "wb");
+    FILE *f = (FILE *)platform_fopen(path, "wb");
     fwrite(s->data, sizeof(char), s->written, f);
     fclose(f);
 }
 
 void serial_read_from_file(Serial *s, const char *path) {
-    FILE *f = (FILE *)plat_fopen(path, "rb");
+    FILE *f = (FILE *)platform_fopen(path, "rb");
     fseek(f, 0, SEEK_END);
     s->read = 0;
     s->written = ftell(f);

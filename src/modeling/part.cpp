@@ -9,7 +9,7 @@ void part_init(Part *part, const char *name, float tail_endp_dx, float nose_endp
     assert(tail_endp_dx > 0.01);
     assert(nose_endp_dx > 0.01);
     assert(strlen(name) < MAX_PROTO_NAME);
-#ifdef WIN
+#ifdef PLATFORM_WIN
     strcpy_s(part->name, name);
 #else
     strcpy(part->name, name);

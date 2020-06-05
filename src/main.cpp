@@ -2,6 +2,7 @@
 #include "modeling/object.h"
 #include "modeling/warehouse.h"
 #include "modeling/mesh.h"
+#include "window.h"
 #include "platform.h"
 #include "graphics.h"
 #include "camera.h"
@@ -48,8 +49,8 @@ void _recalculate_model() {
 }
 
 void _mousebutton_callback(int button, int action, int mods) {
-    if (button == PLATFORM_LEFT) {
-        if (action == PLATFORM_PRESS) {
+    if (button == WINDOW_LEFT) {
+        if (action == WINDOW_PRESS) {
             if (warehouse.mode == WM_OBJECT) {
                 model_add_object(&model, warehouse.make_selected_part(camera.pos, camera.dir));
                 _recalculate_model();
@@ -58,16 +59,16 @@ void _mousebutton_callback(int button, int action, int mods) {
                 model_add_wing(&model, warehouse_make_selected_wing(&warehouse, camera.pos, camera.dir));
                 _recalculate_model();
             }
-            if (model.maybe_drag_selection(pick_result, (mods & PLATFORM_MOD_CTRL) != 0))
+            if (model.maybe_drag_selection(pick_result, (mods & WINDOW_MOD_CTRL) != 0))
                 drag.begin(camera.pos, camera.dir, pick_result.depth);
         }
         else
             drag.end();
     }
-    else if (button == PLATFORM_RIGHT) {
-        if (action == PLATFORM_PRESS) {
+    else if (button == WINDOW_RIGHT) {
+        if (action == WINDOW_PRESS) {
             if (!warehouse.mode == WM_OBJECT)
-                warehouse.open(mods & PLATFORM_MOD_CTRL);
+                warehouse.open(mods & WINDOW_MOD_CTRL);
         }
     }
 }
@@ -88,67 +89,67 @@ void _scroll_callback(float x, float y) {
 }
 
 void _key_callback(int key, int mods, int action) {
-    if (mods & PLATFORM_MOD_CTRL) {
-        if (action == PLATFORM_RELEASE) {
-            if (key == PLATFORM_KEY_S)
+    if (mods & WINDOW_MOD_CTRL) {
+        if (action == WINDOW_RELEASE) {
+            if (key == WINDOW_KEY_S)
                 model_serialize(&model, "model.dump");
-            else if (key == PLATFORM_KEY_L) {
+            else if (key == WINDOW_KEY_L) {
                 model_deserialize(&model, "model.dump");
                 _recalculate_model();
             }
-            else if (key == PLATFORM_KEY_D)
+            else if (key == WINDOW_KEY_D)
                 model_dump_mesh(&model, "model.mesh_dump");
         }
     }
     else {
-        if (action == PLATFORM_RELEASE) {
-            if (key == PLATFORM_KEY_ESCAPE)
+        if (action == WINDOW_RELEASE) {
+            if (key == WINDOW_KEY_ESCAPE)
                 warehouse.close();
-            else if (key == PLATFORM_KEY_DELETE) {
+            else if (key == WINDOW_KEY_DELETE) {
                 if (model.delete_selected()) {
                     _recalculate_model();
                     pick_result.clear();
                 }
             }
-            else if (key == PLATFORM_KEY_O) {
+            else if (key == WINDOW_KEY_O) {
                 config_decrease_shape_samples();
                 _recalculate_model();
             }
-            else if (key == PLATFORM_KEY_P) {
+            else if (key == WINDOW_KEY_P) {
                 config_increase_shape_samples();
                 _recalculate_model();
             }
-            else if (key == PLATFORM_KEY_K) {
+            else if (key == WINDOW_KEY_K) {
                 config_decrease_structural_margin();
                 _recalculate_model();
             }
-            else if (key == PLATFORM_KEY_L) {
+            else if (key == WINDOW_KEY_L) {
                 config_increase_structural_margin();
                 _recalculate_model();
             }
-            else if (key == PLATFORM_KEY_N) {
+            else if (key == WINDOW_KEY_N) {
                 config_decrease_mesh_triangle_edge_transparency();
             }
-            else if (key == PLATFORM_KEY_M) {
+            else if (key == WINDOW_KEY_M) {
                 config_increase_mesh_triangle_edge_transparency();
             }
-            else if (key == PLATFORM_KEY_B) {
+            else if (key == WINDOW_KEY_B) {
                 mesh_verts_merge_margin(true);
                 _recalculate_model();
             }
-            else if (key == PLATFORM_KEY_V) {
+            else if (key == WINDOW_KEY_V) {
                 mesh_verts_merge_margin(false);
                 _recalculate_model();
             }
-            else if (key == PLATFORM_KEY_H) {
+            else if (key == WINDOW_KEY_H) {
                 config_decrease_merge_interpolation_delay();
                 _recalculate_model();
             }
-            else if (key == PLATFORM_KEY_J) {
+            else if (key == WINDOW_KEY_J) {
                 config_increase_merge_interpolation_delay();
                 _recalculate_model();
             }
-            else if (key == PLATFORM_KEY_R) {
+            else if (key == WINDOW_KEY_R) {
                 _recalculate_model();
             }
         }
@@ -158,18 +159,17 @@ void _key_callback(int key, int mods, int action) {
 }
 
 void _main_loop_func() {
-    vec2 screen = plat_get_screen();
 
     // setup viewport
 
-    graph_viewport(0, 0, screen.x, screen.y);
+    graph_viewport(0, 0, window.w, window.h);
 
     // setup matrices
 
     camera.update();
 
     mat4 perspective, lookat;
-    graph_perspective(perspective, camera.fov, screen.x / screen.y, camera.near, camera.far);
+    graph_perspective(perspective, camera.fov, window.w / window.h, camera.near, camera.far);
     graph_lookat(lookat, camera.pos, camera.dir, vec3(0, 0, 1));
 
     projection = perspective * lookat;
@@ -207,7 +207,7 @@ void _main_loop_func() {
     if (!drag.dragging && camera.moved) {
         graph_clear(vec3(1, 1, 1));
         model.pick(program, mv_stack);
-        pick(5, screen.x, screen.y, camera.near, camera.far, pick_result, true);
+        pick(5, window.w, window.h, camera.near, camera.far, pick_result, true);
     }
 
     // drawing
@@ -258,7 +258,7 @@ void _main_loop_func() {
         graph_line_width(2);
 
         mat4 headup_projection;
-        graph_ortho(headup_projection, 0, screen.x, 0, screen.y, -100, 100);
+        graph_ortho(headup_projection, 0, window.w, 0, window.h, -100, 100);
 
         mat4 headup_modelview;
         headup_modelview.set_identity();
@@ -270,11 +270,11 @@ void _main_loop_func() {
         program.set_data<vec3>(0, 4, crosshair_verts);
         graph_draw_lines(4);
 
-        plat_swap_buffers();
+        window_swap_buffers();
     }
 
-    plat_sleep(10);
-    plat_poll_events();
+    platform_sleep(10);
+    window_poll_events();
 }
 
 int main() {
@@ -290,7 +290,7 @@ int main() {
 
     /* create window */
 
-    plat_create_window("Boids", 1800, 1000, false);
+    window_create("Boids", 1800, 1000, false);
 
     program.init("src/shaders/default.vert", "src/shaders/default.frag");
     program.define_in_float(3); /* position */
@@ -318,23 +318,22 @@ int main() {
     valued_program.define_uniform("projection");
     valued_program.define_uniform("modelview");
 
-    plat_set_cursor_hidden(true);
-    plat_set_key_callback(_key_callback);
-    plat_set_mousepos_callback(_mousepos_callback);
-    plat_set_scroll_callback(_scroll_callback);
-    plat_set_mousebutton_callback(_mousebutton_callback);
+    window_set_cursor_hidden(true);
+    window_set_key_callback(_key_callback);
+    window_set_mousepos_callback(_mousepos_callback);
+    window_set_scroll_callback(_scroll_callback);
+    window_set_mousebutton_callback(_mousebutton_callback);
 
-    vec2 screen = plat_get_screen();
-    crosshair_verts[0] = vec3(screen.x * 0.5f - 10.0f, screen.y * 0.5f, 0.0f);
-    crosshair_verts[1] = vec3(screen.x * 0.5f + 10.0f, screen.y * 0.5f, 0.0f);
-    crosshair_verts[2] = vec3(screen.x * 0.5f, screen.y * 0.5f - 10.0f, 0.0f);
-    crosshair_verts[3] = vec3(screen.x * 0.5f, screen.y * 0.5f + 10.0f, 0.0f);
+    crosshair_verts[0] = vec3(window.w * 0.5f - 10.0f, window.h * 0.5f, 0.0f);
+    crosshair_verts[1] = vec3(window.w * 0.5f + 10.0f, window.h * 0.5f, 0.0f);
+    crosshair_verts[2] = vec3(window.w * 0.5f, window.h * 0.5f - 10.0f, 0.0f);
+    crosshair_verts[3] = vec3(window.w * 0.5f, window.h * 0.5f + 10.0f, 0.0f);
 
     init_model_draw();
 
     /* run window */
 
-    plat_run_window(_main_loop_func);
+    window_run(_main_loop_func);
 
     return 0;
 }
