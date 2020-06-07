@@ -7,6 +7,9 @@
 #include "math_vec.h"
 #include <assert.h>
 
+#define DRAW_VERTS_PER_POINT    16
+#define DRAW_VERTS_PER_POLY     (4 * DRAW_VERTS_PER_POINT)
+
 
 static Arena default_arena(10000000);
 

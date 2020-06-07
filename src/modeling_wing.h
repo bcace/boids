@@ -1,7 +1,6 @@
 #ifndef wing_h
 #define wing_h
 
-#include "ui_mantle.h" // TODO: ?
 #include "modeling_element.h"
 #include "modeling_airfoil.h"
 
@@ -30,9 +29,6 @@ struct Wing {
     float tx, ty, tz; /* target position, used for dragging */
     float fx, fy, fz; /* forces acting on wing during collision */
     bool selected;
-
-    /* drawing */
-    Mantle mantle;
 };
 
 void wing_add_spar(Wing *w, float x);

@@ -47,13 +47,3 @@ void Object::move(vec3 dp) {
 void Object::reset_drag_p() {
     drag_p = p;
 }
-
-void Object::deselect_all_handles() {
-    for (int i = 0; i < 2; ++i)
-        for (int j = 0; j < SHAPE_CURVES; ++j)
-            handles[i][j].selected = false;
-}
-
-void object_update_mantle(Object *o) {
-    mantle_generate_from_former_array(&o->model_mantle, &mantle_arena(), o->formers, o->formers_count, o->p.x, o->p.y, o->p.z);
-}

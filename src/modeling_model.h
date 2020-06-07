@@ -5,8 +5,6 @@
 
 #define MAX_FUSELAGES   32
 
-#define DRAW_CORRS      0 /* just for debugging */
-
 
 struct vec3;
 struct vec4;
@@ -59,17 +57,6 @@ struct Model {
     void deselect_all();
     bool move_selected(vec3 move_xyz, vec3 target_yz);
     bool delete_selected();
-
-    void draw_triangles(ShaderProgram &program, mat4_stack &mv_stack, PickResult &pick_result);
-    void draw_skin_triangles(ShaderProgram &program, mat4_stack &mv_stack, PickResult &pick_result);
-    void draw_lines(ShaderProgram &program, mat4_stack &mv_stack, PickResult &pick_result);
-#if DRAW_CORRS
-    void draw_corrs(ShaderProgram &program);
-#endif
-    void pick(ShaderProgram &program, mat4_stack &mv_stack);
-    void *decode_pick_result(PickResult &result);
-
-    bool maybe_drag_selection(PickResult &pick_result, bool ctrl_pressed);
 };
 
 void model_clear(Model *m);
@@ -81,9 +68,7 @@ void model_deserialize(Model *model, const char *path);
 void model_dump_mesh(Model *model, const char *path);
 
 void model_init_ochre_state();
-void init_model_draw();
-
-void model_update_object_mantles(Model *model);
+// void init_model_draw();
 
 void model_update_skin_verts_values(Model *model, SkinVertColorSource source);
 

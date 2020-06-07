@@ -3,7 +3,6 @@
 
 #include "math_vec.h"
 #include "modeling_shape.h"
-#include "ui_mantle.h" // TODO: ?
 #include "modeling_constants.h"
 
 #define MAX_OBJECT_FORMERS      8
@@ -12,30 +11,8 @@
 #define COLL_VERTS_PER_CURVE    4
 #define COLL_VERTS_PER_PRISM    (SHAPE_CURVES * COLL_VERTS_PER_CURVE)
 
-#define HANDLE_VERTS            8
-#define HANDLE_SIZE             0.02f
 
-
-struct Arena;
 struct CollPrism;
-struct mat4_stack;
-struct ShaderProgram;
-
-enum SkinFormerConstraints {
-    sfcNone,
-    sfcBothSymmetric,
-    sfcVertSymmetric,
-};
-
-struct HandleConstraints {
-    int symm_x, symm_y; /* index of handle that this point is symmetric with wrt specified axis */
-    bool move_x, move_y; /* whether a point should move along specified axis */
-};
-
-struct Handle {
-    vec3 verts[HANDLE_VERTS]; /* model CS */
-    bool selected;
-};
 
 struct Object {
     /* serialize */
@@ -58,13 +35,8 @@ struct Object {
     bool selected;
     vec3 drag_p;
 
-    /* drawing */
-    Mantle model_mantle;
-    Handle handles[2][SHAPE_CURVES]; /* [tail/nose][index] */
-
     void move(vec3 dp);
     void reset_drag_p();
-    void deselect_all_handles();
 };
 
 void object_finish(Object *o);
@@ -74,7 +46,5 @@ bool object_should_be_centered(Object *o);
 bool object_should_be_mirrored(Object *o);
 
 void object_clear_dynamic_arena();
-
-void object_update_mantle(Object *o);
 
 #endif

@@ -1,22 +1,22 @@
-#include "modeling_model.h"
-#include "modeling_object.h"
-#include "modeling_warehouse.h"
-#include "modeling_mesh.h"
 #include "ui_window.h"
-#include "platform.h"
+#include "ui_model.h"
 #include "ui_graphics.h"
 #include "ui_camera.h"
 #include "ui_pick.h"
 #include "ui_drag.h"
-#include "serial.h"
+#include "modeling_object.h"
+#include "modeling_warehouse.h"
+#include "modeling_mesh.h"
 #include "modeling_shape.h"
-#include "math_vec.h"
-#include "math_mat.h"
 #include "modeling_ochre.h"
-#include "memory_arena.h"
-#include "proc_apame.h"
 #include "modeling_airfoil.h"
 #include "modeling_config.h"
+#include "memory_arena.h"
+#include "math_vec.h"
+#include "math_mat.h"
+#include "proc_apame.h"
+#include "platform.h"
+#include "serial.h"
 #include <assert.h>
 #include <stdio.h>
 
@@ -28,7 +28,7 @@ mat4_stack mv_stack;
 Camera camera(1.0, 1000.0, 0.8);
 Drag drag;
 
-Model model;
+UiModel ui_model;
 Serial serial;
 PickResult pick_result;
 
@@ -38,14 +38,15 @@ Arena arena(20000000);
 
 
 void _recalculate_model() {
-    mantle_clear_arena();
-    model_update_object_mantles(&model);
-    model_loft(&arena, &model);
+    // mantle_clear_arena();
+    // model_update_object_mantles(&ui_model.model);
+    ui_model_update_mantles(&ui_model);
+    model_loft(&arena, &ui_model.model);
 #ifdef BOIDS_USE_APAME
-    boids_apame_run(&model);
-    model_update_skin_verts_values(&model, VX);
+    boids_apame_run(&ui_model.model);
+    model_update_skin_verts_values(&ui_model.model, VX);
 #else
-    model_update_skin_verts_values(&model, NO_SOURCE);
+    model_update_skin_verts_values(&ui_model.model, NO_SOURCE);
 #endif
 }
 
@@ -53,14 +54,14 @@ void _mousebutton_callback(int button, int action, int mods) {
     if (button == WINDOW_LEFT) {
         if (action == WINDOW_PRESS) {
             if (warehouse.mode == WM_OBJECT) {
-                model_add_object(&model, warehouse.make_selected_part(camera.pos, camera.dir));
+                model_add_object(&ui_model.model, warehouse.make_selected_part(camera.pos, camera.dir));
                 _recalculate_model();
             }
             else if (warehouse.mode == WM_WING) {
-                model_add_wing(&model, warehouse_make_selected_wing(&warehouse, camera.pos, camera.dir));
+                model_add_wing(&ui_model.model, warehouse_make_selected_wing(&warehouse, camera.pos, camera.dir));
                 _recalculate_model();
             }
-            if (model.maybe_drag_selection(pick_result, (mods & WINDOW_MOD_CTRL) != 0))
+            if (ui_model_maybe_drag_selection(&ui_model, &pick_result, (mods & WINDOW_MOD_CTRL) != 0))
                 drag.begin(camera.pos, camera.dir, pick_result.depth);
         }
         else
@@ -93,13 +94,13 @@ void _key_callback(int key, int mods, int action) {
     if (mods & WINDOW_MOD_CTRL) {
         if (action == WINDOW_RELEASE) {
             if (key == WINDOW_KEY_S)
-                model_serialize(&model, "model.dump");
+                model_serialize(&ui_model.model, "model.dump");
             else if (key == WINDOW_KEY_L) {
-                model_deserialize(&model, "model.dump");
+                model_deserialize(&ui_model.model, "model.dump");
                 _recalculate_model();
             }
             else if (key == WINDOW_KEY_D)
-                model_dump_mesh(&model, "model.mesh_dump");
+                model_dump_mesh(&ui_model.model, "model.mesh_dump");
         }
     }
     else {
@@ -107,7 +108,7 @@ void _key_callback(int key, int mods, int action) {
             if (key == WINDOW_KEY_ESCAPE)
                 warehouse.close();
             else if (key == WINDOW_KEY_DELETE) {
-                if (model.delete_selected()) {
+                if (ui_model.model.delete_selected()) {
                     _recalculate_model();
                     pick_result.clear();
                 }
@@ -189,13 +190,13 @@ void _main_loop_func() {
 
     if (drag.dragging && camera.moved) {
         vec3 move = drag.drag(camera.pos, camera.dir);
-        if (model.move_selected(move, drag.target_yz))
+        if (ui_model.model.move_selected(move, drag.target_yz))
             reloft = true;
     }
 
     // step colliders
 
-    if (model_collide(&model, &arena, drag.dragging))
+    if (model_collide(&ui_model.model, &arena, drag.dragging))
         reloft = true;
 
     // reloft fuselages
@@ -207,7 +208,7 @@ void _main_loop_func() {
 
     if (!drag.dragging && camera.moved) {
         graph_clear(vec3(1, 1, 1));
-        model.pick(program, mv_stack); // !!!
+        ui_model_draw_for_picking(&ui_model, program, mv_stack);
         pick(5, window.w, window.h, camera.near, camera.far, pick_result, true);
     }
 
@@ -222,14 +223,14 @@ void _main_loop_func() {
         valued_program.set_uniform_mat4(0, projection);
         valued_program.set_uniform_mat4(1, mv_stack.top());
 
-        model.draw_skin_triangles(valued_program, mv_stack, pick_result);
+        ui_model_draw_skin_triangles(&ui_model, valued_program, mv_stack, pick_result);
 
 #if DRAW_CORRS
         colored_program.use();
         colored_program.set_uniform_mat4(0, projection);
         colored_program.set_uniform_mat4(1, mv_stack.top());
 
-        model.draw_corrs(colored_program);
+        ui_model_draw_corrs(&ui_model, colored_program);
 #endif
 
         // graph_clear_depth();
@@ -239,7 +240,8 @@ void _main_loop_func() {
         shaded_program.use();
         shaded_program.set_uniform_mat4(0, projection);
         shaded_program.set_uniform_mat4(1, mv_stack.top());
-        model.draw_triangles(shaded_program, mv_stack, pick_result); // !!!
+        ui_model_draw_mantles(&ui_model, shaded_program, mv_stack, pick_result);
+        // ui_model.model.draw_triangles(shaded_program, mv_stack, pick_result);
         warehouse.draw_triangles(shaded_program, mv_stack, camera.pos, camera.dir);
 
         // draw lines
@@ -248,7 +250,8 @@ void _main_loop_func() {
         program.set_uniform_mat4(0, projection);
         program.set_uniform_mat4(1, mv_stack.top());
 
-        model.draw_lines(program, mv_stack, pick_result); // !!!
+        // ui_model.model.draw_lines(program, mv_stack, pick_result);
+        ui_model_draw_lines(&ui_model, program, mv_stack, pick_result);
         warehouse.draw_lines(program, mv_stack, camera.pos, camera.dir);
 
         // draw headup
@@ -330,7 +333,7 @@ int main() {
     crosshair_verts[2] = vec3(window.w * 0.5f, window.h * 0.5f - 10.0f, 0.0f);
     crosshair_verts[3] = vec3(window.w * 0.5f, window.h * 0.5f + 10.0f, 0.0f);
 
-    init_model_draw();
+    ui_model_init_drawing();
 
     /* run window */
 

@@ -33,10 +33,8 @@ void model_add_wing(Model *m, Wing *w) {
 }
 
 void Model::deselect_all() {
-    for (int i = 0; i < objects_count; ++i) {
+    for (int i = 0; i < objects_count; ++i)
         objects[i]->selected = false;
-        objects[i]->deselect_all_handles();
-    }
     for (int i = 0; i < wings_count; ++i)
         wings[i]->selected = false;
 }

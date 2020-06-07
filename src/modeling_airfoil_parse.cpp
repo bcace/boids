@@ -204,7 +204,7 @@ void airfoil_generate_base() {
 
     int infos_count = sizeof(infos) / sizeof(_FileInfo);
 
-    FILE *f = (FILE *)platform_fopen("src/airfoil_base.cpp", "w");
+    FILE *f = (FILE *)platform_fopen("src/modeling_airfoil_base.cpp", "w");
 
     fprintf(f,
 "#include \"airfoil.h\"\n"
