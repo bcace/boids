@@ -38,16 +38,14 @@ Arena arena(20000000);
 
 
 void _recalculate_model() {
-    // mantle_clear_arena();
-    // model_update_object_mantles(&ui_model.model);
-    ui_model_update_mantles(&ui_model);
     model_loft(&arena, &ui_model.model);
+    ui_model_update_mantles(&ui_model);
+    SkinVertColorSource source = NO_SOURCE;
 #ifdef BOIDS_USE_APAME
     boids_apame_run(&ui_model.model);
-    model_update_skin_verts_values(&ui_model.model, VX);
-#else
-    model_update_skin_verts_values(&ui_model.model, NO_SOURCE);
+    source = VX;
 #endif
+    ui_model_update_skin(&ui_model, source);
 }
 
 void _mousebutton_callback(int button, int action, int mods) {
@@ -241,7 +239,6 @@ void _main_loop_func() {
         shaded_program.set_uniform_mat4(0, projection);
         shaded_program.set_uniform_mat4(1, mv_stack.top());
         ui_model_draw_mantles(&ui_model, shaded_program, mv_stack, pick_result);
-        // ui_model.model.draw_triangles(shaded_program, mv_stack, pick_result);
         warehouse.draw_triangles(shaded_program, mv_stack, camera.pos, camera.dir);
 
         // draw lines
@@ -250,7 +247,6 @@ void _main_loop_func() {
         program.set_uniform_mat4(0, projection);
         program.set_uniform_mat4(1, mv_stack.top());
 
-        // ui_model.model.draw_lines(program, mv_stack, pick_result);
         ui_model_draw_lines(&ui_model, program, mv_stack, pick_result);
         warehouse.draw_lines(program, mv_stack, camera.pos, camera.dir);
 

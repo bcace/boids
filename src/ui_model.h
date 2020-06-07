@@ -12,14 +12,24 @@ struct mat4_stack;
 struct PickResult;
 struct ShaderProgram;
 
+enum SkinVertColorSource {
+    NO_SOURCE, VX, VY, VZ, V
+};
+
 struct UiModel {
     Model model;
     Mantle o_mantles[MAX_MODEL_MANTLES];
     Mantle w_mantles[MAX_MODEL_MANTLES];
+    int *skin_trias;
+    int skin_trias_count;
+    int *skin_quads;
+    int skin_quads_count;
+    float *skin_verts_values;
 };
 
 void ui_model_init(UiModel *ui_model);
 void ui_model_update_mantles(UiModel *ui_model);
+void ui_model_update_skin(UiModel *ui_model, SkinVertColorSource source);
 
 void ui_model_init_drawing();
 void ui_model_draw_mantles(UiModel *ui_model, ShaderProgram &program, mat4_stack &mv_stack, PickResult &pick_result);

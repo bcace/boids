@@ -10,8 +10,6 @@
 
 
 static Arena verts_arena(500000);
-static Arena trias_arena(10000000);
-static Arena quads_arena(10000000);
 
 /* Initializes an Objref instance. */
 static void _init_oref(Oref *r, Object *o, int index, bool is_clone) {
@@ -124,34 +122,5 @@ void model_loft(Arena *arena, Model *model) {
         fuselage_update_longitudinal_tangents(f);
         arena->clear();
         fuselage_loft(arena, &verts_arena, model, f);
-    }
-
-    /* make triangles and quads for drawing from generated panels */
-
-    trias_arena.clear();
-    model->skin_trias = trias_arena.rest<int>();
-    model->skin_trias_count = 0;
-
-    quads_arena.clear();
-    model->skin_quads = quads_arena.rest<int>();
-    model->skin_quads_count = 0;
-
-    for (int i = 0; i < model->panels_count; ++i) {
-        Panel *p = model->panels + i;
-        if (p->v4 == -1) {  /* triangle */
-            int *idx = trias_arena.alloc<int>(3); // TODO: think about pre-allocating this
-            *idx++ = p->v1;
-            *idx++ = p->v2;
-            *idx++ = p->v3;
-            ++model->skin_trias_count;
-        }
-        else {              /* quad */
-            int *idx = quads_arena.alloc<int>(4); // TODO: think about pre-allocating this
-            *idx++ = p->v1;
-            *idx++ = p->v2;
-            *idx++ = p->v3;
-            *idx++ = p->v4;
-            ++model->skin_quads_count;
-        }
     }
 }

@@ -7,18 +7,9 @@
 
 
 struct vec3;
-struct vec4;
 struct Wing;
 struct Arena;
-struct Serial;
 struct Object;
-struct PickResult;
-struct mat4_stack;
-struct ShaderProgram;
-
-enum SkinVertColorSource {
-    NO_SOURCE, VX, VY, VZ, V
-};
 
 struct Panel {
     int v1, v2, v3, v4; /* vertex indices */
@@ -34,13 +25,6 @@ struct Model {
 
     vec3 *skin_verts;
     int skin_verts_count;
-
-    /* drawing */
-    int *skin_trias;
-    int skin_trias_count;
-    int *skin_quads;
-    int skin_quads_count;
-    float *skin_verts_values;
 
 #if DRAW_CORRS
     vec3 *corr_verts;
@@ -68,9 +52,6 @@ void model_deserialize(Model *model, const char *path);
 void model_dump_mesh(Model *model, const char *path);
 
 void model_init_ochre_state();
-// void init_model_draw();
-
-void model_update_skin_verts_values(Model *model, SkinVertColorSource source);
 
 bool model_collide(Model *model, Arena *arena, bool dragging);
 

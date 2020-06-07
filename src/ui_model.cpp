@@ -3,6 +3,9 @@
 #include "ui_graphics.h"
 #include "modeling_object.h"
 #include "modeling_config.h"
+#include "memory_arena.h"
+#include <assert.h>
+#include <float.h>
 
 
 unsigned int object_model_pick_category;
@@ -79,8 +82,8 @@ void ui_model_draw_lines(UiModel *ui_model, ShaderProgram &program, mat4_stack &
     program.set_uniform_vec4(2, vec4(0.0f, 0.0f, 0.0f, MESH_ALPHA));
 
     program.set_data<vec3>(0, m->skin_verts_count, m->skin_verts);
-    graph_draw_triangles_indexed(m->skin_trias_count * 3, m->skin_trias);
-    graph_draw_quads_indexed(m->skin_quads_count * 4, m->skin_quads);
+    graph_draw_triangles_indexed(ui_model->skin_trias_count * 3, ui_model->skin_trias);
+    graph_draw_quads_indexed(ui_model->skin_quads_count * 4, ui_model->skin_quads);
 
     for (int i = 0; i < m->objects_count; ++i) {
         Object *o = m->objects[i];
@@ -94,9 +97,9 @@ void ui_model_draw_lines(UiModel *ui_model, ShaderProgram &program, mat4_stack &
 void ui_model_draw_skin_triangles(UiModel *ui_model, ShaderProgram &program, mat4_stack &mv_stack, PickResult &pick_result) {
     Model *m = &ui_model->model;
     program.set_data<vec3>(0, m->skin_verts_count, m->skin_verts);
-    program.set_data<float>(1, m->skin_verts_count, m->skin_verts_values);
-    graph_draw_triangles_indexed(m->skin_trias_count * 3, m->skin_trias);
-    graph_draw_quads_indexed(m->skin_quads_count * 4, m->skin_quads);
+    program.set_data<float>(1, m->skin_verts_count, ui_model->skin_verts_values);
+    graph_draw_triangles_indexed(ui_model->skin_trias_count * 3, ui_model->skin_trias);
+    graph_draw_quads_indexed(ui_model->skin_quads_count * 4, ui_model->skin_quads);
 }
 
 bool ui_model_maybe_drag_selection(UiModel *ui_model, PickResult *pick_result, bool ctrl_pressed) {
@@ -136,3 +139,94 @@ void ui_model_draw_corrs(UiModel *ui_model, ShaderProgram &program) {
 }
 #endif
 
+static Arena trias_arena(10000000);
+static Arena quads_arena(10000000);
+static Arena values_arena(10000000);
+
+/* make triangles and quads for drawing from generated panels */
+void ui_model_update_skin(UiModel *ui_model, SkinVertColorSource source) {
+    Model *m = &ui_model->model;
+
+    trias_arena.clear();
+    ui_model->skin_trias = trias_arena.rest<int>();
+    ui_model->skin_trias_count = 0;
+
+    quads_arena.clear();
+    ui_model->skin_quads = quads_arena.rest<int>();
+    ui_model->skin_quads_count = 0;
+
+    for (int i = 0; i < m->panels_count; ++i) {
+        Panel *p = m->panels + i;
+        if (p->v4 == -1) {  /* triangle */
+            int *idx = trias_arena.alloc<int>(3); // TODO: think about pre-allocating this
+            *idx++ = p->v1;
+            *idx++ = p->v2;
+            *idx++ = p->v3;
+            ++ui_model->skin_trias_count;
+        }
+        else {              /* quad */
+            int *idx = quads_arena.alloc<int>(4); // TODO: think about pre-allocating this
+            *idx++ = p->v1;
+            *idx++ = p->v2;
+            *idx++ = p->v3;
+            *idx++ = p->v4;
+            ++ui_model->skin_quads_count;
+        }
+    }
+
+    /* update values */
+
+    values_arena.clear();
+    float *values = values_arena.alloc<float>(m->skin_verts_count, true);
+
+    if (source == NO_SOURCE) {
+        for (int i = 0; i < m->skin_verts_count; ++i)
+            values[i] = 10.0f;
+    }
+    else {
+        int *panels = values_arena.alloc<int>(m->skin_verts_count, true);
+
+        if (source == VX) {
+            for (int i = 0; i < m->panels_count; ++i) {
+                Panel *panel = m->panels + i;
+                values[panel->v1] += panel->vx;
+                ++panels[panel->v1];
+                values[panel->v2] += panel->vx;
+                ++panels[panel->v2];
+                values[panel->v3] += panel->vx;
+                ++panels[panel->v3];
+                if (panel->v4 != -1) {
+                    values[panel->v4] += panel->vx;
+                    ++panels[panel->v4];
+                }
+            }
+        }
+        else if (source == VY) {
+            // ...
+        }
+        else if (source == VZ) {
+            // ...
+        }
+        else if (source == V) {
+            // ...
+        }
+        else
+            assert(false); /* unhandled source type */
+
+        float min = FLT_MAX;
+        float max = -FLT_MAX;
+        for (int i = 0; i < m->skin_verts_count; ++i) {
+            values[i] /= panels[i];
+            if (values[i] < min)
+                min = values[i];
+            if (values[i] > max)
+                max = values[i];
+        }
+
+        float range = max - min;
+        for (int i = 0; i < m->skin_verts_count; ++i)
+            values[i] = (values[i] - min) / range;
+    }
+
+    ui_model->skin_verts_values = values;
+}
