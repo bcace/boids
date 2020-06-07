@@ -1,22 +1,22 @@
-#include "modeling/model.h"
-#include "modeling/object.h"
-#include "modeling/warehouse.h"
-#include "modeling/mesh.h"
-#include "window.h"
+#include "modeling_model.h"
+#include "modeling_object.h"
+#include "modeling_warehouse.h"
+#include "modeling_mesh.h"
+#include "ui_window.h"
 #include "platform.h"
-#include "graphics.h"
-#include "camera.h"
-#include "pick.h"
-#include "drag.h"
+#include "ui_graphics.h"
+#include "ui_camera.h"
+#include "ui_pick.h"
+#include "ui_drag.h"
 #include "serial.h"
-#include "modeling/shape.h"
-#include "vec.h"
-#include "mat.h"
-#include "ochre.h"
-#include "arena.h"
-#include "apame.h"
-#include "modeling/airfoil.h"
-#include "modeling/config.h"
+#include "modeling_shape.h"
+#include "math_vec.h"
+#include "math_mat.h"
+#include "modeling_ochre.h"
+#include "memory_arena.h"
+#include "proc_apame.h"
+#include "modeling_airfoil.h"
+#include "modeling_config.h"
 #include <assert.h>
 #include <stdio.h>
 
@@ -207,7 +207,7 @@ void _main_loop_func() {
 
     if (!drag.dragging && camera.moved) {
         graph_clear(vec3(1, 1, 1));
-        model.pick(program, mv_stack);
+        model.pick(program, mv_stack); // !!!
         pick(5, window.w, window.h, camera.near, camera.far, pick_result, true);
     }
 
@@ -239,7 +239,7 @@ void _main_loop_func() {
         shaded_program.use();
         shaded_program.set_uniform_mat4(0, projection);
         shaded_program.set_uniform_mat4(1, mv_stack.top());
-        model.draw_triangles(shaded_program, mv_stack, pick_result);
+        model.draw_triangles(shaded_program, mv_stack, pick_result); // !!!
         warehouse.draw_triangles(shaded_program, mv_stack, camera.pos, camera.dir);
 
         // draw lines
@@ -248,7 +248,7 @@ void _main_loop_func() {
         program.set_uniform_mat4(0, projection);
         program.set_uniform_mat4(1, mv_stack.top());
 
-        model.draw_lines(program, mv_stack, pick_result);
+        model.draw_lines(program, mv_stack, pick_result); // !!!
         warehouse.draw_lines(program, mv_stack, camera.pos, camera.dir);
 
         // draw headup
