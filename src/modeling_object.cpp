@@ -4,7 +4,7 @@
 
 void object_finish(Object *o) {
     o->selected = false;
-    o->reset_drag_p();
+    object_reset_drag_p(o);
     object_update_extents(o);
 }
 
@@ -40,10 +40,10 @@ bool object_should_be_mirrored(Object *o) {
     return !object_should_be_centered(o);
 }
 
-void Object::move(vec3 dp) {
-    drag_p += dp;
+void object_move(Object *o, vec3 dp) {
+    o->drag_p += dp;
 }
 
-void Object::reset_drag_p() {
-    drag_p = p;
+void object_reset_drag_p(Object *o) {
+    o->drag_p = o->p;
 }

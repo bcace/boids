@@ -3,8 +3,12 @@
 
 #include "modeling_constants.h"
 #include "modeling_element.h"
+#include "math_dvec.h"
+
+#define MAX_WING_ISECS (MAX_ELEM_REFS * 2)
 
 
+/* Trace envelope point. */
 struct EnvPoint {
     double x, y;
     double t1, t2;  /* polygon edge t values, non-zero only for intersections */
@@ -14,13 +18,20 @@ struct EnvPoint {
     bool is_intersection;
 };
 
+/* Trace envelope, generated initially when tracing around the fuselage. */
 struct TraceEnv {
     EnvPoint points[MAX_ENVELOPE_POINTS];
     int count;
-    Flags object_like_flags;
+    Flags object_like_flags; /* object-like polygons forming this envelope, passed down to corresponding mesh envelope */
 };
 
-// TODO: think about merging this with EnvPoint struct
+struct Wisec {
+    int i; /* starting envelope point index of the segment where the intersection is */
+    double t;
+    tvec p;
+};
+
+/* Mesh point, representing actual skin vertex and containing all info required for meshing. */
 struct MeshPoint {
     double x, y;
     int i1, i2;     /* polygon vertex indices */
@@ -28,8 +39,7 @@ struct MeshPoint {
     int subdiv_i;   /* starting polygon vertex index of polygon side where the point is located */
     int vert_i;     /* index of vertex created from the point, offset from envelope verts_base_i */
     bool is_intersection;
-    bool t_is_outermost;
-    bool n_is_outermost;
+    bool t_is_outermost, n_is_outermost; /* result of merge filter */
 };
 
 struct MeshEnvSlice {
@@ -37,17 +47,17 @@ struct MeshEnvSlice {
     Ids ids;
 };
 
+/* Additional vertex info required for meshing, generated from a corresponding trace envelope. */
 struct MeshEnv {
     MeshPoint points[MAX_ENVELOPE_POINTS];
     int count;
     MeshEnvSlice slices[MAX_ENVELOPE_POINTS];
     int slices_count;
-    int verts_base_i; /* index of first vertex in model vertex buffer so we can map envelope points to their vertices */
-    float x; /* section x, model CS */
-    Flags object_like_flags; /* used for creating merge filter */
+    int verts_base_i;           /* index of first vertex in model vertex buffer so we can map envelope points to their vertices */
+    float x;                    /* section x, model CS */
+    Flags object_like_flags;    /* used for creating merge filter */
 };
 
-struct dvec;
 struct Model;
 struct Shape;
 struct Arena;

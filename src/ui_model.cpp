@@ -106,7 +106,7 @@ bool ui_model_maybe_drag_selection(UiModel *ui_model, PickResult *pick_result, b
     Model *m = &ui_model->model;
 
     if (!ctrl_pressed)
-        m->deselect_all();
+        model_deselect_all(m);
 
     void *hovered_pickable = _decode_pick_result(m, pick_result);
     if (hovered_pickable == 0)
@@ -117,7 +117,7 @@ bool ui_model_maybe_drag_selection(UiModel *ui_model, PickResult *pick_result, b
         o->selected = !o->selected;
         if (o->selected) {
             for (int i = 0; i < m->objects_count; ++i)
-                m->objects[i]->reset_drag_p();
+                object_reset_drag_p(m->objects[i]);
             return true;
         }
     }

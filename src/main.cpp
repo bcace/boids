@@ -92,13 +92,13 @@ void _key_callback(int key, int mods, int action) {
     if (mods & WINDOW_MOD_CTRL) {
         if (action == WINDOW_RELEASE) {
             if (key == WINDOW_KEY_S)
-                model_serialize(&ui_model.model, "model.dump");
+                model_serial_dump(&ui_model.model, "model.dump");
             else if (key == WINDOW_KEY_L) {
-                model_deserialize(&ui_model.model, "model.dump");
+                model_serial_load(&ui_model.model, "model.dump");
                 _recalculate_model();
             }
             else if (key == WINDOW_KEY_D)
-                model_dump_mesh(&ui_model.model, "model.mesh_dump");
+                model_serial_dump_mesh(&ui_model.model, "model.mesh_dump");
         }
     }
     else {
@@ -106,7 +106,7 @@ void _key_callback(int key, int mods, int action) {
             if (key == WINDOW_KEY_ESCAPE)
                 warehouse.close();
             else if (key == WINDOW_KEY_DELETE) {
-                if (ui_model.model.delete_selected()) {
+                if (model_delete_selected(&ui_model.model)) {
                     _recalculate_model();
                     pick_result.clear();
                 }
@@ -160,11 +160,11 @@ void _key_callback(int key, int mods, int action) {
 
 void _main_loop_func() {
 
-    // setup viewport
+    /* setup viewport */
 
     graph_viewport(0, 0, window.w, window.h);
 
-    // setup matrices
+    /* setup matrices */
 
     camera.update();
 
@@ -176,33 +176,33 @@ void _main_loop_func() {
 
     mv_stack.set_identity();
 
-    // setup shader program
+    /* setup shader program */
 
     program.use();
     program.set_uniform_mat4(0, projection);
     graph_enable_depth_test(true);
 
-    // move objects
+    /* move objects */
 
     bool reloft = false;
 
     if (drag.dragging && camera.moved) {
         vec3 move = drag.drag(camera.pos, camera.dir);
-        if (ui_model.model.move_selected(move, drag.target_yz))
+        if (model_move_selected(&ui_model.model, move, drag.target_yz))
             reloft = true;
     }
 
-    // step colliders
+    /* step colliders */
 
-    if (model_collide(&ui_model.model, &arena, drag.dragging))
+    if (model_collision_run(&ui_model.model, &arena, drag.dragging))
         reloft = true;
 
-    // reloft fuselages
+    /* reloft fuselages */
 
     if (reloft)
         _recalculate_model();
 
-    // pick objects
+    /* pick objects */
 
     if (!drag.dragging && camera.moved) {
         graph_clear(vec3(1, 1, 1));
@@ -210,10 +210,10 @@ void _main_loop_func() {
         pick(5, window.w, window.h, camera.near, camera.far, pick_result, true);
     }
 
-    // drawing
+    /* drawing */
 
     {
-        // draw fuselage skin
+        /* draw fuselage skin */
 
         graph_clear(vec3(0.9, 0.9, 0.9));
 
@@ -231,9 +231,9 @@ void _main_loop_func() {
         ui_model_draw_corrs(&ui_model, colored_program);
 #endif
 
-        // graph_clear_depth();
+        /* graph_clear_depth(); */
 
-        // draw objects
+        /* draw objects */
 
         shaded_program.use();
         shaded_program.set_uniform_mat4(0, projection);
@@ -241,7 +241,7 @@ void _main_loop_func() {
         ui_model_draw_mantles(&ui_model, shaded_program, mv_stack, pick_result);
         warehouse.draw_triangles(shaded_program, mv_stack, camera.pos, camera.dir);
 
-        // draw lines
+        /* draw lines */
 
         program.use();
         program.set_uniform_mat4(0, projection);
@@ -250,7 +250,7 @@ void _main_loop_func() {
         ui_model_draw_lines(&ui_model, program, mv_stack, pick_result);
         warehouse.draw_lines(program, mv_stack, camera.pos, camera.dir);
 
-        // draw headup
+        /* draw headup */
 
         program.use();
 
@@ -286,7 +286,7 @@ int main() {
     airfoil_init_base();
 #endif
 
-    model_init_ochre_state();
+    model_collision_init();
 
     /* create window */
 

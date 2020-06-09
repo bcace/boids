@@ -9,7 +9,7 @@
 #include <assert.h>
 
 
-double COLLAPSE_MARGIN = 0.25;
+double COLLAPSE_MARGIN = 0.4;
 double ONE_MINUS_COLLAPSE_MARGIN = 1.0 - COLLAPSE_MARGIN;
 
 static void _update_mesh_envelope_slices(MeshEnv *env) {

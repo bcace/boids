@@ -25,6 +25,8 @@ struct Model {
 
     vec3 *skin_verts;
     int skin_verts_count;
+    Panel *panels;
+    int panels_count;
 
 #if DRAW_CORRS
     vec3 *corr_verts;
@@ -32,29 +34,23 @@ struct Model {
     int corrs_count;
 #endif
 
-    Panel *panels;
-    int panels_count;
-
     Model();
     ~Model();
-
-    void deselect_all();
-    bool move_selected(vec3 move_xyz, vec3 target_yz);
-    bool delete_selected();
 };
 
 void model_clear(Model *m);
 void model_add_object(Model *m, Object *o);
 void model_add_wing(Model *m, Wing *w);
+void model_deselect_all(Model *m);
+bool model_move_selected(Model *m, vec3 move_xyz, vec3 target_yz);
+bool model_delete_selected(Model *m);
 
-void model_serialize(Model *model, const char *path);
-void model_deserialize(Model *model, const char *path);
-void model_dump_mesh(Model *model, const char *path);
+void model_serial_dump(Model *model, const char *path);
+void model_serial_load(Model *model, const char *path);
+void model_serial_dump_mesh(Model *model, const char *path);
 
-void model_init_ochre_state();
-
-bool model_collide(Model *model, Arena *arena, bool dragging);
-
+void model_collision_init();
+bool model_collision_run(Model *model, Arena *arena, bool dragging);
 void model_loft(Arena *arena, Model *model);
 
 #ifdef NDEBUG

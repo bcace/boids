@@ -225,8 +225,8 @@ static void _get_wing_section(tvec l1, tvec l2, tvec ld, tvec t1, tvec t2, tvec 
     // TODO: make vertices
 }
 
-void fuselage_wing_intersections(Arena *arena, Wref *wrefs, int wrefs_count, TraceSection *sects, int sects_count) {
 #if 0
+void fuselage_wing_intersections(Arena *arena, Wref *wrefs, int wrefs_count, TraceSection *sects, int sects_count) {
     Wisec *u_wisecs = arena->lock<Wisec>(MAX_WING_SURFACE_STATIONS * 2);
     Wisec *l_wisecs = u_wisecs + MAX_WING_SURFACE_STATIONS;
 
@@ -352,5 +352,5 @@ void fuselage_wing_intersections(Arena *arena, Wref *wrefs, int wrefs_count, Tra
         TraceSection *sect = sects + i;
         _insert_wisecs_into_envelope(sect->t_env, sect->wisecs, sect->wisecs_count);
     }
-#endif
 }
+#endif

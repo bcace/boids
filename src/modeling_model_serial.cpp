@@ -30,7 +30,7 @@ static void _deserialize_former(Former *former) {
     shape_update_curve_control_points(curves);
 }
 
-void model_serialize(Model *model, const char *path) {
+void model_serial_dump(Model *model, const char *path) {
     serial_clear(&file);
 
     /* objects */
@@ -56,7 +56,7 @@ void model_serialize(Model *model, const char *path) {
     serial_write_to_file(&file, path);
 }
 
-void model_deserialize(Model *model, const char *path) {
+void model_serial_load(Model *model, const char *path) {
     model_clear(model);
 
     serial_read_from_file(&file, path);
@@ -86,7 +86,7 @@ void model_deserialize(Model *model, const char *path) {
     }
 }
 
-void model_dump_mesh(Model *model, const char *path) {
+void model_serial_dump_mesh(Model *model, const char *path) {
     FILE *file = (FILE *)platform_fopen(path, "w");
 
     /* vertices */

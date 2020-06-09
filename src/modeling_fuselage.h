@@ -1,31 +1,22 @@
 #ifndef fuselage_h
 #define fuselage_h
 
-#include "math_dvec.h"
 #include "modeling_shape.h"
 #include "modeling_config.h"
 #include "modeling_element.h"
 #include "modeling_constants.h"
+#include "math_dvec.h"
 
-#define MAX_FUSELAGE_CONNS  32
-#define MAX_WING_ISECS      (MAX_ELEM_REFS * 2)
+#define MAX_FUSELAGE_CONNS 32
 
 
 struct Wing;
 struct Arena;
 struct Model;
 struct Object;
-struct TraceEnv;
-struct TraceSection;
-
-struct Wisec {
-    int i; /* starting envelope point index of the segment where the intersection is */
-    double t;
-    tvec p;
-};
 
 struct StationId {
-    short int id; /* required station id */
+    short int id; /* required station id, -1 for filler stations */
     short int index; /* station index when all stations are created */
 };
 
@@ -74,25 +65,6 @@ struct Conn {
     Oref *nose_o;
 };
 
-// TODO: maybe we don't need this, maybe we can just move it down to TraceSection
-struct TraceShapes {
-    Shape shapes[MAX_ENVELOPE_SHAPES]; /* actual storage */
-    Shape *t_shapes[MAX_ENVELOPE_SHAPES]; /* aliases, shapes looking tailwise */
-    Shape *n_shapes[MAX_ENVELOPE_SHAPES]; /* aliases, shapes looking nosewise */
-    int shapes_count;
-    int t_shapes_count;
-    int n_shapes_count;
-    bool two_envelopes;
-};
-
-struct TraceSection {
-    TraceShapes shapes;
-    TraceEnv *t_env, *n_env; /* pointers because they migh point at the same thing in arena */
-    double x;
-    Wisec wisecs[MAX_WING_ISECS];
-    int wisecs_count;
-};
-
 struct Fuselage {
     Oref orefs[MAX_ELEM_REFS];
     int orefs_count;
@@ -110,6 +82,6 @@ bool fuselage_objects_overlap(Oref *a, Oref *b);
 bool fuselage_object_and_wing_overlap(Oref *o, Wref *w);
 
 /* wing */
-void fuselage_wing_intersections(Arena *arena, Wref *wrefs, int wrefs_count, TraceSection *sections, int sections_count);
+// void fuselage_wing_intersections(Arena *arena, Wref *wrefs, int wrefs_count, struct TraceSection *sections, int sections_count);
 
 #endif

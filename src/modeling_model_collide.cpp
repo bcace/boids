@@ -128,7 +128,7 @@ static void _wing_action(void *agent, void *exec_context) {
 }
 
 /* Initialize ochre state for model elements collision. */
-void model_init_ochre_state() {
+void model_collision_init() {
     state = ochre_add_state();
 
     objects_group = ochre_add_node_group(state, OFFSETOF(Object, f), OFFSETOF(Object, p), OC_LAYOUT_F32_3);
@@ -144,7 +144,7 @@ void model_init_ochre_state() {
 
 /* Main model elements collision procedure. Returns true if some elements moved
 which would require relofting. */
-bool model_collide(Model *model, Arena *arena, bool dragging) {
+bool model_collision_run(Model *model, Arena *arena, bool dragging) {
     CollContext c;
     c.arena = arena;
     c.dragging = dragging;

@@ -35,16 +35,13 @@ struct Object {
     bool selected;
     vec3 drag_p;
 
-    void move(vec3 dp);
-    void reset_drag_p();
 };
 
+void object_move(Object *o, vec3 dp);
+void object_reset_drag_p(Object *o);
 void object_finish(Object *o);
 void object_update_extents(Object *o);
-
 bool object_should_be_centered(Object *o);
 bool object_should_be_mirrored(Object *o);
-
-void object_clear_dynamic_arena();
 
 #endif
