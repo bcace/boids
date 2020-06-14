@@ -1,10 +1,10 @@
-#include "modeling_mesh.h"
-#include "math_periodic.h"
+#include "modeling_loft.h"
 #include "modeling_shape.h"
 #include "modeling_model.h"
 #include "modeling_config.h"
-#include "memory_arena.h"
 #include "math_vec.h"
+#include "math_periodic.h"
+#include "memory_arena.h"
 #include <stdlib.h>
 #include <assert.h>
 

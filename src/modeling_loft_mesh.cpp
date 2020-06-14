@@ -1,9 +1,8 @@
-#include "modeling_mesh.h"
-#include "modeling_shape.h"
+#include "modeling_loft.h"
 #include "modeling_model.h"
+#include "modeling_config.h"
 #include "math_periodic.h"
 #include "memory_arena.h"
-#include "modeling_config.h"
 #include <float.h>
 #include <math.h>
 #include <stdlib.h>

@@ -1,7 +1,7 @@
 #ifndef wing_h
 #define wing_h
 
-#include "modeling_element.h"
+#include "modeling_id.h"
 #include "modeling_airfoil.h"
 
 #define WING_MAX_SPARS  32

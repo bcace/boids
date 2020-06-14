@@ -6,7 +6,6 @@
 #include "ui_drag.h"
 #include "modeling_object.h"
 #include "modeling_warehouse.h"
-#include "modeling_mesh.h"
 #include "modeling_shape.h"
 #include "modeling_ochre.h"
 #include "modeling_airfoil.h"

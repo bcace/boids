@@ -1,8 +1,8 @@
 #include "modeling_model.h"
-#include "modeling_mesh.h"
-#include "modeling_fuselage.h"
+#include "modeling_loft.h"
 #include "modeling_object.h"
 #include "modeling_wing.h"
+#include "modeling_config.h"
 #include "util_group.h"
 #include "memory_arena.h"
 #include <math.h>

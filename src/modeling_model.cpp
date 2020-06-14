@@ -1,7 +1,6 @@
 #include "modeling_model.h"
 #include "modeling_object.h"
 #include "modeling_wing.h"
-#include "modeling_part.h"
 #include <math.h>
 #include <assert.h>
 #include <string.h>

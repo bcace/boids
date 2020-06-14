@@ -1,5 +1,5 @@
-#ifndef modeling_id_h
-#define modeling_id_h
+#ifndef element_h
+#define element_h
 
 
 /* Used to determine flags overhead needed for storing clone id flags. */

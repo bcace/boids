@@ -1,7 +1,7 @@
 #ifndef model_h
 #define model_h
 
-#include "modeling_element.h"
+#include "modeling_loft.h"
 
 #define MAX_FUSELAGES   32
 

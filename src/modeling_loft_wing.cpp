@@ -1,11 +1,10 @@
-#include "modeling_fuselage.h"
+#include "modeling_loft.h"
 #include "modeling_wing.h"
-#include "modeling_mesh.h"
 #include "modeling_airfoil.h"
 #include "math_periodic.h"
 #include "math_dvec.h"
-#include "memory_arena.h"
 #include "math_math.h"
+#include "memory_arena.h"
 #include <float.h>
 #include <math.h>
 

@@ -1,4 +1,4 @@
-#include "modeling_fuselage.h"
+#include "modeling_loft.h"
 #include "modeling_object.h"
 #include "modeling_wing.h"
 #include "math_math.h"

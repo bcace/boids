@@ -1,7 +1,7 @@
 #ifndef shape_h
 #define shape_h
 
-#include "modeling_element.h"
+#include "modeling_id.h"
 #include "modeling_constants.h"
 
 #define SHAPE_FILL_POLY_MARGIN          0.1 // TODO: this is very sensitive, doesn't work if set to a smaller number
