@@ -1,9 +1,9 @@
-#include "modeling_warehouse.h"
-#include "ui_mantle.h"
-#include "memory_arena.h"
+#include "ui_warehouse.h"
 #include "ui_graphics.h"
-#include "math_mat.h"
+#include "ui_mantle.h"
 #include "modeling_config.h"
+#include "memory_arena.h"
+#include "math_mat.h"
 
 
 Mantle mantle;
