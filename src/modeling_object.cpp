@@ -9,14 +9,14 @@ void object_finish(Object *o) {
 }
 
 void object_update_extents(Object *o) {
-    o->min_x = o->p.x + o->tail_skin_former.x;
-    o->max_x = o->p.x + o->nose_skin_former.x;
+    o->min_x = o->p.x + o->def.t_skin_former.x;
+    o->max_x = o->p.x + o->def.n_skin_former.x;
     float min_y = FLT_MAX;
     float max_y = -FLT_MAX;
     float min_z = FLT_MAX;
     float max_z = -FLT_MAX;
-    for (int i = 0; i < o->formers_count; ++i) {
-        Curve *curves = o->formers[i].shape.curves;
+    for (int i = 0; i < o->def.formers_count; ++i) {
+        Curve *curves = o->def.formers[i].shape.curves;
         if (curves[2].x < min_y)
             min_y = curves[2].x;
         if (curves[0].x > max_y)

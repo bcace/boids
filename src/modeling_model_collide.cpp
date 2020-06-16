@@ -24,8 +24,8 @@ static void _object_preparation(void *agent, void *exec_context) {
     float y = o->p.y;
     float z = o->p.z;
 
-    for (int i = 0; i < o->formers_count; ++i) { /* a prism for each object former */
-        Former *f = o->formers + i;
+    for (int i = 0; i < o->def.formers_count; ++i) { /* a prism for each object former */
+        Former *f = o->def.formers + i;
 
         CollPrism *prism = arena->alloc<CollPrism>();
         o->prisms_count++;
@@ -36,12 +36,12 @@ static void _object_preparation(void *agent, void *exec_context) {
         if (i == 0) /* first former */
             prism->min_x = f->x + x;
         else
-            prism->min_x = (f->x + o->formers[i - 1].x) * 0.5f + x;
+            prism->min_x = (f->x + o->def.formers[i - 1].x) * 0.5f + x;
 
-        if (i == o->formers_count - 1) /* last former */
+        if (i == o->def.formers_count - 1) /* last former */
             prism->max_x = f->x + x;
         else
-            prism->max_x = (f->x + o->formers[i + 1].x) * 0.5f + x;
+            prism->max_x = (f->x + o->def.formers[i + 1].x) * 0.5f + x;
     }
 
     o->coll_min_x = (float)o->prisms[0].x;

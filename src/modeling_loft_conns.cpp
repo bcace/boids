@@ -198,7 +198,7 @@ void fuselage_update_longitudinal_tangents(Fuselage *fuselage) {
             for (int j = 0; j < SHAPE_CURVES; ++j) {
                 o_ref->t_tangents[j] = _calculate_longitudinal_tangent_direction(
                     tail_f->x, tail_f->shape.curves[j].x, tail_f->shape.curves[j].y,
-                    tail_f->x - o->tail_endp_dx, o_ref->y, o_ref->z,
+                    tail_f->x - o->def.t_endp_dx, o_ref->y, o_ref->z,
                     nose_f->x, nose_f->shape.curves[j].x, nose_f->shape.curves[j].y
                 );
             }
@@ -215,7 +215,7 @@ void fuselage_update_longitudinal_tangents(Fuselage *fuselage) {
                 o_ref->n_tangents[j] = _calculate_longitudinal_tangent_direction(
                     nose_f->x, nose_f->shape.curves[j].x, nose_f->shape.curves[j].y,
                     tail_f->x, tail_f->shape.curves[j].x, tail_f->shape.curves[j].y,
-                    nose_f->x + o->nose_endp_dx, o_ref->y, o_ref->z
+                    nose_f->x + o->def.n_endp_dx, o_ref->y, o_ref->z
                 );
             }
         }

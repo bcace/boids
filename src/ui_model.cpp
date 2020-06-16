@@ -18,7 +18,7 @@ void ui_model_update_mantles(UiModel *ui_model) {
     for (int i = 0; i < m->objects_count; ++i) {
         Object *o = m->objects[i];
         Mantle *o_mantle = ui_model->o_mantles + i;
-        mantle_generate_from_former_array(o_mantle, &mantle_arena(), o->formers, o->formers_count, o->p.x, o->p.y, o->p.z);
+        mantle_generate_from_former_array(o_mantle, &mantle_arena(), o->def.formers, o->def.formers_count, o->p.x, o->p.y, o->p.z);
     }
 }
 

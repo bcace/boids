@@ -21,13 +21,13 @@ static void _init_oref(Oref *r, Object *o, int index, bool is_clone) {
     r->z = (double)o->p.z;
     if (r->is_clone) {
         r->y = -(double)o->p.y;
-        shape_mirror_former(&o->tail_skin_former, &r->t_skin_former, r->x, r->y, r->z, STRUCTURAL_MARGIN);
-        shape_mirror_former(&o->nose_skin_former, &r->n_skin_former, r->x, r->y, r->z, STRUCTURAL_MARGIN);
+        shape_mirror_former(&o->def.t_skin_former, &r->t_skin_former, r->x, r->y, r->z, STRUCTURAL_MARGIN);
+        shape_mirror_former(&o->def.n_skin_former, &r->n_skin_former, r->x, r->y, r->z, STRUCTURAL_MARGIN);
     }
     else {
         r->y = (double)o->p.y;
-        shape_copy_former(&o->tail_skin_former, &r->t_skin_former, r->x, r->y, r->z, STRUCTURAL_MARGIN);
-        shape_copy_former(&o->nose_skin_former, &r->n_skin_former, r->x, r->y, r->z, STRUCTURAL_MARGIN);
+        shape_copy_former(&o->def.t_skin_former, &r->t_skin_former, r->x, r->y, r->z, STRUCTURAL_MARGIN);
+        shape_copy_former(&o->def.n_skin_former, &r->n_skin_former, r->x, r->y, r->z, STRUCTURAL_MARGIN);
     }
 }
 

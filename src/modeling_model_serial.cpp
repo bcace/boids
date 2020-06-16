@@ -42,15 +42,15 @@ void model_serial_dump(Model *model, const char *path) {
         serial_write_f32(&file, o->p.v, 3);
 
         /* collision formers */
-        serial_write_i32(&file, &o->formers_count, 1);
-        for (int j = 0; j < o->formers_count; ++j)
-            _serialize_former(o->formers + j);
+        serial_write_i32(&file, &o->def.formers_count, 1);
+        for (int j = 0; j < o->def.formers_count; ++j)
+            _serialize_former(o->def.formers + j);
 
         /* skin formers */
-        _serialize_former(&o->tail_skin_former);
-        _serialize_former(&o->nose_skin_former);
-        serial_write_f32(&file, &o->tail_endp_dx, 1);
-        serial_write_f32(&file, &o->nose_endp_dx, 1);
+        _serialize_former(&o->def.t_skin_former);
+        _serialize_former(&o->def.n_skin_former);
+        serial_write_f32(&file, &o->def.t_endp_dx, 1);
+        serial_write_f32(&file, &o->def.n_endp_dx, 1);
     }
 
     serial_write_to_file(&file, path);
@@ -72,15 +72,15 @@ void model_serial_load(Model *model, const char *path) {
         serial_read_f32(&file, o->p.v, 3);
 
         /* collision formers */
-        serial_read_i32(&file, &o->formers_count, 1);
-        for (int j = 0; j < o->formers_count; ++j)
-            _deserialize_former(o->formers + j);
+        serial_read_i32(&file, &o->def.formers_count, 1);
+        for (int j = 0; j < o->def.formers_count; ++j)
+            _deserialize_former(o->def.formers + j);
 
         /* skin formers */
-        _deserialize_former(&o->tail_skin_former);
-        _deserialize_former(&o->nose_skin_former);
-        serial_read_f32(&file, &o->tail_endp_dx, 1);
-        serial_read_f32(&file, &o->nose_endp_dx, 1);
+        _deserialize_former(&o->def.t_skin_former);
+        _deserialize_former(&o->def.n_skin_former);
+        serial_read_f32(&file, &o->def.t_endp_dx, 1);
+        serial_read_f32(&file, &o->def.n_endp_dx, 1);
 
         object_finish(o);
     }

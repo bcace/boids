@@ -1,6 +1,7 @@
 #include "ui_warehouse.h"
 #include "modeling_object.h"
 #include "modeling_wing.h"
+#include "math_vec.h"
 #include "platform.h"
 #include <string.h>
 #include <assert.h>
@@ -17,51 +18,51 @@ Warehouse::Warehouse() {
 
     /* object parts */
 
-    Part *klimov_vk1 = parts + parts_count++;
-    part_init(klimov_vk1, "Klimov Vk-1", 0.5, 1.0, false, false);
-    part_add_coll_former(klimov_vk1, shape_circle(0.0, 0.0, 0.25), 0.0f);
-    part_add_coll_former(klimov_vk1, shape_circle(0.0, 0.0, 0.3), 1.8f);
-    part_add_coll_former(klimov_vk1, shape_circle(0.0, 0.0, 0.5), 2.4f);
-    part_add_coll_former(klimov_vk1, shape_circle(0.0, 0.0, 0.5), 2.7f);
-    part_add_coll_former(klimov_vk1, shape_circle(0.0, 0.0, 0.25), 3.0f);
-    part_set_skin_formers(klimov_vk1,
+    ObjectProto *klimov_vk1 = parts + parts_count++;
+    object_proto_init(klimov_vk1, "Klimov Vk-1", 0.5, 1.0);
+    object_proto_add_coll_former(klimov_vk1, shape_circle(0.0, 0.0, 0.25), 0.0f);
+    object_proto_add_coll_former(klimov_vk1, shape_circle(0.0, 0.0, 0.3), 1.8f);
+    object_proto_add_coll_former(klimov_vk1, shape_circle(0.0, 0.0, 0.5), 2.4f);
+    object_proto_add_coll_former(klimov_vk1, shape_circle(0.0, 0.0, 0.5), 2.7f);
+    object_proto_add_coll_former(klimov_vk1, shape_circle(0.0, 0.0, 0.25), 3.0f);
+    object_proto_set_skin_formers(klimov_vk1,
                           shape_circle(0.0, 0.0, 0.28), 0.0f,
                           shape_circle(0.0, 0.0, 0.6), 3.0f);
 
-    Part *tumansky_r13 = parts + parts_count++;
-    part_init(tumansky_r13, "Tumansky R-13", 2.0, 2.0, true, false);
-    part_add_coll_former(tumansky_r13, shape_circle(0.0, 0.0, 0.45), 0.0f);
-    part_add_coll_former(tumansky_r13, shape_circle(0.0, 0.0, 0.45), 1.4f);
-    part_add_coll_former(tumansky_r13, shape_circle(0.0, 0.0, 0.4), 1.8f);
-    part_add_coll_former(tumansky_r13, shape_circle(0.0, 0.0, 0.4), 2.2f);
-    part_add_coll_former(tumansky_r13, shape_circle(0.0, 0.0, 0.5), 2.8f);
-    part_add_coll_former(tumansky_r13, shape_circle(0.0, 0.0, 0.5), 3.7f);
-    part_add_coll_former(tumansky_r13, shape_circle(0.0, 0.0, 0.4), 4.0f);
-    part_set_skin_formers(tumansky_r13,
+    ObjectProto *tumansky_r13 = parts + parts_count++;
+    object_proto_init(tumansky_r13, "Tumansky R-13", 2.0, 2.0);
+    object_proto_add_coll_former(tumansky_r13, shape_circle(0.0, 0.0, 0.45), 0.0f);
+    object_proto_add_coll_former(tumansky_r13, shape_circle(0.0, 0.0, 0.45), 1.4f);
+    object_proto_add_coll_former(tumansky_r13, shape_circle(0.0, 0.0, 0.4), 1.8f);
+    object_proto_add_coll_former(tumansky_r13, shape_circle(0.0, 0.0, 0.4), 2.2f);
+    object_proto_add_coll_former(tumansky_r13, shape_circle(0.0, 0.0, 0.5), 2.8f);
+    object_proto_add_coll_former(tumansky_r13, shape_circle(0.0, 0.0, 0.5), 3.7f);
+    object_proto_add_coll_former(tumansky_r13, shape_circle(0.0, 0.0, 0.4), 4.0f);
+    object_proto_set_skin_formers(tumansky_r13,
                           shape_circle(0.0, 0.0, 0.5), 0.0f,
                           shape_circle(0.0, 0.0, 0.5), 4.0f);
 
-    Part *mirage_iii_intake = parts + parts_count++;
-    part_init(mirage_iii_intake, "Mirage III intake", 2.0, 2.0, false, true);
-    part_add_coll_former(mirage_iii_intake, shape_right_semi_circle(0.0, 0.0, 0.4), 0.0f);
-    part_add_coll_former(mirage_iii_intake, shape_right_semi_circle(0.0, 0.0, 0.4), 0.4f);
-    part_set_skin_formers(mirage_iii_intake,
+    ObjectProto *mirage_iii_intake = parts + parts_count++;
+    object_proto_init(mirage_iii_intake, "Mirage III intake", 2.0, 2.0);
+    object_proto_add_coll_former(mirage_iii_intake, shape_right_semi_circle(0.0, 0.0, 0.4), 0.0f);
+    object_proto_add_coll_former(mirage_iii_intake, shape_right_semi_circle(0.0, 0.0, 0.4), 0.4f);
+    object_proto_set_skin_formers(mirage_iii_intake,
                           shape_right_semi_circle(0.0, 0.0, 0.42), 0.0f,
                           shape_right_semi_circle(0.0, 0.0, 0.42), 0.4f);
 
-    Part *mig_15_cockpit = parts + parts_count++;
-    part_init(mig_15_cockpit, "Mig-15 cockpit", 2.0, 2.0, false, false);
-    part_add_coll_former(mig_15_cockpit, shape_rect(0.0, 0.0, 0.7, 1.5), 0.0f);
-    part_add_coll_former(mig_15_cockpit, shape_rect(0.0, 0.0, 0.7, 1.5), 1.5f);
-    part_set_skin_formers(mig_15_cockpit,
+    ObjectProto *mig_15_cockpit = parts + parts_count++;
+    object_proto_init(mig_15_cockpit, "Mig-15 cockpit", 2.0, 2.0);
+    object_proto_add_coll_former(mig_15_cockpit, shape_rect(0.0, 0.0, 0.7, 1.5), 0.0f);
+    object_proto_add_coll_former(mig_15_cockpit, shape_rect(0.0, 0.0, 0.7, 1.5), 1.5f);
+    object_proto_set_skin_formers(mig_15_cockpit,
                           shape_rect(0.0, 0.0, 0.72, 1.52), 0.0f,
                           shape_rect(0.0, 0.0, 0.72, 1.52), 1.5f);
 
-    Part *nose_endpoint = parts + parts_count++;
-    part_init(nose_endpoint, "Nose end-point", 2.0f, 0.05f, false, true);
-    part_add_coll_former(nose_endpoint, shape_circle(0.0, 0.0, 0.1), 0.0f);
-    part_add_coll_former(nose_endpoint, shape_circle(0.0, 0.0, 0.02), 0.2f);
-    part_set_skin_formers(nose_endpoint,
+    ObjectProto *nose_endpoint = parts + parts_count++;
+    object_proto_init(nose_endpoint, "Nose end-point", 2.0f, 0.05f);
+    object_proto_add_coll_former(nose_endpoint, shape_circle(0.0, 0.0, 0.1), 0.0f);
+    object_proto_add_coll_former(nose_endpoint, shape_circle(0.0, 0.0, 0.02), 0.2f);
+    object_proto_set_skin_formers(nose_endpoint,
                           shape_circle(0.0, 0.0, 0.1), 0.0f,
                           shape_circle(0.0, 0.0, 0.02), 0.2f);
 }
@@ -104,7 +105,7 @@ void Warehouse::select_prev_part() {
 }
 
 Object *Warehouse::make_selected_part(vec3 camera_pos, vec3 camera_dir) {
-    Object *o = part_make_object(&parts[selected_part], camera_pos + camera_dir * 10);
+    Object *o = object_proto_make_object(&parts[selected_part], camera_pos + camera_dir * 10);
     close();
     return o;
 }
@@ -116,50 +117,38 @@ Wing *warehouse_make_selected_wing(Warehouse *wh, vec3 camera_pos, vec3 camera_d
     return w;
 }
 
-void part_init(Part *part, const char *name, float tail_endp_dx, float nose_endp_dx, bool tail_opening, bool nose_opening) {
+void object_proto_init(ObjectProto *proto, const char *name, float tail_endp_dx, float nose_endp_dx) {
     assert(tail_endp_dx > 0.01);
     assert(nose_endp_dx > 0.01);
     assert(strlen(name) < MAX_PROTO_NAME);
 #ifdef PLATFORM_WIN
-    strcpy_s(part->name, name);
+    strcpy_s(proto->name, name);
 #else
-    strcpy(part->name, name);
+    strcpy(proto->name, name);
 #endif
-    part->formers_count = 0;
-    part->tail_endp_dx = tail_endp_dx;
-    part->nose_endp_dx = nose_endp_dx;
-    part->tail_opening = tail_opening;
-    part->nose_opening = nose_opening;
+    proto->def.formers_count = 0;
+    proto->def.t_endp_dx = tail_endp_dx;
+    proto->def.n_endp_dx = nose_endp_dx;
 }
 
-void part_add_coll_former(Part *part, Shape shape, float x) {
-    assert(part->formers_count == 0 || x > part->formers[part->formers_count - 1].x); // new former must be in front of the old one
-    Former *f = part->formers + part->formers_count++;
+void object_proto_add_coll_former(ObjectProto *proto, Shape shape, float x) {
+    assert(proto->def.formers_count == 0 || x > proto->def.formers[proto->def.formers_count - 1].x); /* new former must be in front of the old one */
+    Former *f = proto->def.formers + proto->def.formers_count++;
     f->shape = shape;
     f->x = x;
 }
 
-void part_set_skin_formers(Part *part, Shape tail_shape, float tail_x, Shape nose_shape, float nose_x) {
-    part->tail_skin_former.shape = tail_shape;
-    part->tail_skin_former.x = tail_x;
-    part->nose_skin_former.shape = nose_shape;
-    part->nose_skin_former.x = nose_x;
+void object_proto_set_skin_formers(ObjectProto *proto, Shape tail_shape, float tail_x, Shape nose_shape, float nose_x) {
+    proto->def.t_skin_former.shape = tail_shape;
+    proto->def.t_skin_former.x = tail_x;
+    proto->def.n_skin_former.shape = nose_shape;
+    proto->def.n_skin_former.x = nose_x;
 }
 
-Object *part_make_object(Part *part, vec3 p) {
+Object *object_proto_make_object(ObjectProto *proto, vec3 p) {
     Object *o = new Object();
     o->p = p;
-
-    for (int i = 0; i < part->formers_count; ++i)
-        o->formers[i] = part->formers[i];
-    o->formers_count = part->formers_count;
-
-    o->tail_skin_former = part->tail_skin_former;
-    o->nose_skin_former = part->nose_skin_former;
-    o->tail_endp_dx = part->tail_endp_dx;
-    o->nose_endp_dx = part->nose_endp_dx;
-
+    o->def = proto->def;
     object_finish(o);
-
     return o;
 }

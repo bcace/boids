@@ -12,9 +12,9 @@ Arena warehouse_arena(100000);
 
 void Warehouse::update_drawing_geometry() {
     if (mode == WM_OBJECT) {
-        Part *part = parts + selected_part;
+        ObjectProto *part = parts + selected_part;
         warehouse_arena.clear();
-        mantle_generate_from_former_array(&mantle, &warehouse_arena, part->formers, part->formers_count, 0.0f, 0.0f, 0.0f);
+        mantle_generate_from_former_array(&mantle, &warehouse_arena, part->def.formers, part->def.formers_count, 0.0f, 0.0f, 0.0f);
     }
     else if (mode == WM_WING) {
         Airfoil *airfoil = airfoils_base + selected_wpro;
