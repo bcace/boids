@@ -34,9 +34,10 @@ dvec airfoil_get_point(Airfoil *airfoil, int i) {
     return p;
 }
 
-void airfoil_init(Airfoil *airfoil,
+void airfoil_init(Airfoil *airfoil, const char *name,
                   float u_base, float u_delta, unsigned char *u_y,
                   float l_base, float l_delta, unsigned char *l_y) {
+    strcpy_s(airfoil->name, name);
 
     memcpy(airfoil->upper.y, u_y, sizeof(unsigned char) * AIRFOIL_X_SUBDIVS);
     airfoil->upper.base = u_base;

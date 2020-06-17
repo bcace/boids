@@ -4,6 +4,7 @@
 #define AIRFOIL_MAX_BASE_COUNT  256
 #define AIRFOIL_X_SUBDIVS       32
 #define AIRFOIL_POINTS          (AIRFOIL_X_SUBDIVS * 2 + 1)
+
 #define AIRFOIL_GENERATE_BASE   0
 
 
@@ -22,7 +23,7 @@ struct Airfoil {
 
 double airfoil_get_subdiv_x(int i);
 dvec airfoil_get_point(Airfoil *airfoil, int i);
-void airfoil_init(Airfoil *airfoil,
+void airfoil_init(Airfoil *airfoil, const char *name,
                   float u_base, float u_delta, unsigned char *u_y,
                   float l_base, float l_delta, unsigned char *l_y);
 float airfoil_get_trailing_y_offset(Airfoil *a);

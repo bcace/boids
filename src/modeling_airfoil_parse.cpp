@@ -41,7 +41,7 @@ static unsigned char _get_y_fraction(AirfoilSide *side, double y) {
         return v;
 }
 
-void _parse_selig_airfoil(Airfoil *a, const char *path, int count) {
+static void _parse_selig_airfoil(Airfoil *a, const char *path, int count) {
     static char *text = 0;
     static dvec *verts = 0;
 
@@ -151,7 +151,7 @@ void _parse_selig_airfoil(Airfoil *a, const char *path, int count) {
     a->lower.y[AIRFOIL_X_SUBDIVS - 1] = _get_y_fraction(&a->lower, verts[count - 1].y);
 }
 
-void _print_airfoil_side_y(FILE *f, AirfoilSide *side, const char *label) {
+static void _print_airfoil_side_y(FILE *f, AirfoilSide *side, const char *label) {
 
     fprintf(f,
 "        unsigned char %s_y[] = { "
@@ -164,50 +164,50 @@ void _print_airfoil_side_y(FILE *f, AirfoilSide *side, const char *label) {
 "};\n");
 }
 
-struct _FileInfo {
-    const char *path;
+struct FileInfo {
+    const char *path, *name;
     int count;
 };
 
-void _print_airfoil(FILE *f, _FileInfo *info) {
+static void _print_airfoil(FILE *f, FileInfo *info) {
     Airfoil a;
     _parse_selig_airfoil(&a, info->path, info->count);
 
     fprintf(f,
-"\n    /* %s */\n"
-"    {\n", info->path);
+"    {\n");
 
     _print_airfoil_side_y(f, &a.upper, "u");
     _print_airfoil_side_y(f, &a.lower, "l");
 
     fprintf(f,
 "\n"
-"        airfoil_init(airfoils_base + airfoils_base_count++,\n"
+"        airfoil_init(airfoils_base + airfoils_base_count++, \"%s\",\n"
 "                     %gf, %gf, u_y,\n"
 "                     %gf, %gf, l_y);\n"
 "    }\n",
+    info->name,
     a.upper.base, a.upper.delta,
     a.lower.base, a.lower.delta);
 }
 
 void airfoil_generate_base() {
 
-    _FileInfo infos[] = {
-        { "airfoils/naca23012.dat", 61 },
-        { "airfoils/naca23015_clean.dat", 35 },
-        { "airfoils/naca23018_clean.dat", 35 },
-        { "airfoils/b737a.dat", 45 },
-        { "airfoils/b737b.dat", 45 },
-        { "airfoils/b737c.dat", 45 },
-        { "airfoils/b737d.dat", 45 },
+    FileInfo infos[] = {
+        { "airfoils/naca23012.dat", "naca23012", 61 },
+        { "airfoils/naca23015_clean.dat", "naca23015", 35 },
+        { "airfoils/naca23018_clean.dat", "naca23018", 35 },
+        { "airfoils/b737a.dat", "b737a", 45 },
+        { "airfoils/b737b.dat", "b737b", 45 },
+        { "airfoils/b737c.dat", "b737c", 45 },
+        { "airfoils/b737d.dat", "b737d", 45 },
     };
 
-    int infos_count = sizeof(infos) / sizeof(_FileInfo);
+    int infos_count = sizeof(infos) / sizeof(FileInfo);
 
     FILE *f = (FILE *)platform_fopen("src/modeling_airfoil_base.cpp", "w");
 
     fprintf(f,
-"#include \"airfoil.h\"\n"
+"#include \"modeling_airfoil.h\"\n"
 "#include <assert.h>\n\n\n"
 "Airfoil airfoils_base[AIRFOIL_MAX_BASE_COUNT];\n"
 "int airfoils_base_count = 0;\n\n"
