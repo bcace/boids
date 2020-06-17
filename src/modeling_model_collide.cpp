@@ -9,7 +9,7 @@
 
 static OcState *state;
 static OcNodeGroup *objects_group;
-static OcNodeGroup *wing_formers_group;
+static OcNodeGroup *wings_group;
 
 /* Action callback that prepares an object for interaction. */
 static void _object_preparation(void *agent, void *exec_context) {
@@ -119,11 +119,11 @@ static void _object_action(void *agent, void *exec_context) {
 position into force that will move them towards target position. */
 static void _wing_action(void *agent, void *exec_context) {
     CollContext *c = (CollContext *)exec_context;
-    WFormer *f = (WFormer *)agent;
-    if (f->selected && c->dragging) {
-        f->fx -= f->x - f->tx;
-        f->fy -= f->y - f->ty;
-        f->fz -= f->z - f->tz;
+    Wing *w = (Wing *)agent;
+    if (w->selected && c->dragging) {
+        w->fx -= w->x - w->tx;
+        w->fy -= w->y - w->ty;
+        w->fz -= w->z - w->tz;
     }
 }
 
@@ -132,14 +132,14 @@ void model_collision_init() {
     state = ochre_add_state();
 
     objects_group = ochre_add_node_group(state, OFFSETOF(Object, f), OFFSETOF(Object, p), OC_LAYOUT_F32_3);
-    wing_formers_group = ochre_add_node_group(state, OFFSETOF(WFormer, fx), OFFSETOF(WFormer, x), OC_LAYOUT_F32_3);
+    wings_group = ochre_add_node_group(state, OFFSETOF(Wing, fx), OFFSETOF(Wing, x), OC_LAYOUT_F32_3);
 
     ochre_add_node_action(state, objects_group, _object_preparation, 0);
     ochre_add_node_interaction(state, objects_group, objects_group, _object_interaction, 1);
     ochre_add_node_action(state, objects_group, _object_plane_interaction, 1);
     ochre_add_node_action(state, objects_group, _object_action, 2);
 
-    ochre_add_node_action(state, wing_formers_group, _wing_action, 2);
+    ochre_add_node_action(state, wings_group, _wing_action, 2);
 }
 
 /* Main model elements collision procedure. Returns true if some elements moved
@@ -157,7 +157,7 @@ bool model_collision_run(Model *model, Arena *arena, bool dragging) {
     for (int i = 0; i < model->objects_count; ++i)
         ochre_add_node(objects_group, model->objects[i]);
     for (int i = 0; i < model->wings_count; ++i)
-        ochre_add_node(wing_formers_group, model->wings[i]);
+        ochre_add_node(wings_group, model->wings[i]);
 
     /* collide */
     if (!ochre_run(state, 10))

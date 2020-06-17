@@ -35,8 +35,8 @@ void model_deselect_all(Model *m) {
     for (int i = 0; i < m->objects_count; ++i)
         m->objects[i]->selected = false;
     for (int i = 0; i < m->wings_count; ++i) {
-        m->wings[i]->root_former.selected = false;
-        m->wings[i]->tip_former.selected = false;
+        m->wings[i]->selected = false;
+        m->wings[i]->selected = false;
     }
 }
 

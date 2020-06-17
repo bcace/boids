@@ -43,8 +43,9 @@ bool fuselage_objects_overlap(Oref *a, Oref *b) {
 referenced object in the y-z plane. */
 bool fuselage_object_and_wing_overlap(Oref *o, Wref *w) {
     Circle c = _object_circle(o->object, o->is_clone);
+    Wing *wing = w->wing;
     return _circles_overlap(c.x, c.y, c.r,
-                            w->wing->root_former.y, w->wing->root_former.z, 0.0) !=
+                            wing->y + wing->def.r_former.y, wing->z + wing->def.r_former.z, 0.0) !=
            _circles_overlap(c.x, c.y, c.r,
-                            w->wing->tip_former.y, w->wing->tip_former.z, 0.0);
+                            wing->y + wing->def.t_former.y, wing->z + wing->def.t_former.z, 0.0);
 }

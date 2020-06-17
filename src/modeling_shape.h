@@ -13,19 +13,19 @@
 struct dvec;
 
 struct Curve {
-    double x, y;    /* curve start position, serial */
-    double w;       /* rational Bezier weight, serial */
+    double x, y;    /* curve start position, serialize */
+    double w;       /* rational Bezier weight, serialize */
     double cx, cy;  /* control point (calculated) */
 };
 
 struct Shape {
-    Curve curves[SHAPE_CURVES]; /* serial */
+    Curve curves[SHAPE_CURVES]; /* serialize */
     Ids ids;
 };
 
 struct Former {
-    Shape shape; /* serial */
-    float x; /* serial */
+    Shape shape;    /* serialize */
+    float x;        /* object CS, serialize */
 };
 
 Shape shape_make(double x, double y, double d1, double d2, double d3, double d4, double w1, double w2, double w3, double w4);

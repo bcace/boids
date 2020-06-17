@@ -12,16 +12,24 @@ struct Spar {
     float x; /* fraction of LE - TE, [0, 1] */
 };
 
-struct WFormerDef {
+struct WFormer {
+    /* serialize */
     Airfoil airfoil;
     float aoa;      /* rad */
     float chord;
+    float x, y, z;  /* wing CS */
 };
 
-struct WFormer {
+struct WingDef {
+    WFormer r_former, t_former;
+    Spar spars[WING_MAX_SPARS]; /* defined from leading to trailing edge */
+    int spars_count;
+};
+
+struct Wing {
     /* serialize */
     float x, y, z;  /* model CS */
-    WFormerDef def;
+    WingDef def;
 
     /* control */
     float tx, ty, tz; /* target position, used for dragging */
@@ -29,14 +37,6 @@ struct WFormer {
     bool selected;
 };
 
-struct Wing {
-    /* serialize */
-    WFormer root_former, tip_former;
-    Spar spars[WING_MAX_SPARS]; /* defined from leading to trailing edge */
-    int spars_count;
-};
-
-void wing_add_spar(Wing *w, float x);
 // int wing_get_required_stations(Wing *w, float *stations);
 // bool wing_should_be_centered(Wing *w);
 // bool wing_should_be_mirrored(Wing *w);

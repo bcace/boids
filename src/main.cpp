@@ -33,6 +33,7 @@ PickResult pick_result;
 
 vec3 crosshair_verts[4];
 
+/* arena used for collision and lofting */
 Arena arena(20000000);
 
 
@@ -50,10 +51,11 @@ void _recalculate_model() {
 void _mousebutton_callback(int button, int action, int mods) {
     if (button == WINDOW_LEFT) {
         if (action == WINDOW_PRESS) {
-            if (warehouse.mode == WM_OBJECT) {
-                model_add_object(&ui_model.model, warehouse.make_selected_part(camera.pos, camera.dir));
-                _recalculate_model();
-            }
+            if (warehouse.is_object)
+                model_add_object(&ui_model.model, warehouse_make_selected_object(camera.pos, camera.dir));
+            else
+                ;
+            _recalculate_model();
             if (ui_model_maybe_drag_selection(&ui_model, &pick_result, (mods & WINDOW_MOD_CTRL) != 0))
                 drag.begin(camera.pos, camera.dir, pick_result.depth);
         }
@@ -62,8 +64,8 @@ void _mousebutton_callback(int button, int action, int mods) {
     }
     else if (button == WINDOW_RIGHT) {
         if (action == WINDOW_PRESS) {
-            if (!warehouse.mode == WM_OBJECT)
-                warehouse.open(mods & WINDOW_MOD_CTRL);
+            if (!warehouse.is_open)
+                warehouse.open();
         }
     }
 }
@@ -73,7 +75,7 @@ void _mousepos_callback(float x, float y) {
 }
 
 void _scroll_callback(float x, float y) {
-    if (warehouse.mode != WM_CLOSED) {
+    if (warehouse.is_open) {
         if (y > 0)
             warehouse.select_next_part();
         else

@@ -4,13 +4,6 @@
 #include <assert.h>
 
 
-void wing_add_spar(Wing *w, float x) {
-    assert(w->spars_count < WING_MAX_SPARS);
-    assert(x > 0.05 && x < 0.95);
-    assert(w->spars_count == 0 || x > w->spars[w->spars_count - 1].x);
-    w->spars[w->spars_count++].x = x;
-}
-
 // /* Returns required stations' x positions, from trailing to leading edge.
 // Includes stations for edges and spars. */
 // int wing_get_required_stations(Wing *w, float *stations) {

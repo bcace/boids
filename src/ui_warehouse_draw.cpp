@@ -11,20 +11,20 @@ Mantle mantle;
 Arena warehouse_arena(100000);
 
 void Warehouse::update_drawing_geometry() {
-    if (mode == WM_OBJECT) {
-        ObjectProto *part = parts + selected_part;
+    if (is_object) {
+        OProto *proto = o_protos + selected_proto;
         warehouse_arena.clear();
-        mantle_generate_from_former_array(&mantle, &warehouse_arena, part->def.formers, part->def.formers_count, 0.0f, 0.0f, 0.0f);
+        mantle_generate_from_former_array(&mantle, &warehouse_arena, proto->def.formers, proto->def.formers_count, 0.0f, 0.0f, 0.0f);
     }
-    else if (mode == WM_WING) {
-        Airfoil *airfoil = airfoils_base + selected_wpro;
+    else {
+        Airfoil *airfoil = airfoils_base + selected_proto;
         warehouse_arena.clear();
         mantle_generate_from_airfoil(&mantle, &warehouse_arena, airfoil, 0.0f, 0.0f, 0.0f);
     }
 }
 
 void Warehouse::draw_triangles(ShaderProgram &program, mat4_stack &mv_stack, vec3 camera_pos, vec3 camera_dir) {
-    if (mode == WM_CLOSED)
+    if (!is_open)
         return;
 
     mv_stack.push();
@@ -38,7 +38,7 @@ void Warehouse::draw_triangles(ShaderProgram &program, mat4_stack &mv_stack, vec
 }
 
 void Warehouse::draw_lines(ShaderProgram &program, mat4_stack &mv_stack, vec3 camera_pos, vec3 camera_dir) {
-    if (mode == WM_CLOSED)
+    if (!is_open)
         return;
 
     mv_stack.push();
