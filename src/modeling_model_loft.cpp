@@ -70,10 +70,10 @@ void model_loft(Arena *arena, Model *model) {
         Wing *w = model->wings[i];
         Wref *wref = wrefs + wrefs_count++;
         _init_wref(wref, w, available_ref_index, false);
-        if (wing_should_be_mirrored(w)) {
-            Wref *_wref = wrefs + wrefs_count++;
-            _init_wref(_wref, w, available_ref_index, true);
-        }
+        // if (wing_should_be_mirrored(w)) {
+        //     Wref *_wref = wrefs + wrefs_count++;
+        //     _init_wref(_wref, w, available_ref_index, true);
+        // }
         ++available_ref_index;
     }
 

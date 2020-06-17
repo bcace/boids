@@ -25,7 +25,7 @@ void object_proto_add_coll_former(ObjectProto *part, Shape shape, float x);
 void object_proto_set_skin_formers(ObjectProto *part, Shape tail_shape, float tail_x, Shape nose_shape, float nose_x);
 Object *object_proto_make_object(ObjectProto *part, vec3 p);
 
-struct Wpro {
+struct WProto {
     Airfoil airfoil;
 };
 
@@ -35,7 +35,7 @@ struct Warehouse {
     ObjectProto parts[MAX_PARTS];
     int parts_count;
     int selected_part;
-    Wpro wpros[MAX_WPROS];
+    WProto wpros[MAX_WPROS];
     int wpros_count;
     int selected_wpro;
     WarehouseMode mode;
@@ -53,7 +53,7 @@ struct Warehouse {
     void draw_lines(ShaderProgram &program, mat4_stack &mv_stack, vec3 camera_pos, vec3 camera_dir);
 };
 
-Wing *warehouse_make_selected_wing(Warehouse *wh, vec3 camera_pos, vec3 camera_dir);
+// Wing *warehouse_make_selected_wing(Warehouse *wh, vec3 camera_pos, vec3 camera_dir);
 
 extern Warehouse warehouse;
 

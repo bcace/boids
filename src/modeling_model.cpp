@@ -34,8 +34,10 @@ void model_add_wing(Model *m, Wing *w) {
 void model_deselect_all(Model *m) {
     for (int i = 0; i < m->objects_count; ++i)
         m->objects[i]->selected = false;
-    for (int i = 0; i < m->wings_count; ++i)
-        m->wings[i]->selected = false;
+    for (int i = 0; i < m->wings_count; ++i) {
+        m->wings[i]->root_former.selected = false;
+        m->wings[i]->tip_former.selected = false;
+    }
 }
 
 bool model_move_selected(Model *m, vec3 move_xyz, vec3 target_yz) {
@@ -47,11 +49,11 @@ bool model_move_selected(Model *m, vec3 move_xyz, vec3 target_yz) {
             object_move(o, move_xyz);
     }
 
-    for (int i = 0; i < m->wings_count; ++i) {
-        Wing *w = m->wings[i];
-        if (w->selected)
-            wing_move_target_position(w, move_xyz.x, move_xyz.y, move_xyz.z);
-    }
+    // for (int i = 0; i < m->wings_count; ++i) {
+    //     Wing *w = m->wings[i];
+    //     if (w->selected)
+    //         wing_move_target_position(w, move_xyz.x, move_xyz.y, move_xyz.z);
+    // }
 
     return requires_reloft;
 }

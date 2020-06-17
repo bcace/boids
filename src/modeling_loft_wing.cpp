@@ -95,7 +95,7 @@ static Wisec _envelope_and_line_intersection(TraceEnv *env, dvec p1, dvec p2, do
 
     return p;
 }
-
+#if 0
 /* Calculates intersection between wing edge and corresponding fuselage envelope
 and stores the result in wing reference. */
 static Wisec _get_wing_root_point(Wref *wref, TraceEnv *env, float x, bool trailing) {
@@ -224,7 +224,6 @@ static void _get_wing_section(tvec l1, tvec l2, tvec ld, tvec t1, tvec t2, tvec 
     // TODO: make vertices
 }
 
-#if 0
 void fuselage_wing_intersections(Arena *arena, Wref *wrefs, int wrefs_count, TraceSection *sects, int sects_count) {
     Wisec *u_wisecs = arena->lock<Wisec>(MAX_WING_SURFACE_STATIONS * 2);
     Wisec *l_wisecs = u_wisecs + MAX_WING_SURFACE_STATIONS;

@@ -110,12 +110,12 @@ Object *Warehouse::make_selected_part(vec3 camera_pos, vec3 camera_dir) {
     return o;
 }
 
-Wing *warehouse_make_selected_wing(Warehouse *wh, vec3 camera_pos, vec3 camera_dir) {
-    vec3 p = camera_pos + camera_dir * 10;
-    Wing *w = wing_make_from_selected_base_airfoil(wh->selected_wpro, p.x, p.y, p.z);
-    wh->close();
-    return w;
-}
+// Wing *warehouse_make_selected_wing(Warehouse *wh, vec3 camera_pos, vec3 camera_dir) {
+//     vec3 p = camera_pos + camera_dir * 10;
+//     Wing *w = wing_make_from_selected_base_airfoil(wh->selected_wpro, p.x, p.y, p.z);
+//     wh->close();
+//     return w;
+// }
 
 void object_proto_init(ObjectProto *proto, const char *name, float tail_endp_dx, float nose_endp_dx) {
     assert(tail_endp_dx > 0.01);

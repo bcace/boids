@@ -196,26 +196,26 @@ void fuselage_loft(Arena *arena, Arena *verts_arena,
 
         /* get wing required stations (leading and trailing edge root points, spars) */
 
-        for (int i = 0; i < fuselage->wrefs_count; ++i) {
-            Wref *wref = fuselage->wrefs + i;
+        // for (int i = 0; i < fuselage->wrefs_count; ++i) {
+        //     Wref *wref = fuselage->wrefs + i;
 
-            static float x_positions[MAX_ELEM_REFS];
-            int count = wing_get_required_stations(wref->wing, x_positions);
+        //     static float x_positions[MAX_ELEM_REFS];
+        //     int count = wing_get_required_stations(wref->wing, x_positions);
 
-            /* trailing edge */
-            wref->t_station.id = _insert_station(req_stations,
-                                                 &req_stations_count,
-                                                 x_positions[0]);
+        //     /* trailing edge */
+        //     wref->t_station.id = _insert_station(req_stations,
+        //                                          &req_stations_count,
+        //                                          x_positions[0]);
 
-            //
-            // TODO: add spar stations
-            //
+        //     //
+        //     // TODO: add spar stations
+        //     //
 
-            /* leading edge */
-            wref->n_station.id = _insert_station(req_stations,
-                                                 &req_stations_count,
-                                                 x_positions[count - 1]);
-        }
+        //     /* leading edge */
+        //     wref->n_station.id = _insert_station(req_stations,
+        //                                          &req_stations_count,
+        //                                          x_positions[count - 1]);
+        // }
 
         // TODO: merge stations that are too close along x, use mesh size to estimate
     }
