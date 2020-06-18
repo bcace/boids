@@ -41,7 +41,7 @@ struct Wing {
 // bool wing_should_be_centered(Wing *w);
 // bool wing_should_be_mirrored(Wing *w);
 // Wing *wing_make_from_selected_base_airfoil(int index, float x, float y, float z);
-// void wing_move_target_position(Wing *w, float dx, float dy, float dz);
-// void wing_reset_target_position(Wing *w);
+void wing_move_target_position(Wing *w, float dx, float dy, float dz);
+void wing_reset_target_position(Wing *w);
 
 #endif

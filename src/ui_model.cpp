@@ -164,11 +164,11 @@ bool ui_model_maybe_drag_selection(UiModel *ui_model, PickResult *pick_result, b
     else if (pick_result->category_id == wing_model_pick_category) {
         Wing *w = (Wing *)hovered_pickable;
         w->selected = !w->selected;
-        // if (w->selected) {
-        //     for (int i = 0; i < m->objects_count; ++i)
-        //         object_reset_drag_p(m->objects[i]);
-        //     return true;
-        // }
+        if (w->selected) {
+            for (int i = 0; i < m->wings_count; ++i)
+                wing_reset_target_position(m->wings[i]);
+            return true;
+        }
     }
 
     return false;

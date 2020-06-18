@@ -49,11 +49,11 @@ bool model_move_selected(Model *m, vec3 move_xyz, vec3 target_yz) {
             object_move(o, move_xyz);
     }
 
-    // for (int i = 0; i < m->wings_count; ++i) {
-    //     Wing *w = m->wings[i];
-    //     if (w->selected)
-    //         wing_move_target_position(w, move_xyz.x, move_xyz.y, move_xyz.z);
-    // }
+    for (int i = 0; i < m->wings_count; ++i) {
+        Wing *w = m->wings[i];
+        if (w->selected)
+            wing_move_target_position(w, move_xyz.x, move_xyz.y, move_xyz.z);
+    }
 
     return requires_reloft;
 }
