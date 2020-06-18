@@ -5,21 +5,22 @@
 #include "memory_arena.h"
 #include "math_mat.h"
 
+// TODO: adapt this to distance from nearest geometry, symmetry plane etc...
+#define PROTO_DIST_FROM_CAMERA 10.0f
 
-Mantle mantle;
 
-Arena warehouse_arena(100000);
+static Mantle mantle;
+static Arena arena(100000);
 
 void Warehouse::update_drawing_geometry() {
+    arena.clear();
     if (is_object) {
-        OProto *proto = o_protos + selected_proto;
-        warehouse_arena.clear();
-        mantle_generate_from_former_array(&mantle, &warehouse_arena, proto->def.formers, proto->def.formers_count, 0.0f, 0.0f, 0.0f);
+        OProto *p = o_protos + selected_proto;
+        mantle_generate_from_former_array(&mantle, &arena, p->def.formers, p->def.formers_count, 0.0f, 0.0f, 0.0f);
     }
     else {
-        Airfoil *airfoil = airfoils_base + selected_proto;
-        warehouse_arena.clear();
-        mantle_generate_from_airfoil(&mantle, &warehouse_arena, airfoil, 0.0f, 0.0f, 0.0f);
+        WProto *p = w_protos + selected_proto;
+        mantle_generate_from_wing_formers(&mantle, &arena, &p->def.r_former, &p->def.t_former, 0.0f, 0.0f, 0.0f);
     }
 }
 
@@ -28,7 +29,7 @@ void Warehouse::draw_triangles(ShaderProgram &program, mat4_stack &mv_stack, vec
         return;
 
     mv_stack.push();
-    mv_stack.translate(camera_pos + camera_dir * 10); // TODO: adapt distance to part size
+    mv_stack.translate(camera_pos + camera_dir * PROTO_DIST_FROM_CAMERA);
     program.set_uniform_mat4(1, mv_stack.top());
 
     mantle_draw_quads(&mantle, program, mv_stack, vec4(0.45f, 0.65f, 1.0f, 1.0f));
@@ -42,7 +43,7 @@ void Warehouse::draw_lines(ShaderProgram &program, mat4_stack &mv_stack, vec3 ca
         return;
 
     mv_stack.push();
-    mv_stack.translate(camera_pos + camera_dir * 10); // TODO: adapt distance to part size
+    mv_stack.translate(camera_pos + camera_dir * PROTO_DIST_FROM_CAMERA);
     program.set_uniform_mat4(1, mv_stack.top());
 
     graph_set_polygon_line_mode(true);

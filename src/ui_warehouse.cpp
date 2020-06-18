@@ -57,16 +57,16 @@ static void _init_wing_proto(WProto *proto, const char *name,
     proto->def.spars_count = 0;
 }
 
-Warehouse::Warehouse() {
-    o_protos_count = 0;
-    w_protos_count = 0;
-    selected_proto = 0;
-    is_object = true;
-    is_open = false;
+void warehouse_init() {
+    warehouse.o_protos_count = 0;
+    warehouse.w_protos_count = 0;
+    warehouse.selected_proto = 0;
+    warehouse.is_object = true;
+    warehouse.is_open = false;
 
     /* object prototypes */
 
-    OProto *klimov_vk1 = o_protos + o_protos_count++;
+    OProto *klimov_vk1 = warehouse.o_protos + warehouse.o_protos_count++;
     _object_proto_init(klimov_vk1, "Klimov Vk-1", 0.5, 1.0);
     _object_proto_add_coll_former(klimov_vk1, shape_circle(0.0, 0.0, 0.25), 0.0f);
     _object_proto_add_coll_former(klimov_vk1, shape_circle(0.0, 0.0, 0.3), 1.8f);
@@ -77,7 +77,7 @@ Warehouse::Warehouse() {
                           shape_circle(0.0, 0.0, 0.28), 0.0f,
                           shape_circle(0.0, 0.0, 0.6), 3.0f);
 
-    OProto *tumansky_r13 = o_protos + o_protos_count++;
+    OProto *tumansky_r13 = warehouse.o_protos + warehouse.o_protos_count++;
     _object_proto_init(tumansky_r13, "Tumansky R-13", 2.0, 2.0);
     _object_proto_add_coll_former(tumansky_r13, shape_circle(0.0, 0.0, 0.45), 0.0f);
     _object_proto_add_coll_former(tumansky_r13, shape_circle(0.0, 0.0, 0.45), 1.4f);
@@ -90,7 +90,7 @@ Warehouse::Warehouse() {
                           shape_circle(0.0, 0.0, 0.5), 0.0f,
                           shape_circle(0.0, 0.0, 0.5), 4.0f);
 
-    OProto *mirage_iii_intake = o_protos + o_protos_count++;
+    OProto *mirage_iii_intake = warehouse.o_protos + warehouse.o_protos_count++;
     _object_proto_init(mirage_iii_intake, "Mirage III intake", 2.0, 2.0);
     _object_proto_add_coll_former(mirage_iii_intake, shape_right_semi_circle(0.0, 0.0, 0.4), 0.0f);
     _object_proto_add_coll_former(mirage_iii_intake, shape_right_semi_circle(0.0, 0.0, 0.4), 0.4f);
@@ -98,7 +98,7 @@ Warehouse::Warehouse() {
                           shape_right_semi_circle(0.0, 0.0, 0.42), 0.0f,
                           shape_right_semi_circle(0.0, 0.0, 0.42), 0.4f);
 
-    OProto *mig_15_cockpit = o_protos + o_protos_count++;
+    OProto *mig_15_cockpit = warehouse.o_protos + warehouse.o_protos_count++;
     _object_proto_init(mig_15_cockpit, "Mig-15 cockpit", 2.0, 2.0);
     _object_proto_add_coll_former(mig_15_cockpit, shape_rect(0.0, 0.0, 0.7, 1.5), 0.0f);
     _object_proto_add_coll_former(mig_15_cockpit, shape_rect(0.0, 0.0, 0.7, 1.5), 1.5f);
@@ -106,7 +106,7 @@ Warehouse::Warehouse() {
                           shape_rect(0.0, 0.0, 0.72, 1.52), 0.0f,
                           shape_rect(0.0, 0.0, 0.72, 1.52), 1.5f);
 
-    OProto *nose_endpoint = o_protos + o_protos_count++;
+    OProto *nose_endpoint = warehouse.o_protos + warehouse.o_protos_count++;
     _object_proto_init(nose_endpoint, "Nose end-point", 2.0f, 0.05f);
     _object_proto_add_coll_former(nose_endpoint, shape_circle(0.0, 0.0, 0.1), 0.0f);
     _object_proto_add_coll_former(nose_endpoint, shape_circle(0.0, 0.0, 0.02), 0.2f);
@@ -117,10 +117,10 @@ Warehouse::Warehouse() {
 
     /* wing prototypes */
 
-    WProto *mirage_iii_wing = w_protos + w_protos_count;
+    WProto *mirage_iii_wing = warehouse.w_protos + warehouse.w_protos_count++;
     _init_wing_proto(mirage_iii_wing, "Mirage III wing",
-                     airfoils_base[0], 0.0f, 10.0f, 0.0f, 0.0f, 0.0f,
-                     airfoils_base[0], 0.0f, 0.5f, -9.4f, 7.0f, 0.0f);
+                     airfoils_base[1], 0.0f, 10.0f, 0.0f, 0.0f, 0.0f,
+                     airfoils_base[1], 0.0f, 0.5f, -9.4f, 7.0f, 0.0f);
 }
 
 void Warehouse::open() {
@@ -133,16 +133,15 @@ void Warehouse::close() {
 }
 
 void Warehouse::select_next_part() {
+    ++selected_proto;
     if (is_object) {
-        ++selected_proto;
-        if (selected_proto > o_protos_count - 1) {
+        if (selected_proto == o_protos_count) {
             is_object = false;
             selected_proto = 0;
         }
     }
     else {
-        ++selected_proto;
-        if (selected_proto > w_protos_count - 1) {
+        if (selected_proto == w_protos_count) {
             is_object = true;
             selected_proto = 0;
         }
@@ -151,18 +150,17 @@ void Warehouse::select_next_part() {
 }
 
 void Warehouse::select_prev_part() {
+    --selected_proto;
     if (is_object) {
-        --selected_proto;
         if (selected_proto < 0) {
             is_object = false;
-            selected_proto = o_protos_count - 1;
+            selected_proto = w_protos_count - 1;
         }
     }
     else {
-        --selected_proto;
         if (selected_proto < 0) {
             is_object = true;
-            selected_proto = w_protos_count - 1;
+            selected_proto = o_protos_count - 1;
         }
     }
     update_drawing_geometry();
@@ -177,9 +175,13 @@ Object *warehouse_make_selected_object(vec3 camera_pos, vec3 camera_dir) {
     return o;
 }
 
-// Wing *warehouse_make_selected_wing(Warehouse *wh, vec3 camera_pos, vec3 camera_dir) {
-//     vec3 p = camera_pos + camera_dir * 10;
-//     Wing *w = wing_make_from_selected_base_airfoil(wh->selected_wpro, p.x, p.y, p.z);
-//     wh->close();
-//     return w;
-// }
+Wing *warehouse_make_selected_wing(vec3 camera_pos, vec3 camera_dir) {
+    Wing *w = new Wing();
+    vec3 p = camera_pos + camera_dir * 10;
+    w->x = p.x;
+    w->y = p.y;
+    w->z = p.z;
+    w->def = warehouse.w_protos[warehouse.selected_proto].def;
+    warehouse.close();
+    return w;
+}

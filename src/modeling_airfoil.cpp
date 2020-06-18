@@ -1,5 +1,6 @@
 #include "modeling_airfoil.h"
 #include "math_dvec.h"
+#include "math_vec.h"
 #include <math.h>
 #include <string.h>
 
@@ -57,30 +58,28 @@ float airfoil_get_trailing_y_offset(Airfoil *a) {
             _get_side_trailing_offset(&a->lower)) * 0.5f;
 }
 
-void airfoil_get_points(Airfoil *airfoil, tvec *verts,
-                        double chord, double depth,
-                        double aoa, double dihedral,
-                        double x, double y, double z) {
+template<typename T>
+void airfoil_get_points(Airfoil *airfoil, T *verts, double dihedral, double chord, double aoa, double x, double y, double z) {
 
     AirfoilSide *u_side = &airfoil->upper;
     AirfoilSide *l_side = &airfoil->lower;
-    tvec *v = verts;
+    T *v = verts;
 
     for (int i = AIRFOIL_X_SUBDIVS - 1; i >= 0; --i) {
         v->x = -airfoil_get_subdiv_x(i);
-        v->y = depth;
+        v->y = 0.0;
         v->z = u_side->base + u_side->y[i] * u_side->delta;
         ++v;
     }
 
     v->x = 0.0;
-    v->y = depth;
+    v->y = 0.0;
     v->z = 0.0;
     ++v;
 
     for (int i = 0; i < AIRFOIL_X_SUBDIVS; ++i) {
         v->x = -airfoil_get_subdiv_x(i);
-        v->y = depth;
+        v->y = 0.0;
         v->z = l_side->base + l_side->y[i] * l_side->delta;
         ++v;
     }
@@ -91,9 +90,12 @@ void airfoil_get_points(Airfoil *airfoil, tvec *verts,
     double sin_g = sin(dihedral);
 
     for (int i = 0; i < AIRFOIL_POINTS; ++i) { /* transform vertices */
-        tvec o = verts[i];
+        T o = verts[i];
         verts[i].x = x + (o.x * cos_b + o.y * sin_b * sin_g + o.z * sin_b * cos_g) * chord;
         verts[i].y = y + (o.y * cos_g - o.z * sin_g) * chord;
         verts[i].z = z + (-o.x * sin_b + o.y * cos_b * sin_g + o.z * cos_b * cos_g) * chord;
     }
 }
+
+template void airfoil_get_points<vec3>(Airfoil *airfoil, vec3 *verts, double dihedral, double chord, double aoa, double x, double y, double z);
+template void airfoil_get_points<tvec>(Airfoil *airfoil, tvec *verts, double dihedral, double chord, double aoa, double x, double y, double z);

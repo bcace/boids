@@ -33,8 +33,6 @@ struct Warehouse {
     bool is_object;
     bool is_open;
 
-    Warehouse();
-
     void open();
     void close();
     void select_next_part();
@@ -45,9 +43,9 @@ struct Warehouse {
     void draw_lines(ShaderProgram &program, mat4_stack &mv_stack, vec3 camera_pos, vec3 camera_dir);
 };
 
+void warehouse_init();
 Object *warehouse_make_selected_object(vec3 camera_pos, vec3 camera_dir);
-
-// Wing *warehouse_make_selected_wing(Warehouse *wh, vec3 camera_pos, vec3 camera_dir);
+Wing *warehouse_make_selected_wing(vec3 camera_pos, vec3 camera_dir);
 
 extern Warehouse warehouse;
 

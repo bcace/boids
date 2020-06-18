@@ -34,7 +34,7 @@ PickResult pick_result;
 vec3 crosshair_verts[4];
 
 /* arena used for collision and lofting */
-Arena arena(20000000);
+static Arena arena(20000000);
 
 
 void _recalculate_model() {
@@ -51,11 +51,13 @@ void _recalculate_model() {
 void _mousebutton_callback(int button, int action, int mods) {
     if (button == WINDOW_LEFT) {
         if (action == WINDOW_PRESS) {
-            if (warehouse.is_object)
-                model_add_object(&ui_model.model, warehouse_make_selected_object(camera.pos, camera.dir));
-            else
-                ;
-            _recalculate_model();
+            if (warehouse.is_open) {
+                if (warehouse.is_object)
+                    model_add_object(&ui_model.model, warehouse_make_selected_object(camera.pos, camera.dir));
+                else
+                    model_add_wing(&ui_model.model, warehouse_make_selected_wing(camera.pos, camera.dir));
+                _recalculate_model();
+            }
             if (ui_model_maybe_drag_selection(&ui_model, &pick_result, (mods & WINDOW_MOD_CTRL) != 0))
                 drag.begin(camera.pos, camera.dir, pick_result.depth);
         }
@@ -283,6 +285,7 @@ int main() {
     airfoil_init_base();
 #endif
 
+    warehouse_init();
     model_collision_init();
 
     /* create window */

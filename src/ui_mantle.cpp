@@ -7,6 +7,7 @@
 #include "math_vec.h"
 #include "math_dvec.h"
 #include <assert.h>
+#include <math.h>
 
 #define DRAW_VERTS_PER_POINT    16
 #define DRAW_VERTS_PER_POLY     (4 * DRAW_VERTS_PER_POINT)
@@ -16,8 +17,7 @@ static Arena default_arena(10000000);
 
 Mantle::Mantle() : verts(0), verts_count(0),
                    indices(0), indices_count(0),
-                   sections_count(0), verts_per_section(0),
-                   is_wing(false) {}
+                   sections_count(0), verts_per_section(0) {}
 
 void mantle_draw_quads(Mantle *m, ShaderProgram &program, mat4_stack &mv_stack, const vec4 &color) {
     program.set_uniform_vec4(2, color);
@@ -41,29 +41,12 @@ static void _get_shape_verts(Shape *shape, vec3 *verts, int verts_count, float d
         verts[i] = vec3(dx, (float)_verts[i].x + dy, (float)_verts[i].y + dz);
 }
 
-static void _init_mantle(Mantle *m, int sections_count, int verts_per_section, bool draw_caps) {
+static void _update_storage(Mantle *m, Arena *arena, int sections_count, int verts_per_section) {
     m->sections_count = sections_count;
     m->verts_per_section = verts_per_section;
-    m->is_wing = draw_caps;
-}
-
-static void _mantle_update_storage(Mantle *m, Arena *arena) {
-    m->verts = arena->alloc<vec3>(m->verts_count);
-    m->indices = arena->alloc<int>(m->indices_count);
-}
-
-static void _update_storage(Mantle *m, Arena *arena,
-                            int sections_count, int verts_per_section, bool draw_caps) {
-
-    m->sections_count = sections_count;
-    m->verts_per_section = verts_per_section;
-    m->is_wing = draw_caps;
 
     m->verts_count = sections_count * verts_per_section;
     m->indices_count = (sections_count - 1) * verts_per_section * 4;
-
-    if (draw_caps)
-        m->indices_count += AIRFOIL_X_SUBDIVS * 2 * 4;
 
     m->verts = arena->alloc<vec3>(m->verts_count);
     m->indices = arena->alloc<int>(m->indices_count);
@@ -85,49 +68,10 @@ static void _update_data(Mantle *m) {
             *idx++ = i2 * m->verts_per_section + j1;
         }
     }
-
-    if (m->is_wing) {
-        bool odd_verts_per_section = (m->verts_per_section % 2) == 1;
-
-        int verts_per_side = odd_verts_per_section ?
-                             (m->verts_per_section - 1) / 2 :
-                             m->verts_per_section / 2;
-
-        for (int i = 1; i < verts_per_side; ++i) {
-            int i1 = i - 1;
-            int i2 = i;
-            int i3 = m->verts_per_section - i - 1;
-            int i4 = m->verts_per_section - i;
-
-            *idx++ = i1;
-            *idx++ = i2;
-            *idx++ = i3;
-            *idx++ = i4;
-
-            *idx++ = i1 + m->verts_per_section;
-            *idx++ = i2 + m->verts_per_section;
-            *idx++ = i3 + m->verts_per_section;
-            *idx++ = i4 + m->verts_per_section;
-        }
-
-        if (odd_verts_per_section) {
-            *idx++ = verts_per_side - 1;
-            *idx++ = verts_per_side;
-            *idx++ = verts_per_side;
-            *idx++ = verts_per_side + 1;
-
-            *idx++ = verts_per_side - 1 + m->verts_per_section;
-            *idx++ = verts_per_side + m->verts_per_section;
-            *idx++ = verts_per_side + m->verts_per_section;
-            *idx++ = verts_per_side + 1 + m->verts_per_section;
-        }
-    }
 }
 
 void mantle_generate_from_former_array(Mantle *m, Arena *arena, Former *formers, int formers_count, float x, float y, float z) {
-    assert(formers_count > 1);
-
-    _update_storage(m, arena, formers_count, DRAW_VERTS_PER_POLY, false);
+    _update_storage(m, arena, formers_count, DRAW_VERTS_PER_POLY);
 
     vec3 *section_verts = m->verts;
     for (int i = 0; i < formers_count; ++i) {
@@ -139,29 +83,17 @@ void mantle_generate_from_former_array(Mantle *m, Arena *arena, Former *formers,
     _update_data(m);
 }
 
-/* Used to generate a draggable representation of a wing root. */
-void mantle_generate_from_airfoil(Mantle *m, Arena *arena, Airfoil *airfoil,
-                                  float x, float y, float z) {
+void mantle_generate_from_wing_formers(Mantle *m, Arena *arena, WFormer *r_f, WFormer *t_f, float x, float y, float z) {
+    _update_storage(m, arena, 2, AIRFOIL_POINTS);
 
-    _update_storage(m, arena, 2, AIRFOIL_POINTS, true);
+    double dihedral = atan2(t_f->z - r_f->z, t_f->y - r_f->y);
 
-    static tvec r_verts[AIRFOIL_POINTS];
-    static tvec t_verts[AIRFOIL_POINTS];
-    airfoil_get_points(airfoil, r_verts, 1.0, -WING_SNAP_WIDTH, 0.0, 0.0, x, y, z);
-    airfoil_get_points(airfoil, t_verts, 1.0,  WING_SNAP_WIDTH, 0.0, 0.0, x, y, z);
-
-    vec3 *v1 = m->verts;
-    vec3 *v2 = v1 + AIRFOIL_POINTS;
-    for (int i = 0; i < AIRFOIL_POINTS; ++i) {
-        v1->x = r_verts[i].x;
-        v1->y = r_verts[i].y;
-        v1->z = r_verts[i].z;
-        v2->x = t_verts[i].x;
-        v2->y = t_verts[i].y;
-        v2->z = t_verts[i].z;
-        ++v1;
-        ++v2;
-    }
+    airfoil_get_points(&r_f->airfoil, m->verts, dihedral,
+                       r_f->chord, r_f->aoa,
+                       r_f->x + x, r_f->y + y, r_f->z + z);
+    airfoil_get_points(&t_f->airfoil, m->verts + AIRFOIL_POINTS, dihedral,
+                       t_f->chord, t_f->aoa,
+                       t_f->x + x, t_f->y + y, t_f->z + z);
 
     _update_data(m);
 }
