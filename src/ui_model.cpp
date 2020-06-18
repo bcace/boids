@@ -10,6 +10,7 @@
 
 
 unsigned int object_model_pick_category;
+unsigned int wing_model_pick_category;
 
 void ui_model_update_mantles(UiModel *ui_model) {
     Model *m = &ui_model->model;
@@ -64,6 +65,8 @@ void *_decode_pick_result(Model *m, PickResult *result) {
         return 0;
     if (result->category_id == object_model_pick_category)
         return m->objects[result->ids[0]];
+    if (result->category_id == wing_model_pick_category)
+        return m->wings[result->ids[0]];
     return 0;
 }
 
@@ -95,6 +98,11 @@ void ui_model_draw_for_picking(UiModel *ui_model, ShaderProgram &program, mat4_s
     for (int i = 0; i < m->objects_count; ++i) {
         Mantle *o_mantle = ui_model->o_mantles + i;
         mantle_draw_quads(o_mantle, program, mv_stack, pick_encode(object_model_pick_category, i));
+    }
+
+    for (int i = 0; i < m->wings_count; ++i) {
+        Mantle *w_mantle = ui_model->w_mantles + i;
+        mantle_draw_quads(w_mantle, program, mv_stack, pick_encode(wing_model_pick_category, i));
     }
 
     graph_enable_blend(true);
@@ -153,12 +161,22 @@ bool ui_model_maybe_drag_selection(UiModel *ui_model, PickResult *pick_result, b
             return true;
         }
     }
+    else if (pick_result->category_id == wing_model_pick_category) {
+        Wing *w = (Wing *)hovered_pickable;
+        w->selected = !w->selected;
+        // if (w->selected) {
+        //     for (int i = 0; i < m->objects_count; ++i)
+        //         object_reset_drag_p(m->objects[i]);
+        //     return true;
+        // }
+    }
 
     return false;
 }
 
 void ui_model_init_drawing() {
     object_model_pick_category = pick_register_category();
+    wing_model_pick_category = pick_register_category();
 }
 
 #if DRAW_CORRS
