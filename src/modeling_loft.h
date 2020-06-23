@@ -49,6 +49,12 @@ struct Oref {
     StationId t_station, n_station;
 };
 
+struct Wisec {
+    int i; /* starting envelope point index of the segment where the intersection is */
+    double t;
+    tvec p;
+};
+
 struct Wref {
     Wing *wing;
     bool is_clone;
@@ -56,7 +62,7 @@ struct Wref {
 
     /* derived */
     StationId t_station, n_station;
-    bool valid;
+    bool isec_valid; /* is intersection with fuselage valid */
 };
 
 struct Conn {
@@ -80,10 +86,9 @@ void fuselage_loft(Arena *arena, Arena *verts_arena, Model *model, Fuselage *fus
 bool fuselage_objects_overlap(Oref *a, Oref *b);
 bool fuselage_object_and_wing_overlap(Oref *o, Wref *w);
 
-/* wing */
-// void fuselage_wing_intersections(Arena *arena, Wref *wrefs, int wrefs_count, struct TraceSection *sections, int sections_count);
+void loft_fuselage_wing_intersections(Arena *arena, Wref *wrefs, int wrefs_count, struct TraceSection *sections, int sections_count);
 
-#define MAX_WING_ISECS (MAX_ELEM_REFS * 2)
+#define MAX_WING_ISECS_PER_STATION (MAX_ELEM_REFS * 2)
 
 
 /* Trace envelope point. */
@@ -103,10 +108,21 @@ struct TraceEnv {
     Flags object_like_flags; /* object-like polygons forming this envelope, passed down to corresponding mesh envelope */
 };
 
-struct Wisec {
-    int i; /* starting envelope point index of the segment where the intersection is */
-    double t;
-    tvec p;
+/* Section containing all pipe intersection shapes and resulting envelopes. Mostly contains
+only one set of shapes and a single envelope, and two shape sets and two envelopes if there's
+a possibility of an opening. */
+struct TraceSection {
+    Shape shapes[MAX_ENVELOPE_SHAPES];      /* actual storage */
+    Shape *t_shapes[MAX_ENVELOPE_SHAPES];   /* aliases, shapes in tailwise direction */
+    Shape *n_shapes[MAX_ENVELOPE_SHAPES];   /* aliases, shapes in nosewise direction */
+    int shapes_count;
+    int t_shapes_count;
+    int n_shapes_count;
+    bool two_envelopes;
+    TraceEnv *t_env, *n_env; /* pointers because they migh point at the same thing in arena */
+    double x;
+    Wisec wisecs[MAX_WING_ISECS_PER_STATION];
+    int wisecs_count;
 };
 
 /* Mesh point, representing actual skin vertex and containing all info required for meshing. */

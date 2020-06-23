@@ -58,12 +58,11 @@ float airfoil_get_trailing_y_offset(Airfoil *a) {
             _get_side_trailing_offset(&a->lower)) * 0.5f;
 }
 
-template<typename T>
-void airfoil_get_points(Airfoil *airfoil, T *verts, double dihedral, double chord, double aoa, double x, double y, double z) {
+void airfoil_get_drawing_verts(Airfoil *airfoil, vec3 *verts, double dihedral, double chord, double aoa, double x, double y, double z) {
 
     AirfoilSide *u_side = &airfoil->upper;
     AirfoilSide *l_side = &airfoil->lower;
-    T *v = verts;
+    vec3 *v = verts;
 
     for (int i = AIRFOIL_X_SUBDIVS - 1; i >= 0; --i) {
         v->x = -airfoil_get_subdiv_x(i);
@@ -90,12 +89,50 @@ void airfoil_get_points(Airfoil *airfoil, T *verts, double dihedral, double chor
     double sin_g = sin(dihedral);
 
     for (int i = 0; i < AIRFOIL_POINTS; ++i) { /* transform vertices */
-        T o = verts[i];
+        vec3 o = verts[i];
         verts[i].x = x + (o.x * cos_b + o.y * sin_b * sin_g + o.z * sin_b * cos_g) * chord;
         verts[i].y = y + (o.y * cos_g - o.z * sin_g) * chord;
         verts[i].z = z + (-o.x * sin_b + o.y * cos_b * sin_g + o.z * cos_b * cos_g) * chord;
     }
 }
 
-template void airfoil_get_points<vec3>(Airfoil *airfoil, vec3 *verts, double dihedral, double chord, double aoa, double x, double y, double z);
-template void airfoil_get_points<tvec>(Airfoil *airfoil, tvec *verts, double dihedral, double chord, double aoa, double x, double y, double z);
+tvec _transform_vertex(double x, double y, double z, double c, double cb, double sb, double cg, double sg, double dx, double dy, double dz) {
+    tvec v;
+    v.x = dx + (x * cb + y * sb * sg + z * sb * cg) * c;
+    v.y = dy + (y * cg - z * sg) * c;
+    v.z = dz + (-x * sb + y * cb * sg + z * cb * cg) * c;
+    return v;
+}
+
+void airfoil_get_verts(Airfoil *a, tvec *u_verts, tvec *l_verts, double dihedral, double chord, double aoa, double dx, double dy, double dz) {
+    AirfoilSide *u_side = &a->upper;
+    AirfoilSide *l_side = &a->lower;
+
+    double cb = cos(-aoa);
+    double sb = sin(-aoa);
+    double cg = cos(dihedral);
+    double sg = sin(dihedral);
+
+    tvec *u_vert = u_verts;
+    tvec *l_vert = l_verts;
+    for (int i = AIRFOIL_X_SUBDIVS - 1; i >= 0; --i) {
+        *u_vert++ = _transform_vertex(-airfoil_get_subdiv_x(i),
+                                      0.0,
+                                      u_side->base + u_side->y[i] * u_side->delta,
+                                      chord,
+                                      cb, sb, cg, sg,
+                                      dx, dy, dz);
+        *l_vert++ = _transform_vertex(-airfoil_get_subdiv_x(i),
+                                      0.0,
+                                      l_side->base + l_side->y[i] * l_side->delta,
+                                      chord,
+                                      cb, sb, cg, sg,
+                                      dx, dy, dz);
+    }
+    *u_vert = *l_vert = _transform_vertex(0.0,
+                                          0.0,
+                                          0.0,
+                                          chord,
+                                          cb, sb, cg, sg,
+                                          dx, dy, dz);
+}

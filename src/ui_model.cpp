@@ -81,11 +81,11 @@ void ui_model_draw_mantles(UiModel *ui_model, ShaderProgram &program, mat4_stack
         mantle_draw_quads(o_mantle, program, mv_stack, _object_color(o, hovered_pickable));
     }
 
-    for (int i = 0; i < m->wings_count; ++i) {
-        Wing *w = m->wings[i];
-        Mantle *w_mantle = ui_model->w_mantles + i;
-        mantle_draw_quads(w_mantle, program, mv_stack, _wing_color(w, hovered_pickable));
-    }
+    // for (int i = 0; i < m->wings_count; ++i) {
+    //     Wing *w = m->wings[i];
+    //     Mantle *w_mantle = ui_model->w_mantles + i;
+    //     mantle_draw_quads(w_mantle, program, mv_stack, _wing_color(w, hovered_pickable));
+    // }
 }
 
 

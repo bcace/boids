@@ -28,6 +28,9 @@ void Warehouse::draw_triangles(ShaderProgram &program, mat4_stack &mv_stack, vec
     if (!is_open)
         return;
 
+    if (!is_object)
+        return;
+
     mv_stack.push();
     mv_stack.translate(camera_pos + camera_dir * PROTO_DIST_FROM_CAMERA);
     program.set_uniform_mat4(1, mv_stack.top());

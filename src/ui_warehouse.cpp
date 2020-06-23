@@ -53,8 +53,6 @@ static void _init_wing_proto(WProto *proto, const char *name,
     proto->def.t_former.x = t_x;
     proto->def.t_former.y = t_y;
     proto->def.t_former.z = t_z;
-
-    proto->def.spars_count = 0;
 }
 
 void warehouse_init() {
@@ -74,8 +72,8 @@ void warehouse_init() {
     _object_proto_add_coll_former(klimov_vk1, shape_circle(0.0, 0.0, 0.5), 2.7f);
     _object_proto_add_coll_former(klimov_vk1, shape_circle(0.0, 0.0, 0.25), 3.0f);
     _object_proto_set_skin_formers(klimov_vk1,
-                          shape_circle(0.0, 0.0, 0.28), 0.0f,
-                          shape_circle(0.0, 0.0, 0.6), 3.0f);
+                                   shape_circle(0.0, 0.0, 0.28), 0.0f,
+                                   shape_circle(0.0, 0.0, 0.6), 3.0f);
 
     OProto *tumansky_r13 = warehouse.o_protos + warehouse.o_protos_count++;
     _object_proto_init(tumansky_r13, "Tumansky R-13", 2.0, 2.0);
@@ -87,40 +85,50 @@ void warehouse_init() {
     _object_proto_add_coll_former(tumansky_r13, shape_circle(0.0, 0.0, 0.5), 3.7f);
     _object_proto_add_coll_former(tumansky_r13, shape_circle(0.0, 0.0, 0.4), 4.0f);
     _object_proto_set_skin_formers(tumansky_r13,
-                          shape_circle(0.0, 0.0, 0.5), 0.0f,
-                          shape_circle(0.0, 0.0, 0.5), 4.0f);
+                                   shape_circle(0.0, 0.0, 0.5), 0.0f,
+                                   shape_circle(0.0, 0.0, 0.5), 4.0f);
 
     OProto *mirage_iii_intake = warehouse.o_protos + warehouse.o_protos_count++;
     _object_proto_init(mirage_iii_intake, "Mirage III intake", 2.0, 2.0);
     _object_proto_add_coll_former(mirage_iii_intake, shape_right_semi_circle(0.0, 0.0, 0.4), 0.0f);
     _object_proto_add_coll_former(mirage_iii_intake, shape_right_semi_circle(0.0, 0.0, 0.4), 0.4f);
     _object_proto_set_skin_formers(mirage_iii_intake,
-                          shape_right_semi_circle(0.0, 0.0, 0.42), 0.0f,
-                          shape_right_semi_circle(0.0, 0.0, 0.42), 0.4f);
+                                   shape_right_semi_circle(0.0, 0.0, 0.42), 0.0f,
+                                   shape_right_semi_circle(0.0, 0.0, 0.42), 0.4f);
 
     OProto *mig_15_cockpit = warehouse.o_protos + warehouse.o_protos_count++;
     _object_proto_init(mig_15_cockpit, "Mig-15 cockpit", 2.0, 2.0);
     _object_proto_add_coll_former(mig_15_cockpit, shape_rect(0.0, 0.0, 0.7, 1.5), 0.0f);
     _object_proto_add_coll_former(mig_15_cockpit, shape_rect(0.0, 0.0, 0.7, 1.5), 1.5f);
     _object_proto_set_skin_formers(mig_15_cockpit,
-                          shape_rect(0.0, 0.0, 0.72, 1.52), 0.0f,
-                          shape_rect(0.0, 0.0, 0.72, 1.52), 1.5f);
+                                   shape_rect(0.0, 0.0, 0.72, 1.52), 0.0f,
+                                   shape_rect(0.0, 0.0, 0.72, 1.52), 1.5f);
 
     OProto *nose_endpoint = warehouse.o_protos + warehouse.o_protos_count++;
     _object_proto_init(nose_endpoint, "Nose end-point", 2.0f, 0.05f);
     _object_proto_add_coll_former(nose_endpoint, shape_circle(0.0, 0.0, 0.1), 0.0f);
     _object_proto_add_coll_former(nose_endpoint, shape_circle(0.0, 0.0, 0.02), 0.2f);
     _object_proto_set_skin_formers(nose_endpoint,
-                          shape_circle(0.0, 0.0, 0.1), 0.0f,
-                          shape_circle(0.0, 0.0, 0.02), 0.2f);
+                                   shape_circle(0.0, 0.0, 0.1), 0.0f,
+                                   shape_circle(0.0, 0.0, 0.02), 0.2f);
 
 
     /* wing prototypes */
 
-    WProto *mirage_iii_wing = warehouse.w_protos + warehouse.w_protos_count++;
-    _init_wing_proto(mirage_iii_wing, "Mirage III wing",
-                     airfoils_base[1], 0.0f, 10.0f, 0.0f, 0.0f, 0.0f,
-                     airfoils_base[1], 0.0f, 0.5f, -9.4f, 7.0f, 0.0f);
+    WProto *small_wing = warehouse.w_protos + warehouse.w_protos_count++;
+    _init_wing_proto(small_wing, "Small wing",
+                     airfoils_base[2], 0.3f, 1.0f, 0.0f, 0.0f, 0.0f,
+                     airfoils_base[2], 0.0f, 0.6f, -0.1f, 3.0f, 0.0f);
+
+    WProto *small_wing_swept = warehouse.w_protos + warehouse.w_protos_count++;
+    _init_wing_proto(small_wing_swept, "Small wing",
+                     airfoils_base[1], 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+                     airfoils_base[1], 0.0f, 0.6f, -2.0f, 3.0f, 0.0f);
+
+    WProto *small_wing_dihedral = warehouse.w_protos + warehouse.w_protos_count++;
+    _init_wing_proto(small_wing_dihedral, "Small wing",
+                     airfoils_base[1], 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+                     airfoils_base[1], 0.0f, 0.6f, -0.1f, 2.0f, 2.0f);
 }
 
 void Warehouse::open() {

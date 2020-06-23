@@ -4,16 +4,20 @@
 #include <assert.h>
 
 
-// /* Returns required stations' x positions, from trailing to leading edge.
-// Includes stations for edges and spars. */
-// int wing_get_required_stations(Wing *w, float *stations) {
-//     int c = 0;
-//     stations[c++] = w->x - w->chord; /* trailing station */
-//     for (int i = w->spars_count - 1; i <= 0; --i)
-//         stations[c++] = w->x - w->chord * w->spars[i].x;
-//     stations[c++] = w->x; /* leading station */
-//     return c;
-// }
+/* This gets called from different places and needs to be the same thing in all those places. */
+float wing_get_nominal_root_chord(Wing *w) {
+    return w->def.r_former.chord;
+}
+
+/* Returns required stations' x positions, from trailing to leading edge.
+Includes stations for edges and spars. */
+int wing_get_required_stations(Wing *w, float *stations) {
+    int c = 0;
+    stations[c++] = w->x - wing_get_nominal_root_chord(w); /* trailing station */
+    // TODO: add spar stations
+    stations[c++] = w->x; /* leading station */
+    return c;
+}
 
 // bool wing_should_be_centered(Wing *w) {
 //     return w->y < WING_SNAP_WIDTH;

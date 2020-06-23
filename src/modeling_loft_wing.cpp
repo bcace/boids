@@ -21,7 +21,7 @@ static dvec _line_intersection(double x1, double y1, double x2, double y2,
     return i;
 }
 
-static Wisec _envelope_and_line_intersection(TraceEnv *env, dvec p1, dvec p2, double x) {
+static Wisec _envelope_and_line_intersection(TraceEnv *env, double x1, double y1, double x2, double y2, double x) {
     Wisec p;
     p.i = -1;
     p.t = 0.0;
@@ -34,8 +34,8 @@ static Wisec _envelope_and_line_intersection(TraceEnv *env, dvec p1, dvec p2, do
     const double _PARALLEL_MARGIN = 1.0e-10;
 
     /* line normal */
-    double nx = p1.y - p2.y;
-    double ny = p2.x - p1.x;
+    double nx = y1 - y2;
+    double ny = x2 - x1;
     double nl = sqrt(nx * nx + ny * ny);
     nx /= nl;
     ny /= nl;
@@ -46,10 +46,10 @@ static Wisec _envelope_and_line_intersection(TraceEnv *env, dvec p1, dvec p2, do
         if (try_i) {
             double dx = nx * _RETRY_STEP * try_i;
             double dy = ny * _RETRY_STEP * try_i;
-            p1.x += dx;
-            p1.y += dy;
-            p2.x += dx;
-            p2.y += dy;
+            x1 += dx;
+            y1 += dy;
+            x2 += dx;
+            y2 += dy;
         }
 
         for (int i1 = 0; i1 < env->count; ++i1) {
@@ -58,13 +58,13 @@ static Wisec _envelope_and_line_intersection(TraceEnv *env, dvec p1, dvec p2, do
             EnvPoint *e2 = env->points + i2;
 
             /* 2D cross product (angle) between envelope edge and line */
-            double a = (e1->x - e2->x) * (p1.y - p2.y) - (e1->y - e2->y) * (p1.x - p2.x);
+            double a = (e1->x - e2->x) * (y1 - y2) - (e1->y - e2->y) * (x1 - x2);
 
             if (a > _PARALLEL_MARGIN) /* wrong direction */
                 continue;
             else if (a > -_PARALLEL_MARGIN) { /* parallel, if lines are too close, try again */
-                double dx = e1->x - p1.x;
-                double dy = e1->y - p1.y;
+                double dx = e1->x - x1;
+                double dy = e1->y - y1;
                 double d = nx * dx + ny * dy;
                 if (d < _RETRY_MARGIN && d > -_RETRY_MARGIN) /* if lines are too close */
                     goto _RETRY;
@@ -72,7 +72,7 @@ static Wisec _envelope_and_line_intersection(TraceEnv *env, dvec p1, dvec p2, do
             }
 
             /* envelope edge fraction of intersection */
-            double t = ((e1->x - p1.x) * (p1.y - p2.y) - (e1->y - p1.y) * (p1.x - p2.x)) / a;
+            double t = ((e1->x - x1) * (y1 - y2) - (e1->y - y1) * (x1 - x2)) / a;
 
             /* skip envelope edge if t is way off */
             if (t < -_RETRY_MARGIN || t > _ONE_PLUS_RETRY_MARGIN)
@@ -95,27 +95,33 @@ static Wisec _envelope_and_line_intersection(TraceEnv *env, dvec p1, dvec p2, do
 
     return p;
 }
-#if 0
-/* Calculates intersection between wing edge and corresponding fuselage envelope
-and stores the result in wing reference. */
-static Wisec _get_wing_root_point(Wref *wref, TraceEnv *env, float x, bool trailing) {
-    Wing *w = wref->wing;
 
-    dvec p1;
-    p1.x = (double)w->y;
-    p1.y = (double)w->z;
+// static double _impart_aoa_and_chord(double x, double y, double aoa, double chord) {
+//     return y * cos(aoa) * chord - x * sin(aoa) * chord;
+// }
 
-    if (trailing) {
-        p1.y += (double)(airfoil_get_trailing_y_offset(&w->airfoil) * w->chord);
-        p1 = dvec_rotate(p1, (double)w->dihedral);
-    }
+// /* Calculates intersection between wing edge and corresponding fuselage envelope. */
+// static Wisec _get_wing_root_point(Wref *wref, TraceEnv *env, float x, bool trailing) {
+//     Wing *w = wref->wing;
 
-    dvec p2;
-    p2.x = p1.x + cos(w->dihedral * DEG_TO_RAD);
-    p2.y = p1.y + sin(w->dihedral * DEG_TO_RAD);
+//     double x1 = (double)w->y;
+//     double y1 = (double)w->z;
 
-    return _envelope_and_line_intersection(env, p1, p2, x);
-}
+//     WFormer *r_form = &wref->wing->def.r_former;
+//     WFormer *t_form = &wref->wing->def.t_former;
+//     double dihedral = atan2(t_form->z - r_form->z, t_form->y - r_form->y);
+
+//     if (trailing) {
+//         /* airfoil CS */
+//         // y1 += (double)(dy * cos(r_form->aoa) - dx * sin(r_form->aoa));
+//         y1 += _impart_aoa_and_chord(1.0, airfoil_get_trailing_y_offset(&r_form->airfoil), r_form->aoa, r_form->chord);
+//     }
+
+//     double x2 = x1 + cos(dihedral);
+//     double y2 = y1 + sin(dihedral);
+
+//     return _envelope_and_line_intersection(env, x1, y1, x2, y2, x);
+// }
 
 static int _insert_wisec(Wisec *wisecs, int count, Wisec wisec) {
 
@@ -172,6 +178,7 @@ static void _insert_wisecs_into_envelope(TraceEnv *env, Wisec *wisecs, int wisec
     }
 }
 
+#if 0
 static tvec _get_direction(tvec v1, tvec v2) {
     tvec d;
     d.x = v2.x - v1.x;
@@ -223,8 +230,132 @@ static void _get_wing_section(tvec l1, tvec l2, tvec ld, tvec t1, tvec t2, tvec 
 
     // TODO: make vertices
 }
+#endif
 
-void fuselage_wing_intersections(Arena *arena, Wref *wrefs, int wrefs_count, TraceSection *sects, int sects_count) {
+tvec _interp_wing_section_surface(tvec *verts, double x, int *beg) {
+    while (verts[*beg + 1].x < x)
+        ++(*beg);
+    double t = (x - verts[*beg].x) / (verts[*beg + 1].x - verts[*beg].x);
+    tvec s;
+    s.x = x;
+    s.y = verts[*beg].y + (verts[*beg + 1].y - verts[*beg].y) * t;
+    s.z = verts[*beg].z + (verts[*beg + 1].z - verts[*beg].z) * t;
+    return s;
+}
+
+void loft_fuselage_wing_intersections(Arena *arena, Wref *wrefs, int wrefs_count, TraceSection *sects, int sects_count) {
+
+    tvec *u_verts = arena->lock<tvec>(AIRFOIL_X_SUBDIVS + 1);
+    tvec *l_verts = arena->lock<tvec>(AIRFOIL_X_SUBDIVS + 1);
+
+    /* find fuselage intersections for each wing */
+
+    for (int i = 0; i < wrefs_count; ++i) {
+        Wref *wref = wrefs + i;
+        Wing *w = wref->wing;
+
+        /* find tailmost and nosemost intersection points */
+
+        wref->isec_valid = true;
+
+        TraceSection *t_sect = sects + wref->t_station.index;
+        if (t_sect->t_env != t_sect->n_env) { /* possible opening */
+            wref->isec_valid = false;
+            continue;
+        }
+
+        TraceSection *n_sect = sects + wref->n_station.index;
+        if (n_sect->t_env != n_sect->n_env) { /* possible opening */
+            wref->isec_valid = false;
+            continue;
+        }
+
+        /* find how much the airfoil has to be scaled to fit the given chord */
+
+        WFormer *r_form = &wref->wing->def.r_former;
+        WFormer *t_form = &wref->wing->def.t_former;
+        Airfoil *r_airfoil = &r_form->airfoil;
+
+        double nominal_c = (double)wing_get_nominal_root_chord(w);
+        double a1 = atan2((double)airfoil_get_trailing_y_offset(r_airfoil), nominal_c);
+        double a2 = a1 + w->def.r_former.aoa;
+        double scaled_c = nominal_c * cos(a1) / cos(a2);
+        double dihedral = atan2(t_form->z - r_form->z, t_form->y - r_form->y);
+
+        airfoil_get_verts(r_airfoil, u_verts, l_verts, dihedral, scaled_c, r_form->aoa,
+                          w->x + r_form->x, w->y + r_form->y, w->z + r_form->z);
+
+        double cd = cos(dihedral);
+        double sd = sin(dihedral);
+
+        /* trailing edge point */
+
+        Wisec t_wisec = _envelope_and_line_intersection(t_sect->t_env,
+            u_verts[0].y, u_verts[0].z,
+            u_verts[0].y + cd, u_verts[0].z + sd,
+            t_sect->x);
+
+        if (t_wisec.i == -1) {
+            wref->isec_valid = false;
+            continue;
+        }
+
+        t_sect->wisecs_count = _insert_wisec(t_sect->wisecs, t_sect->wisecs_count, t_wisec);
+
+        /* surface points */
+
+        int u_i = 0;
+
+        for (int j = wref->t_station.index + 1; j < wref->n_station.index; ++j) {
+            TraceSection *sect = sects + j;
+
+            tvec u_vert = _interp_wing_section_surface(u_verts, sect->x, &u_i);
+
+            Wisec u_wisec = _envelope_and_line_intersection(sect->t_env,
+                u_vert.y, u_vert.z,
+                u_vert.y + cd, u_vert.z + sd,
+                sect->x);
+
+            if (u_wisec.i == -1) {
+                wref->isec_valid = false;
+                break;
+            }
+
+            sect->wisecs_count = _insert_wisec(sect->wisecs, sect->wisecs_count, u_wisec);
+        }
+
+        if (!wref->isec_valid)
+            continue;
+
+        /* leading edge point */
+
+        Wisec n_wisec = _envelope_and_line_intersection(n_sect->t_env,
+            u_verts[AIRFOIL_X_SUBDIVS].y, u_verts[AIRFOIL_X_SUBDIVS].z,
+            u_verts[AIRFOIL_X_SUBDIVS].y + cd, u_verts[AIRFOIL_X_SUBDIVS].z + sd,
+            t_sect->x);
+
+        if (n_wisec.i == -1) {
+            wref->isec_valid = false;
+            continue;
+        }
+
+        n_sect->wisecs_count = _insert_wisec(n_sect->wisecs, n_sect->wisecs_count, n_wisec);
+    }
+
+    /* for wings that intersect fuselages correctly add insert all its intersection points
+    into trace envelopes */
+
+    for (int i = 0; i < sects_count; ++i) {
+        TraceSection *sect = sects + i;
+        _insert_wisecs_into_envelope(sect->t_env, sect->wisecs, sect->wisecs_count);
+    }
+
+    arena->unlock();
+    arena->unlock();
+}
+
+
+#if 0
     Wisec *u_wisecs = arena->lock<Wisec>(MAX_WING_SURFACE_STATIONS * 2);
     Wisec *l_wisecs = u_wisecs + MAX_WING_SURFACE_STATIONS;
 
@@ -350,5 +481,4 @@ void fuselage_wing_intersections(Arena *arena, Wref *wrefs, int wrefs_count, Tra
         TraceSection *sect = sects + i;
         _insert_wisecs_into_envelope(sect->t_env, sect->wisecs, sect->wisecs_count);
     }
-}
 #endif

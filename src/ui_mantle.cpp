@@ -88,10 +88,10 @@ void mantle_generate_from_wing_formers(Mantle *m, Arena *arena, WFormer *r_f, WF
 
     double dihedral = atan2(t_f->z - r_f->z, t_f->y - r_f->y);
 
-    airfoil_get_points(&r_f->airfoil, m->verts, dihedral,
+    airfoil_get_drawing_verts(&r_f->airfoil, m->verts, dihedral,
                        r_f->chord, r_f->aoa,
                        r_f->x + x, r_f->y + y, r_f->z + z);
-    airfoil_get_points(&t_f->airfoil, m->verts + AIRFOIL_POINTS, dihedral,
+    airfoil_get_drawing_verts(&t_f->airfoil, m->verts + AIRFOIL_POINTS, dihedral,
                        t_f->chord, t_f->aoa,
                        t_f->x + x, t_f->y + y, t_f->z + z);
 

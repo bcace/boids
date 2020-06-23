@@ -128,23 +128,6 @@ struct MeshSection {
     int neighbors_map[MAX_ENVELOPE_POINTS]; /* maps tailwise envelope point indices to tailwise triangles */
 };
 
-/* Section containing all pipe intersection shapes and resulting envelopes. Mostly contains
-only one set of shapes and a single envelope, and two shape sets and two envelopes if there's
-a possibility of an opening. */
-struct TraceSection {
-    Shape shapes[MAX_ENVELOPE_SHAPES];      /* actual storage */
-    Shape *t_shapes[MAX_ENVELOPE_SHAPES];   /* aliases, shapes in tailwise direction */
-    Shape *n_shapes[MAX_ENVELOPE_SHAPES];   /* aliases, shapes in nosewise direction */
-    int shapes_count;
-    int t_shapes_count;
-    int n_shapes_count;
-    bool two_envelopes;
-    TraceEnv *t_env, *n_env; /* pointers because they migh point at the same thing in arena */
-    double x;
-    Wisec wisecs[MAX_WING_ISECS];
-    int wisecs_count;
-};
-
 /* Main fuselage lofting function. Generates fuselage skin panels. */
 void fuselage_loft(Arena *arena, Arena *verts_arena,
                    Model *model, Fuselage *fuselage) {
@@ -196,26 +179,20 @@ void fuselage_loft(Arena *arena, Arena *verts_arena,
 
         /* get wing required stations (leading and trailing edge root points, spars) */
 
-        // for (int i = 0; i < fuselage->wrefs_count; ++i) {
-        //     Wref *wref = fuselage->wrefs + i;
+        for (int i = 0; i < fuselage->wrefs_count; ++i) {
+            Wref *wref = fuselage->wrefs + i;
 
-        //     static float x_positions[MAX_ELEM_REFS];
-        //     int count = wing_get_required_stations(wref->wing, x_positions);
+            static float x_positions[MAX_ELEM_REFS];
+            int count = wing_get_required_stations(wref->wing, x_positions);
 
-        //     /* trailing edge */
-        //     wref->t_station.id = _insert_station(req_stations,
-        //                                          &req_stations_count,
-        //                                          x_positions[0]);
-
-        //     //
-        //     // TODO: add spar stations
-        //     //
-
-        //     /* leading edge */
-        //     wref->n_station.id = _insert_station(req_stations,
-        //                                          &req_stations_count,
-        //                                          x_positions[count - 1]);
-        // }
+            wref->t_station.id = _insert_station(req_stations,
+                                                 &req_stations_count,
+                                                 x_positions[0]);
+            // TODO: add spar stations
+            wref->n_station.id = _insert_station(req_stations,
+                                                 &req_stations_count,
+                                                 x_positions[count - 1]);
+        }
 
         // TODO: merge stations that are too close along x, use mesh size to estimate
     }
@@ -313,7 +290,6 @@ void fuselage_loft(Arena *arena, Arena *verts_arena,
     for (int i = 0; i < stations_count; ++i) {
         _Station *station = stations + i;
         TraceSection *sect = trace_sections + i;
-        sect->wisecs_count = 0;
         sect->t_env = 0;
         sect->n_env = 0;
         sect->x = station->x;
@@ -321,6 +297,7 @@ void fuselage_loft(Arena *arena, Arena *verts_arena,
         sect->t_shapes_count = 0;
         sect->n_shapes_count = 0;
         sect->two_envelopes = false;
+        sect->wisecs_count = 0;
 
         /* intersect objects */
 
@@ -389,9 +366,9 @@ void fuselage_loft(Arena *arena, Arena *verts_arena,
 
     /* wing intersections */
 
-    // fuselage_wing_intersections(arena,
-    //                             fuselage->wrefs, fuselage->wrefs_count,
-    //                             trace_sections, stations_count);
+    loft_fuselage_wing_intersections(arena,
+                                     fuselage->wrefs, fuselage->wrefs_count,
+                                     trace_sections, stations_count);
 
     /* mesh between each two neighboring sections */
 
